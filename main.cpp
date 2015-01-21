@@ -25,6 +25,9 @@ int main(int argc, char **argv)
     MythFrame frame;
 
     frame.setGeometry(0, 0, 480, 272);
+    if (!frame.init())
+    	return -1;
+
     frame.show();
 
     return app.exec();

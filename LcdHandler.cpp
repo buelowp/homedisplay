@@ -19,11 +19,42 @@
 #include "LcdHandler.h"
 
 LcdHandler::LcdHandler() {
-	// TODO Auto-generated constructor stub
-
 }
 
-LcdHandler::~LcdHandler() {
-	// TODO Auto-generated destructor stub
+LcdHandler::LcdHandler(QTcpSocket *s) {
+	if (s) {
+		sock = s;
+		connect(sock, SIGNAL(disconnected()), this, SLOT(disconnected()));
+		connect(sock, SIGNAL(error(QAbstractSocket::SocketError)), this, SLOT(error(QAbstractSocket::SocketError)));
+		connect(sock, SIGNAL(readyRead()), this, SLOT(messageAvailable()));
+	}
 }
 
+LcdHandler::~LcdHandler()
+{
+	if (sock)
+		delete sock;
+}
+
+void LcdHandler::disconnected()
+{
+	delete sock;
+	sock = NULL;
+	emit sockClosed();
+}
+
+void LcdHandler::error(QAbstractSocket::SocketError e)
+{
+	qDebug() << "LcdHandler:" << sock->errorString();
+}
+
+void LcdHandler::messageAvailable()
+{
+	QByteArray ba = sock->readAll();
+	qDebug() << ba;
+}
+
+void LcdHandler::closeConn()
+{
+	sock->close();
+}

@@ -19,12 +19,26 @@
 #ifndef LCDHANDLER_H_
 #define LCDHANDLER_H_
 
+#include <QtCore>
 #include <QtNetwork>
 
-class LcdHandler {
+class LcdHandler : public QObject {
+	Q_OBJECT
 public:
+	LcdHandler(QTcpSocket *sock);
 	LcdHandler();
 	virtual ~LcdHandler();
+
+	void addSocket(QTcpSocket *sock);
+	void closeConn();
+
+signals:
+	void sockClosed();
+
+public slots:
+	void disconnected();
+	void error(QAbstractSocket::SocketError);
+	void messageAvailable();
 
 private:
 	QTcpSocket *sock;

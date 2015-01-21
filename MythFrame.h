@@ -20,19 +20,29 @@
 #define MYTHFRAME_H_
 
 #include <QtGui>
+#include <QtNetwork>
+
 #include "MythClock.h"
+#include "LcdHandler.h"
 
 class MythFrame : public QFrame {
+	Q_OBJECT
 public:
 	MythFrame(QFrame *parent = 0);
 	virtual ~MythFrame();
+	bool init();
+
+public slots:
+	void connCreated();
+	void connClosed();
 
 protected:
-	void paintEvent(QPaintEvent*);
 	void showEvent(QShowEvent*);
 
 private:
 	MythClock *clock;
+	QTcpServer *server;
+	LcdHandler *conn;
 };
 
 #endif /* MYTHFRAME_H_ */

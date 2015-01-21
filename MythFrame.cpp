@@ -25,14 +25,37 @@ MythFrame::MythFrame(QFrame *parent) : QFrame(parent) {
 	setPalette(pal);
 
 	clock = new MythClock(this);
+	server = new QTcpServer(this);
+	conn = NULL;
 }
 
 MythFrame::~MythFrame() {
-	// TODO Auto-generated destructor stub
+	conn->closeConn();
+	delete conn;
+	server->close();
+	delete server;
 }
 
-void MythFrame::paintEvent(QPaintEvent*)
+bool MythFrame::init()
 {
+	connect(server, SIGNAL(newConnection()), this, SLOT(connCreated()));
+	return server->listen(QHostAddress::LocalHost, 13666);
+}
+
+void MythFrame::connCreated()
+{
+	if (conn == NULL) {
+		conn = new LcdHandler(server->nextPendingConnection());
+		connect(conn, SIGNAL(sockClosed()), this, SLOT(connClosed()));
+	}
+}
+
+void MythFrame::connClosed()
+{
+	if (conn) {
+		delete conn;
+		conn = NULL;
+	}
 }
 
 void MythFrame::showEvent(QShowEvent*)
