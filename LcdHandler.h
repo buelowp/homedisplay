@@ -34,6 +34,8 @@ public:
 
 signals:
 	void sockClosed();
+	void progressBarUpdate(int);
+	void channelString(QString);
 
 public slots:
 	void disconnected();
@@ -41,7 +43,14 @@ public slots:
 	void messageAvailable();
 
 private:
+	void sendConnect();
+	void setWidget(QByteArray&);
+	void setName(QByteArray&);
+	void addScreen(QByteArray&);
+
+	int lcdState;
 	QTcpSocket *sock;
+	QString name;
 };
 
 #endif /* LCDHANDLER_H_ */

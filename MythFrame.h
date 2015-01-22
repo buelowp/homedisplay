@@ -43,6 +43,7 @@ private:
 	MythClock *clock;
 	QTcpServer *server;
 	LcdHandler *conn;
+	QLabel *mythConn;
 };
 
 #endif /* MYTHFRAME_H_ */

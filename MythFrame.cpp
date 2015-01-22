@@ -26,6 +26,11 @@ MythFrame::MythFrame(QFrame *parent) : QFrame(parent) {
 
 	clock = new MythClock(this);
 	server = new QTcpServer(this);
+	mythConn = new QLabel(this);
+
+	// Set the Myth connection indicator background black.
+	mythConn->setAutoFillBackground(true);
+	mythConn->setPalette(pal);
 	conn = NULL;
 }
 
@@ -47,11 +52,13 @@ void MythFrame::connCreated()
 	if (conn == NULL) {
 		conn = new LcdHandler(server->nextPendingConnection());
 		connect(conn, SIGNAL(sockClosed()), this, SLOT(connClosed()));
+		mythConn->setText("<font color='blue'>MythTV</font>");
 	}
 }
 
 void MythFrame::connClosed()
 {
+	mythConn->setText("<font color='gray'>MythTV</font>");
 	if (conn) {
 		delete conn;
 		conn = NULL;
@@ -62,4 +69,8 @@ void MythFrame::showEvent(QShowEvent*)
 {
 	clock->resize(width(), height());
 	clock->show();
+	mythConn->setText("<font color='gray'>MythTV</font>");
+	mythConn->setGeometry(450, 0, 30, 10);
+	QFont f("Times", 6);
+	mythConn->setFont(f);
 }
