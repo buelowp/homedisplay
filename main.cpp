@@ -19,10 +19,25 @@
 #include <QApplication>
 #include "MythFrame.h"
 
+void printFonts()
+{
+     QFontDatabase database;
+
+     foreach (const QString &family, database.families()) {
+    	 qDebug() << "Family:" << family;
+
+         foreach (const QString &style, database.styles(family)) {
+        	 qDebug() << " Style:" << style;
+         }
+     }
+}
+
 int main(int argc, char **argv)
 {
     QApplication app (argc, argv);
     MythFrame frame;
+
+ //   printFonts();
 
     frame.setGeometry(0, 0, 480, 272);
     if (!frame.init())

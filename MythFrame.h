@@ -35,6 +35,9 @@ public:
 public slots:
 	void connCreated();
 	void connClosed();
+	void channelUpdate(QString);
+	void enableProgressBar(bool);
+	void enableChannelMeta(bool);
 
 protected:
 	void showEvent(QShowEvent*);
@@ -44,6 +47,9 @@ private:
 	QTcpServer *server;
 	LcdHandler *conn;
 	QLabel *mythConn;
+	QLabel *channelLabel;
+	QList<QString> chanMetaData;
+	QProgressBar *pBar;
 };
 
 #endif /* MYTHFRAME_H_ */

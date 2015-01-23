@@ -36,6 +36,8 @@ signals:
 	void sockClosed();
 	void progressBarUpdate(int);
 	void channelString(QString);
+	void enableProgressBar(bool);
+	void enableChannelMeta(bool);
 
 public slots:
 	void disconnected();
@@ -47,6 +49,7 @@ private:
 	void setWidget(QByteArray&);
 	void setName(QByteArray&);
 	void addScreen(QByteArray&);
+	void setOutput(QByteArray&);
 
 	int lcdState;
 	QTcpSocket *sock;

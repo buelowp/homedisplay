@@ -19,18 +19,26 @@
 #include "MythFrame.h"
 
 MythFrame::MythFrame(QFrame *parent) : QFrame(parent) {
-	QPalette pal(palette());
-	pal.setColor(QPalette::Background, Qt::black);
+	QPalette pal(QColor(0,0,0));
+	setBackgroundRole(QPalette::Window);
+	pal.setColor(QPalette::Window, Qt::black);
 	setAutoFillBackground(true);
 	setPalette(pal);
 
 	clock = new MythClock(this);
 	server = new QTcpServer(this);
 	mythConn = new QLabel(this);
+	channelLabel = new QLabel(this);
+	pBar = new QProgressBar(this);
 
 	// Set the Myth connection indicator background black.
 	mythConn->setAutoFillBackground(true);
 	mythConn->setPalette(pal);
+	mythConn->setAlignment(Qt::AlignRight);
+	channelLabel->setAutoFillBackground(true);
+	channelLabel->setPalette(pal);
+	pBar->setRange(0, 64);
+	pBar->setTextVisible(false);
 	conn = NULL;
 }
 
@@ -53,6 +61,30 @@ void MythFrame::connCreated()
 		conn = new LcdHandler(server->nextPendingConnection());
 		connect(conn, SIGNAL(sockClosed()), this, SLOT(connClosed()));
 		mythConn->setText("<font color='blue'>MythTV</font>");
+		connect(conn, SIGNAL(channelString(QString)), this, SLOT(channelUpdate(QString)));
+		connect(conn, SIGNAL(progressBarUpdate(int)), pBar, SLOT(setValue(int)));
+		connect(conn, SIGNAL(enableProgressBar(bool)), this, SLOT(enableProgressBar(bool)));
+		connect(conn, SIGNAL(enableChannelMeta(bool)), this, SLOT(enableChannelMeta(bool)));
+	}
+}
+
+void MythFrame::enableProgressBar(bool v)
+{
+	if (v) {
+		pBar->show();
+	}
+	else {
+		pBar->hide();
+	}
+}
+
+void MythFrame::enableChannelMeta(bool v)
+{
+	if (v)
+		channelLabel->show();
+	else {
+		channelLabel->hide();
+		chanMetaData.clear();
 	}
 }
 
@@ -65,12 +97,38 @@ void MythFrame::connClosed()
 	}
 }
 
+void MythFrame::channelUpdate(QString s)
+{
+	for (int i = 0; i < chanMetaData.size(); i++) {
+		if (chanMetaData[i] == s) {
+			return;
+		}
+	}
+	chanMetaData.push_back(s);
+
+	QString meta;
+	for (int i = 0; i < chanMetaData.size(); i++) {
+		meta += chanMetaData[i];
+		meta += "\n";
+	}
+	channelLabel->setText(meta);
+}
+
 void MythFrame::showEvent(QShowEvent*)
 {
-	clock->resize(width(), height());
+	int middle = (width() - height()) / 2;
+	clock->setGeometry(0, 0, height(), height());
 	clock->show();
 	mythConn->setText("<font color='gray'>MythTV</font>");
-	mythConn->setGeometry(450, 0, 30, 10);
+	mythConn->setGeometry(272, 0, 208, 10);
 	QFont f("Times", 6);
 	mythConn->setFont(f);
+
+	channelLabel->setGeometry(272, 10, 208, 100);
+	channelLabel->hide();
+	QFont c("Liberation Sans", 10);
+	channelLabel->setFont(c);
+
+	pBar->setGeometry(272, 252, 208, 20);
+	pBar->hide();
 }

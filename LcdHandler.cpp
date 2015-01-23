@@ -27,7 +27,6 @@ LcdHandler::LcdHandler(QTcpSocket *s) {
 		connect(sock, SIGNAL(disconnected()), this, SLOT(disconnected()));
 		connect(sock, SIGNAL(error(QAbstractSocket::SocketError)), this, SLOT(error(QAbstractSocket::SocketError)));
 		connect(sock, SIGNAL(readyRead()), this, SLOT(messageAvailable()));
-		qDebug() << "New socket connection";
 	}
 	lcdState = 0;
 }
@@ -53,7 +52,6 @@ void LcdHandler::error(QAbstractSocket::SocketError e)
 void LcdHandler::sendConnect()
 {
 	if (sock->state() == QAbstractSocket::ConnectedState) {
-		qDebug() << "Sending connect message";
 		sock->write("connect LCDproc 0.5.6 protocol 0.3 lcd wid 64 hgt 2 cellwid 1 cellhgt 8\n");
 		lcdState++;
 	}
@@ -61,8 +59,22 @@ void LcdHandler::sendConnect()
 
 void LcdHandler::setWidget(QByteArray &ba)
 {
-	QList<QByteArray> list = ba.split(' ');
+	QList<QByteArray> list;
 	QList<QByteArray>::iterator i;
+
+	if (ba.contains("Channel") && ba.contains("topWidget")) {
+		int pos = ba.indexOf('"');
+		if (pos != -1) {
+			QByteArray metaData = ba.mid(pos + 1, ba.size() - pos);
+			metaData.resize(metaData.size() - 2);
+			emit enableChannelMeta(true);
+			emit channelString(metaData.trimmed());
+		}
+		return;
+	}
+	else {
+		list = ba.split(' ');
+	}
 	i = list.begin();
 	i++;
 
@@ -71,16 +83,12 @@ void LcdHandler::setWidget(QByteArray &ba)
 	}
 	if (list[1] == "Channel") {
 		if (list[2] == "progressBar") {
-			emit progressBarUpdate(list[5].toInt());
-		}
-		if (list[2] == "topWidget") {
-			QString entry = list[5].trimmed();
-			emit channelString(entry);
+			QByteArray pct = list[5].left(list[5].size() - 1);
+			emit enableProgressBar(true);
+			emit progressBarUpdate(pct.toInt());
 		}
 		return;
 	}
-
-	qDebug() << list[1];
 }
 
 void LcdHandler::setName(QByteArray &ba)
@@ -90,7 +98,6 @@ void LcdHandler::setName(QByteArray &ba)
 		QByteArray val = list[2];
 		val.resize(val.size() - 1);
 		name = val;
-		qDebug() << "Set client name to" << name;
 	}
 }
 
@@ -100,6 +107,19 @@ void LcdHandler::addScreen(QByteArray &ba)
 	QByteArray screen = list[1];
 	screen.resize(screen.size() - 1);
 	qDebug() << "Adding screen" << screen;
+}
+
+void LcdHandler::setOutput(QByteArray &ba)
+{
+	QList<QByteArray> list = ba.split(' ');
+	QByteArray bitmap = list[1];
+	bitmap.resize(bitmap.size() - 1);
+
+	qDebug() << "bitmap is" << bitmap;
+	if (bitmap == "0") {
+		emit enableProgressBar(false);
+		emit enableChannelMeta(false);
+	}
 }
 
 void LcdHandler::messageAvailable()
@@ -142,6 +162,10 @@ void LcdHandler::messageAvailable()
 			return;
 		}
 		if (ba.contains("screen_set")) {
+			return;
+		}
+		if (ba.contains("output")) {
+			setOutput(ba);
 			return;
 		}
 		qDebug() << ba;
