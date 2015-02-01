@@ -21,6 +21,7 @@
 
 #include <QtGui>
 #include <QtNetwork>
+#include <QtCore>
 
 #include "MythClock.h"
 #include "LcdHandler.h"
@@ -36,8 +37,12 @@ public slots:
 	void connCreated();
 	void connClosed();
 	void channelUpdate(QString);
-	void enableProgressBar(bool);
-	void enableChannelMeta(bool);
+	void metaDataEnded();
+	void videoFormat(QString);
+	void audioFormat(QString);
+	void stereoFormat(QString);
+	void playbackFlags(QString);
+	void updateClock();
 
 protected:
 	void showEvent(QShowEvent*);
@@ -48,7 +53,15 @@ private:
 	LcdHandler *conn;
 	QLabel *mythConn;
 	QLabel *channelLabel;
-	QList<QString> chanMetaData;
+	QLabel *titleLabel;
+	QLabel *showLabel;
+	QLabel *audioIcon;
+	QLabel *videoIcon;
+	QLabel *stereoIcon;
+	QLabel *mythFlags;
+	QLabel *lbClock;
+	QTimer *pTimer;
+
 	QProgressBar *pBar;
 };
 

@@ -22,6 +22,17 @@
 #include <QtCore>
 #include <QtNetwork>
 
+#define MYTH_FLAG_SPEAKER_MASK		0x30
+#define MYTH_FLAG_SPEAKER_STEREO	(1 << 4)
+#define MYTH_FLAG_SPEAKER_5_1		(2 << 4)
+#define MYTH_FLAG_SPEAKER_7_1		(3 << 4)
+
+#define MYTH_AUDIO_FORMAT_MASK		0x70000
+#define MYTH_AUDIO_FORMAT_MPEG2		(1 << 16)
+#define MYTH_AUDIO_FORMAT_AC3		(2 << 16)
+#define MYTH_AUDIO_FORMAT_DTS		(3 << 16)
+#define MYTH_AUDIO_FORMAT_WMA		(4 << 16)
+
 class LcdHandler : public QObject {
 	Q_OBJECT
 public:
@@ -31,13 +42,17 @@ public:
 
 	void addSocket(QTcpSocket *sock);
 	void closeConn();
+	void ackSuccess();
 
 signals:
 	void sockClosed();
 	void progressBarUpdate(int);
 	void channelString(QString);
-	void enableProgressBar(bool);
-	void enableChannelMeta(bool);
+	void metaDataEnded();
+	void videoFormat(QString);
+	void audioFormat(QString);
+	void stereoFormat(QString);
+	void playbackFlags(QString);
 
 public slots:
 	void disconnected();

@@ -59,35 +59,18 @@ void LcdHandler::sendConnect()
 
 void LcdHandler::setWidget(QByteArray &ba)
 {
-	QList<QByteArray> list;
-	QList<QByteArray>::iterator i;
+	QList<QByteArray> list = ba.split(' ');
 
-	if (ba.contains("Channel") && ba.contains("topWidget")) {
-		int pos = ba.indexOf('"');
-		if (pos != -1) {
-			QByteArray metaData = ba.mid(pos + 1, ba.size() - pos);
-			metaData.resize(metaData.size() - 2);
-			emit enableChannelMeta(true);
-			emit channelString(metaData.trimmed());
-		}
-		return;
-	}
-	else {
-		list = ba.split(' ');
-	}
-	i = list.begin();
-	i++;
-
-	if (list[1] == "Time") {
-		return;
-	}
 	if (list[1] == "Channel") {
-		if (list[2] == "progressBar") {
-			QByteArray pct = list[5].left(list[5].size() - 1);
-			emit enableProgressBar(true);
-			emit progressBarUpdate(pct.toInt());
+		if (list[2] == "topWidget") {
+			ba.resize(ba.size() - 1);
+			int pos = ba.indexOf('"');
+			QString val = ba.mid(pos + 1, (ba.size() - (pos + 1)));
+			emit channelString(val.trimmed());
 		}
-		return;
+		if (list[2] == "progressBar") {
+			emit progressBarUpdate(list[5].toInt());
+		}
 	}
 }
 
@@ -96,7 +79,6 @@ void LcdHandler::setName(QByteArray &ba)
 	QList<QByteArray> list = ba.split(' ');
 	if (list[1] == "name") {
 		QByteArray val = list[2];
-		val.resize(val.size() - 1);
 		name = val;
 	}
 }
@@ -105,20 +87,46 @@ void LcdHandler::addScreen(QByteArray &ba)
 {
 	QList<QByteArray> list = ba.split(' ');
 	QByteArray screen = list[1];
-	screen.resize(screen.size() - 1);
-	qDebug() << "Adding screen" << screen;
 }
 
 void LcdHandler::setOutput(QByteArray &ba)
 {
 	QList<QByteArray> list = ba.split(' ');
 	QByteArray bitmap = list[1];
-	bitmap.resize(bitmap.size() - 1);
 
-	qDebug() << "bitmap is" << bitmap;
 	if (bitmap == "0") {
-		emit enableProgressBar(false);
-		emit enableChannelMeta(false);
+		emit metaDataEnded();
+	}
+	else {
+		int x = bitmap.toInt();
+
+		if (x & 0x80000)
+			emit videoFormat("mpg");
+		else if (x & 0x100000)
+			emit videoFormat("divx");
+		else if (x & 0x180000)
+			emit videoFormat("xvid");
+		else if (x & 0x200000)
+			emit videoFormat("wmv");
+
+		if (x & 0x10000)
+			emit audioFormat("mpeg2");
+		if (x & 0x20000)
+			emit audioFormat("ac3");
+		if (x & 0x30000)
+			emit audioFormat("dts");
+		if (x & 0x40000)
+			emit audioFormat("wma");
+
+		if (x & 0x10)
+			emit stereoFormat("stereo");
+		else if (x & 0x20)
+			emit stereoFormat("5.1");
+		else if (x & 0x30)
+			emit stereoFormat("7.1");
+
+		if (x & 0x400)
+			emit playbackFlags("Hi-Def");
 	}
 }
 
@@ -131,8 +139,10 @@ void LcdHandler::messageAvailable()
 		QByteArray ba = sock->readLine();
 		if (ba.size() == 0)
 			break;
-		else
+		else {
+			ba.resize(ba.size() - 1);
 			lines.push_back(ba);
+		}
 	}
 
 	for (i = lines.begin(); i != lines.end(); i++) {
@@ -142,34 +152,44 @@ void LcdHandler::messageAvailable()
 
 		if (ba.left(5) == "hello") {
 			sendConnect();
-			return;
+			continue;
 		}
 		// We don't care to store this, but it tells us LCDd thinks we're in good shape
 		// Increment state to show we know we're good
 		if (ba.contains("client_set")) {
 			setName(ba);
-			return;
+			ackSuccess();
+			continue;
 		}
 		if (ba.contains("widget_set")) {
 			setWidget(ba);
-			return;
+			ackSuccess();
+			continue;
 		}
 		if (ba.contains("widget_add")) {
-			return;
+			ackSuccess();
+			continue;
 		}
 		if (ba.contains("screen_add")) {
 			addScreen(ba);
-			return;
+			ackSuccess();
+			continue;
 		}
 		if (ba.contains("screen_set")) {
-			return;
+			ackSuccess();
+			continue;
 		}
 		if (ba.contains("output")) {
 			setOutput(ba);
-			return;
+			ackSuccess();
+			continue;
 		}
-		qDebug() << ba;
 	}
+}
+
+void LcdHandler::ackSuccess()
+{
+	sock->write("success");
 }
 
 void LcdHandler::closeConn()

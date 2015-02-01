@@ -25,11 +25,23 @@ MythFrame::MythFrame(QFrame *parent) : QFrame(parent) {
 	setAutoFillBackground(true);
 	setPalette(pal);
 
-	clock = new MythClock(this);
+//	clock = new MythClock(this);
 	server = new QTcpServer(this);
 	mythConn = new QLabel(this);
 	channelLabel = new QLabel(this);
+	titleLabel = new QLabel(this);
+	showLabel = new QLabel(this);
+	audioIcon = new QLabel(this);
+	videoIcon = new QLabel(this);
+	stereoIcon = new QLabel(this);
+	mythFlags = new QLabel(this);
+	lbClock = new QLabel(this);
 	pBar = new QProgressBar(this);
+
+	pTimer = new QTimer(this);
+	connect(pTimer, SIGNAL(timeout()), this, SLOT(updateClock()));
+	pTimer->setInterval(1000);
+	pTimer->start();
 
 	// Set the Myth connection indicator background black.
 	mythConn->setAutoFillBackground(true);
@@ -37,6 +49,24 @@ MythFrame::MythFrame(QFrame *parent) : QFrame(parent) {
 	mythConn->setAlignment(Qt::AlignRight);
 	channelLabel->setAutoFillBackground(true);
 	channelLabel->setPalette(pal);
+	titleLabel->setAutoFillBackground(true);
+	titleLabel->setPalette(pal);
+	showLabel->setAutoFillBackground(true);
+	showLabel->setPalette(pal);
+	audioIcon->setAutoFillBackground(true);
+	audioIcon->setPalette(pal);
+	videoIcon->setAutoFillBackground(true);
+	videoIcon->setPalette(pal);
+	stereoIcon->setAutoFillBackground(true);
+	stereoIcon->setPalette(pal);
+	mythFlags->setAutoFillBackground(true);
+	mythFlags->setPalette(pal);
+	lbClock->setAutoFillBackground(true);
+	lbClock->setPalette(pal);
+
+
+	pBar->setStyleSheet("QProgressBar {border: 0px solid black; border-radius: 0px; text-align: center; background-color: #000000;} QProgressBar::chunk {background-color: #00FFFF;}");
+
 	pBar->setRange(0, 64);
 	pBar->setTextVisible(false);
 	conn = NULL;
@@ -55,6 +85,13 @@ bool MythFrame::init()
 	return server->listen(QHostAddress::LocalHost, 13666);
 }
 
+void MythFrame::updateClock()
+{
+	QTime t = QTime::currentTime();
+
+	lbClock->setText(t.toString("h:mm a"));
+}
+
 void MythFrame::connCreated()
 {
 	if (conn == NULL) {
@@ -63,29 +100,68 @@ void MythFrame::connCreated()
 		mythConn->setText("<font color='blue'>MythTV</font>");
 		connect(conn, SIGNAL(channelString(QString)), this, SLOT(channelUpdate(QString)));
 		connect(conn, SIGNAL(progressBarUpdate(int)), pBar, SLOT(setValue(int)));
-		connect(conn, SIGNAL(enableProgressBar(bool)), this, SLOT(enableProgressBar(bool)));
-		connect(conn, SIGNAL(enableChannelMeta(bool)), this, SLOT(enableChannelMeta(bool)));
+		connect(conn, SIGNAL(metaDataEnded()), this, SLOT(metaDataEnded()));
+		connect(conn, SIGNAL(videoFormat(QString)), this, SLOT(videoFormat(QString)));
+		connect(conn, SIGNAL(audioFormat(QString)), this, SLOT(audioFormat(QString)));
+		connect(conn, SIGNAL(stereoFormat(QString)), this, SLOT(stereoFormat(QString)));
+		connect(conn, SIGNAL(playbackFlags(QString)), this, SLOT(playbackFlags(QString)));
 	}
 }
 
-void MythFrame::enableProgressBar(bool v)
+void MythFrame::videoFormat(QString v)
 {
-	if (v) {
-		pBar->show();
+	videoIcon->setText(v);
+}
+
+void MythFrame::audioFormat(QString v)
+{
+	if (v == "dts") {
+		QPalette pal(QColor(0,0,0));
+		audioIcon->setBackgroundRole(QPalette::Window);
+		pal.setColor(QPalette::Window, Qt::red);
+		audioIcon->setAutoFillBackground(true);
+		audioIcon->setPalette(pal);
+		audioIcon->setText("<center><bold>DTS</bold></center>");
 	}
 	else {
-		pBar->hide();
+		audioIcon->setText(v);
 	}
 }
 
-void MythFrame::enableChannelMeta(bool v)
+void MythFrame::stereoFormat(QString f)
 {
-	if (v)
-		channelLabel->show();
-	else {
-		channelLabel->hide();
-		chanMetaData.clear();
+	if (f == "stereo") {
+		stereoIcon->setText("Stereo");
+//		stereoIcon->setPixmap(QPixmap("icons/stereo.jpg"));
 	}
+	if (f == "5.1") {
+		stereoIcon->setText("5.1");
+	}
+	if (f == "7.1") {
+		stereoIcon->setText("7.1");
+	}
+}
+
+void MythFrame::playbackFlags(QString flags)
+{
+	mythFlags->setText(flags);
+}
+
+void MythFrame::metaDataEnded()
+{
+	showLabel->setText("");
+	titleLabel->setText("");
+	videoIcon->setText("");
+	audioIcon->setText("");
+	stereoIcon->setText("");
+	mythFlags->setText("");
+	pBar->reset();
+
+	QPalette pal(QColor(0,0,0));
+	audioIcon->setBackgroundRole(QPalette::Window);
+	pal.setColor(QPalette::Window, Qt::black);
+	audioIcon->setAutoFillBackground(true);
+	audioIcon->setPalette(pal);
 }
 
 void MythFrame::connClosed()
@@ -99,36 +175,58 @@ void MythFrame::connClosed()
 
 void MythFrame::channelUpdate(QString s)
 {
-	for (int i = 0; i < chanMetaData.size(); i++) {
-		if (chanMetaData[i] == s) {
-			return;
-		}
+	if (showLabel->text().size() == 0) {
+		showLabel->setText(s);
+		return;
 	}
-	chanMetaData.push_back(s);
+	// The movie conundrum
+	if (showLabel->text() == s)
+		return;
 
-	QString meta;
-	for (int i = 0; i < chanMetaData.size(); i++) {
-		meta += chanMetaData[i];
-		meta += "\n";
+	if (titleLabel->text().size() == 0) {
+		titleLabel->setText(s);
+		return;
 	}
-	channelLabel->setText(meta);
+	if (channelLabel->text().size() == 0) {
+		channelLabel->setText(s);
+		return;
+	}
 }
 
 void MythFrame::showEvent(QShowEvent*)
 {
-	int middle = (width() - height()) / 2;
-	clock->setGeometry(0, 0, height(), height());
-	clock->show();
+	lbClock->setGeometry(0, 10, 380, 172);
+	QFont clockFont("Liberation Sans", 60);
+	lbClock->setFont(clockFont);
+	lbClock->setAlignment(Qt::AlignCenter);
+	lbClock->show();
+
 	mythConn->setText("<font color='gray'>MythTV</font>");
-	mythConn->setGeometry(272, 0, 208, 10);
+	mythConn->setGeometry(0, 0, 480, 10);
 	QFont f("Times", 6);
 	mythConn->setFont(f);
 
-	channelLabel->setGeometry(272, 10, 208, 100);
+	QFont c("Liberation Sans", 24);
+	titleLabel->setFont(c);
+	showLabel->setFont(c);
+	showLabel->setGeometry(0, 172, 480, 50);
+	showLabel->setIndent(10);
+	showLabel->show();
+	titleLabel->setGeometry(0, 222, 480, 50);
+	titleLabel->show();
+	titleLabel->setIndent(10);
 	channelLabel->hide();
-	QFont c("Liberation Sans", 10);
-	channelLabel->setFont(c);
 
-	pBar->setGeometry(272, 252, 208, 20);
-	pBar->hide();
+	audioIcon->setGeometry(380, 30, 50, 20);
+	audioIcon->show();
+	videoIcon->setGeometry(430, 30, 50, 20);
+	videoIcon->show();
+	stereoIcon->setGeometry(380, 50, 50, 20);
+	stereoIcon->show();
+	mythFlags->setGeometry(430, 50, 50, 20);
+	mythFlags->show();
+
+	pBar->setGeometry(380, 152, 100, 20);
+	pBar->setValue(0);
+	pBar->show();
 }
