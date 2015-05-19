@@ -39,7 +39,7 @@ int main(int argc, char **argv)
 
  //   printFonts();
 
-    frame.setGeometry(0, 0, 480, 272);
+    frame.setGeometry(0, 0, 800, 480);
     if (!frame.init())
     	return -1;
 

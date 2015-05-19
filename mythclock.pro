@@ -2,7 +2,7 @@ TEMPLATE = app
 
 CONFIG += gui debug core
 
-QT += network
+QT += network widgets
 
 SOURCES = MythClock.cpp \
 	MythFrame.cpp \

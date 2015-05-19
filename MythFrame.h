@@ -22,6 +22,7 @@
 #include <QtGui>
 #include <QtNetwork>
 #include <QtCore>
+#include <QtWidgets>
 
 #include "MythClock.h"
 #include "LcdHandler.h"

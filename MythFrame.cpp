@@ -40,7 +40,7 @@ MythFrame::MythFrame(QFrame *parent) : QFrame(parent) {
 
 	pTimer = new QTimer(this);
 	connect(pTimer, SIGNAL(timeout()), this, SLOT(updateClock()));
-	pTimer->setInterval(1000);
+	pTimer->setInterval(500);
 	pTimer->start();
 
 	// Set the Myth connection indicator background black.
@@ -110,18 +110,20 @@ void MythFrame::connCreated()
 
 void MythFrame::videoFormat(QString v)
 {
+	QFont f("Liberation Sans", 40);
+	videoIcon->setFont(f);
+	videoIcon->setAlignment(Qt::AlignCenter);
 	videoIcon->setText(v);
 }
 
 void MythFrame::audioFormat(QString v)
 {
 	if (v == "dts") {
-		QPalette pal(QColor(0,0,0));
-		audioIcon->setBackgroundRole(QPalette::Window);
-		pal.setColor(QPalette::Window, Qt::red);
-		audioIcon->setAutoFillBackground(true);
-		audioIcon->setPalette(pal);
-		audioIcon->setText("<center><bold>DTS</bold></center>");
+		audioIcon->setStyleSheet(".QLabel{background-color: red; color: white; border-radius: 3px;}");
+		QFont f("Liberation Sans", 40);
+		audioIcon->setAlignment(Qt::AlignCenter);
+		audioIcon->setFont(f);
+		audioIcon->setText(v);
 	}
 	else {
 		audioIcon->setText(v);
@@ -130,6 +132,9 @@ void MythFrame::audioFormat(QString v)
 
 void MythFrame::stereoFormat(QString f)
 {
+	stereoIcon->setFont(QFont("Liberation Sans", 40));
+	stereoIcon->setAlignment(Qt::AlignCenter);
+
 	if (f == "stereo") {
 		stereoIcon->setText("Stereo");
 //		stereoIcon->setPixmap(QPixmap("icons/stereo.jpg"));
@@ -144,6 +149,9 @@ void MythFrame::stereoFormat(QString f)
 
 void MythFrame::playbackFlags(QString flags)
 {
+	QFont f("Liberation Sans", 26);
+	mythFlags->setFont(f);
+	mythFlags->setAlignment(Qt::AlignCenter);
 	mythFlags->setText(flags);
 }
 
@@ -195,38 +203,60 @@ void MythFrame::channelUpdate(QString s)
 
 void MythFrame::showEvent(QShowEvent*)
 {
-	lbClock->setGeometry(0, 10, 380, 172);
-	QFont clockFont("Liberation Sans", 60);
+	int clockWidth = (width() / 4) * 3;
+	int clockHeight = (height() / 3) * 2;
+	int titlePanels = height() / 9;
+	int iconPanelOffset = height() / 20;
+	int iconPanelsWidth = width() / 8;
+	int iconPanelsHeight = ((height() / 4) - (iconPanelOffset / 3));
+
+	lbClock->setGeometry(0, 0, clockWidth, clockHeight);
+	QFont clockFont("Liberation Sans", 120);
 	lbClock->setFont(clockFont);
 	lbClock->setAlignment(Qt::AlignCenter);
 	lbClock->show();
 
 	mythConn->setText("<font color='gray'>MythTV</font>");
-	mythConn->setGeometry(0, 0, 480, 10);
-	QFont f("Times", 6);
+	mythConn->setGeometry(clockWidth, 0, width() / 4, height() / 20);
+	QFont f("Times", 20);
 	mythConn->setFont(f);
 
-	QFont c("Liberation Sans", 24);
+	QFont c("Liberation Sans", 30);
 	titleLabel->setFont(c);
 	showLabel->setFont(c);
-	showLabel->setGeometry(0, 172, 480, 50);
+	showLabel->setGeometry(0, lbClock->height(), width(), titlePanels);
 	showLabel->setIndent(10);
 	showLabel->show();
-	titleLabel->setGeometry(0, 222, 480, 50);
+	titleLabel->setGeometry(0, lbClock->height() + titlePanels, width(), titlePanels);
 	titleLabel->show();
 	titleLabel->setIndent(10);
-	channelLabel->hide();
+	titleLabel->setFont(c);
+	channelLabel->setGeometry(0, lbClock->height() + (titlePanels * 2), width(), titlePanels);
+	channelLabel->show();
+	channelLabel->setIndent(10);
+	channelLabel->setFont(c);
 
-	audioIcon->setGeometry(380, 30, 50, 20);
+	audioIcon->setGeometry(clockWidth, iconPanelOffset, iconPanelsWidth, iconPanelsHeight/2);
 	audioIcon->show();
-	videoIcon->setGeometry(430, 30, 50, 20);
-	videoIcon->show();
-	stereoIcon->setGeometry(380, 50, 50, 20);
-	stereoIcon->show();
-	mythFlags->setGeometry(430, 50, 50, 20);
-	mythFlags->show();
+	audioIcon->setStyleSheet(".QLabel{border-radius: 3px;}");
 
-	pBar->setGeometry(380, 152, 100, 20);
-	pBar->setValue(0);
+	stereoIcon->setGeometry(clockWidth + iconPanelsWidth, iconPanelOffset, iconPanelsWidth, iconPanelsHeight/2);
+	stereoIcon->show();
+
+	videoIcon->setGeometry(clockWidth, iconPanelsHeight, iconPanelsWidth, iconPanelsHeight/2);
+	videoIcon->show();
+	mythFlags->setGeometry(clockWidth + iconPanelsWidth, iconPanelsHeight, iconPanelsWidth, iconPanelsHeight/2);
+	mythFlags->show();
+	pBar->setGeometry(clockWidth, iconPanelsHeight * 2, iconPanelsWidth * 2, iconPanelsHeight / 3);
+	pBar->setStyleSheet(".QProgressBar{background: black; padding: 2px;} QProgressBar::chunk{border-radius: 3px; background: qlineargradient(x1: 0, y1: 0.5, x2: 1, y2: 0.5, stop: 0 #fff, stop: .25 #fee, stop: .5 #fbb, stop: .75 #f66, stop: 1 #f00);}");
+	pBar->setValue(10);
 	pBar->show();
+
+	stereoFormat("5.1");
+	audioFormat("dts");
+	videoFormat("wmv");
+	playbackFlags("Hi-Def");
+	channelUpdate("Show Label Update");
+	channelUpdate("Title Label Update");
+	channelUpdate("Channel Label Update");
 }

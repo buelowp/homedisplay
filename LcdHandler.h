@@ -21,6 +21,9 @@
 
 #include <QtCore>
 #include <QtNetwork>
+#include <QtGui>
+#include <QtWidgets>
+#include <QtDebug>
 
 #define MYTH_FLAG_SPEAKER_MASK		0x30
 #define MYTH_FLAG_SPEAKER_STEREO	(1 << 4)
