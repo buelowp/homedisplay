@@ -88,8 +88,10 @@ bool MythFrame::init()
 void MythFrame::updateClock()
 {
 	QTime t = QTime::currentTime();
+	QDate d = QDate::currentDate();
 
-	lbClock->setText(t.toString("h:mm a"));
+	QString display("<font style='font-size:110px; color:white; font-weight: bold;'>%1</font><br><font style='font-size:20px; color:gray;'>%2</font>");
+	lbClock->setText(display.arg(t.toString("h:mm a")).arg(d.toString()));
 }
 
 void MythFrame::connCreated()
@@ -211,7 +213,7 @@ void MythFrame::showEvent(QShowEvent*)
 	int iconPanelsHeight = ((height() / 4) - (iconPanelOffset / 3));
 
 	lbClock->setGeometry(0, 0, clockWidth, clockHeight);
-	QFont clockFont("Liberation Sans", 120);
+	QFont clockFont("Liberation Sans");
 	lbClock->setFont(clockFont);
 	lbClock->setAlignment(Qt::AlignCenter);
 	lbClock->show();
@@ -249,7 +251,7 @@ void MythFrame::showEvent(QShowEvent*)
 	mythFlags->show();
 	pBar->setGeometry(clockWidth, iconPanelsHeight * 2, iconPanelsWidth * 2, iconPanelsHeight / 3);
 	pBar->setStyleSheet(".QProgressBar{background: black; padding: 2px;} QProgressBar::chunk{border-radius: 3px; background: qlineargradient(x1: 0, y1: 0.5, x2: 1, y2: 0.5, stop: 0 #fff, stop: .25 #fee, stop: .5 #fbb, stop: .75 #f66, stop: 1 #f00);}");
-	pBar->setValue(10);
+	pBar->setValue(64);
 	pBar->show();
 
 	stereoFormat("5.1");
