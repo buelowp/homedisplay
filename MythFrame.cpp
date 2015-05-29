@@ -25,7 +25,7 @@ MythFrame::MythFrame(QFrame *parent) : QFrame(parent) {
 	setAutoFillBackground(true);
 	setPalette(pal);
 
-//	clock = new MythClock(this);
+	clock = new MythClock(this);
 	server = new QTcpServer(this);
 	mythConn = new QLabel(this);
 	channelLabel = new QLabel(this);
@@ -107,6 +107,7 @@ void MythFrame::connCreated()
 		connect(conn, SIGNAL(audioFormat(QString)), this, SLOT(audioFormat(QString)));
 		connect(conn, SIGNAL(stereoFormat(QString)), this, SLOT(stereoFormat(QString)));
 		connect(conn, SIGNAL(playbackFlags(QString)), this, SLOT(playbackFlags(QString)));
+		connect(conn, SIGNAL(metaDataStarted()), this, SLOT(metaDataStarted()));
 	}
 }
 
@@ -157,6 +158,11 @@ void MythFrame::playbackFlags(QString flags)
 	mythFlags->setText(flags);
 }
 
+void MythFrame::metaDataStarted()
+{
+	startMetaData(true);
+}
+
 void MythFrame::metaDataEnded()
 {
 	showLabel->setText("");
@@ -172,6 +178,7 @@ void MythFrame::metaDataEnded()
 	pal.setColor(QPalette::Window, Qt::black);
 	audioIcon->setAutoFillBackground(true);
 	audioIcon->setPalette(pal);
+	startMetaData(false);
 }
 
 void MythFrame::connClosed()
@@ -203,6 +210,34 @@ void MythFrame::channelUpdate(QString s)
 	}
 }
 
+void MythFrame::startMetaData(bool event)
+{
+	if (event) {
+		clock->hide();
+		lbClock->show();
+		titleLabel->show();
+		showLabel->show();
+		channelLabel->show();
+		audioIcon->show();
+		videoIcon->show();
+		stereoIcon->show();
+		mythFlags->show();
+		pBar->show();
+	}
+	else {
+		clock->show();
+		lbClock->hide();
+		titleLabel->hide();
+		showLabel->hide();
+		channelLabel->hide();
+		audioIcon->hide();
+		videoIcon->hide();
+		stereoIcon->hide();
+		mythFlags->hide();
+		pBar->hide();
+	}
+}
+
 void MythFrame::showEvent(QShowEvent*)
 {
 	int clockWidth = (width() / 4) * 3;
@@ -212,6 +247,7 @@ void MythFrame::showEvent(QShowEvent*)
 	int iconPanelsWidth = width() / 8;
 	int iconPanelsHeight = ((height() / 4) - (iconPanelOffset / 3));
 
+	clock->setGeometry(0, 0, width(), height());
 	lbClock->setGeometry(0, 0, clockWidth, clockHeight);
 	QFont clockFont("Liberation Sans");
 	lbClock->setFont(clockFont);
@@ -252,13 +288,6 @@ void MythFrame::showEvent(QShowEvent*)
 	pBar->setGeometry(clockWidth, iconPanelsHeight * 2, iconPanelsWidth * 2, iconPanelsHeight / 3);
 	pBar->setStyleSheet(".QProgressBar{background: black; padding: 2px;} QProgressBar::chunk{border-radius: 3px; background: qlineargradient(x1: 0, y1: 0.5, x2: 1, y2: 0.5, stop: 0 #fff, stop: .25 #fee, stop: .5 #fbb, stop: .75 #f66, stop: 1 #f00);}");
 	pBar->setValue(64);
-	pBar->show();
 
-	stereoFormat("5.1");
-	audioFormat("dts");
-	videoFormat("wmv");
-	playbackFlags("Hi-Def");
-	channelUpdate("Show Label Update");
-	channelUpdate("Title Label Update");
-	channelUpdate("Channel Label Update");
+	startMetaData(false);
 }

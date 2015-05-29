@@ -56,6 +56,7 @@ signals:
 	void audioFormat(QString);
 	void stereoFormat(QString);
 	void playbackFlags(QString);
+	void metaDataStarted();
 
 public slots:
 	void disconnected();

@@ -18,7 +18,9 @@
 
 #include "LcdHandler.h"
 
-LcdHandler::LcdHandler() {
+LcdHandler::LcdHandler()
+{
+	sock = NULL;
 }
 
 LcdHandler::LcdHandler(QTcpSocket *s) {
@@ -60,6 +62,8 @@ void LcdHandler::sendConnect()
 void LcdHandler::setWidget(QByteArray &ba)
 {
 	QList<QByteArray> list = ba.split(' ');
+
+	emit metaDataStarted();
 
 	if (list[1] == "Channel") {
 		if (list[2] == "topWidget") {
@@ -194,5 +198,6 @@ void LcdHandler::ackSuccess()
 
 void LcdHandler::closeConn()
 {
-	sock->close();
+	if (sock)
+		sock->close();
 }

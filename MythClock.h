@@ -30,6 +30,11 @@ class MythClock : public QWidget {
 public:
 	MythClock(QWidget *parent = 0);
 	virtual ~MythClock();
+	void start();
+	void stop();
+
+protected slots:
+	void myUpdate();
 
 protected:
 	void paintEvent(QPaintEvent *event);

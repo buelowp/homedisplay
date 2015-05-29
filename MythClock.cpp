@@ -25,13 +25,27 @@ MythClock::MythClock(QWidget *parent) : QWidget(parent) {
 	setPalette(pal);
 
 	pTimer = new QTimer(this);
+//	connect(pTimer, SIGNAL(timeout()), this, SLOT(myUpdate()));
 	connect(pTimer, SIGNAL(timeout()), this, SLOT(update()));
-	pTimer->setInterval(1000);
-	pTimer->start();
-	resize(480, 272);
 }
 
 MythClock::~MythClock() {
+}
+
+void MythClock::start()
+{
+	pTimer->setInterval(250);
+	pTimer->start();
+}
+
+void MythClock::myUpdate()
+{
+	qDebug() << "I'm here";
+}
+
+void MythClock::stop()
+{
+	pTimer->stop();
 }
 
 void MythClock::paintEvent(QPaintEvent *event)
@@ -79,14 +93,16 @@ void MythClock::paintEvent(QPaintEvent *event)
     painter.setBrush(minuteColorBack);
     painter.save();
     painter.rotate(6.0 * (time.minute() + time.second() / 60.0));
-    painter.drawConvexPolygon(minuteHandBack, 3);
+    QRectF minback(-6, 6, 7.0, -(height() / 5.5));
+    painter.drawRoundedRect(minback, 20, 2);
     painter.restore();
 
     painter.setPen(Qt::NoPen);
     painter.setBrush(minuteColorFront);
     painter.save();
     painter.rotate(6.0 * (time.minute() + time.second() / 60.0));
-    painter.drawConvexPolygon(minuteHandFront, 3);
+    QRectF minfront(-5, 5, 5.0, -(height() / 5.5 - 2));
+    painter.drawRoundedRect(minfront, 20, 2);
     painter.restore();
 
     painter.setPen(minuteColorFront);
@@ -102,14 +118,16 @@ void MythClock::paintEvent(QPaintEvent *event)
     painter.setBrush(hourColorBack);
     painter.save();
     painter.rotate(30.0 * ((time.hour() + time.minute() / 60.0)));
-    painter.drawConvexPolygon(hourHandBack, 3);
+    QRectF hourfront(-6, 6, 7.0, -(height() / 7 - 2));
+    painter.drawRoundedRect(hourfront, 20, 2);
     painter.restore();
 
     painter.setPen(Qt::NoPen);
     painter.setBrush(hourColorFront);
     painter.save();
     painter.rotate(30.0 * ((time.hour() + time.minute() / 60.0)));
-    painter.drawConvexPolygon(hourHandFront, 3);
+    QRectF hourback(-5, 5, 5.0, -(height() / 7 - 2));
+    painter.drawRoundedRect(hourback, 20, 2);
     painter.restore();
 
     QRect button(QPoint(-15, -15), QSize(30, 30));

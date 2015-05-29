@@ -33,6 +33,7 @@ public:
 	MythFrame(QFrame *parent = 0);
 	virtual ~MythFrame();
 	bool init();
+	void startMetaData(bool);
 
 public slots:
 	void connCreated();
@@ -44,6 +45,7 @@ public slots:
 	void stereoFormat(QString);
 	void playbackFlags(QString);
 	void updateClock();
+	void metaDataStarted();
 
 protected:
 	void showEvent(QShowEvent*);
