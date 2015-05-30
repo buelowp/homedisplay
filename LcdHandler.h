@@ -44,19 +44,21 @@ public:
 	virtual ~LcdHandler();
 
 	void addSocket(QTcpSocket *sock);
-	void closeConn();
-	void ackSuccess();
 
 signals:
 	void sockClosed();
-	void progressBarUpdate(int);
-	void channelString(QString);
 	void metaDataEnded();
 	void videoFormat(QString);
 	void audioFormat(QString);
 	void stereoFormat(QString);
 	void playbackFlags(QString);
 	void metaDataStarted();
+	void progressTimeLeft(QByteArray);
+	void progressTotalTime(QByteArray);
+	void progressPercentComplete(int);
+	void channelNumber(QByteArray);
+	void showTitle(QByteArray);
+	void showSubTitle(QByteArray);
 
 public slots:
 	void disconnected();
@@ -65,10 +67,9 @@ public slots:
 
 private:
 	void sendConnect();
-	void setWidget(QByteArray&);
-	void setName(QByteArray&);
-	void addScreen(QByteArray&);
 	void setOutput(QByteArray&);
+	void setChannelProgress(QByteArray&);
+	void setChannelData(QByteArray&);
 
 	int lcdState;
 	QTcpSocket *sock;

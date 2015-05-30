@@ -46,7 +46,7 @@ void LcdHandler::disconnected()
 	emit sockClosed();
 }
 
-void LcdHandler::error(QAbstractSocket::SocketError e)
+void LcdHandler::error(QAbstractSocket::SocketError)
 {
 	qDebug() << "LcdHandler:" << sock->errorString();
 }
@@ -54,43 +54,9 @@ void LcdHandler::error(QAbstractSocket::SocketError e)
 void LcdHandler::sendConnect()
 {
 	if (sock->state() == QAbstractSocket::ConnectedState) {
-		sock->write("connect LCDproc 0.5.6 protocol 0.3 lcd wid 64 hgt 2 cellwid 1 cellhgt 8\n");
+		sock->write("CONNECTED 64 2\n");
 		lcdState++;
 	}
-}
-
-void LcdHandler::setWidget(QByteArray &ba)
-{
-	QList<QByteArray> list = ba.split(' ');
-
-	emit metaDataStarted();
-
-	if (list[1] == "Channel") {
-		if (list[2] == "topWidget") {
-			ba.resize(ba.size() - 1);
-			int pos = ba.indexOf('"');
-			QString val = ba.mid(pos + 1, (ba.size() - (pos + 1)));
-			emit channelString(val.trimmed());
-		}
-		if (list[2] == "progressBar") {
-			emit progressBarUpdate(list[5].toInt());
-		}
-	}
-}
-
-void LcdHandler::setName(QByteArray &ba)
-{
-	QList<QByteArray> list = ba.split(' ');
-	if (list[1] == "name") {
-		QByteArray val = list[2];
-		name = val;
-	}
-}
-
-void LcdHandler::addScreen(QByteArray &ba)
-{
-	QList<QByteArray> list = ba.split(' ');
-	QByteArray screen = list[1];
 }
 
 void LcdHandler::setOutput(QByteArray &ba)
@@ -98,40 +64,75 @@ void LcdHandler::setOutput(QByteArray &ba)
 	QList<QByteArray> list = ba.split(' ');
 	QByteArray bitmap = list[1];
 
-	if (bitmap == "0") {
-		emit metaDataEnded();
+	int x = bitmap.toInt();
+
+	qDebug() << x;
+
+	if (x & 0x80000)
+		emit videoFormat("mpg");
+	else if (x & 0x100000)
+		emit videoFormat("divx");
+	else if (x & 0x180000)
+		emit videoFormat("xvid");
+	else if (x & 0x200000)
+		emit videoFormat("wmv");
+
+	if (x & 0x10000)
+		emit audioFormat("mpeg2");
+	if (x & 0x20000)
+		emit audioFormat("ac3");
+	if (x & 0x30000)
+		emit audioFormat("dts");
+	if (x & 0x40000)
+		emit audioFormat("wma");
+
+	if (x & 0x10)
+		emit stereoFormat("stereo");
+	else if (x & 0x20)
+		emit stereoFormat("5.1");
+	else if (x & 0x30)
+		emit stereoFormat("7.1");
+
+	if (x & 0x400)
+		emit playbackFlags("Hi-Def");
+}
+
+void LcdHandler::setChannelProgress(QByteArray &ba)
+{
+	QList<QByteArray> list = ba.split(' ');
+
+	QByteArray timeLeft = list[1];
+	if (timeLeft.size() > 1) {
+		emit progressTimeLeft(timeLeft.mid(1, timeLeft.size()));
 	}
-	else {
-		int x = bitmap.toInt();
 
-		if (x & 0x80000)
-			emit videoFormat("mpg");
-		else if (x & 0x100000)
-			emit videoFormat("divx");
-		else if (x & 0x180000)
-			emit videoFormat("xvid");
-		else if (x & 0x200000)
-			emit videoFormat("wmv");
-
-		if (x & 0x10000)
-			emit audioFormat("mpeg2");
-		if (x & 0x20000)
-			emit audioFormat("ac3");
-		if (x & 0x30000)
-			emit audioFormat("dts");
-		if (x & 0x40000)
-			emit audioFormat("wma");
-
-		if (x & 0x10)
-			emit stereoFormat("stereo");
-		else if (x & 0x20)
-			emit stereoFormat("5.1");
-		else if (x & 0x30)
-			emit stereoFormat("7.1");
-
-		if (x & 0x400)
-			emit playbackFlags("Hi-Def");
+	QByteArray totalTime = list[3];
+	if (totalTime.size() > 1) {
+		totalTime.resize(totalTime.size() - 1);
+		emit progressTotalTime(totalTime);
+		QByteArray pcntComplete = list[4];
+		int convert = pcntComplete.toDouble() * 100;
+		emit progressPercentComplete(convert);
 	}
+}
+
+void LcdHandler::setChannelData(QByteArray &ba)
+{
+	QList<QByteArray> list = ba.split('"');
+
+	emit metaDataStarted();
+
+	QByteArray chanNum = list[1];
+	if (chanNum.size() > 2)
+		emit channelNumber(chanNum);
+
+	QByteArray title = list[3];
+	if (title.size() > 2)
+		emit showTitle(title);
+
+	QByteArray sub = list[5];
+	if (sub.size() > 3)
+		emit showSubTitle(sub);
 }
 
 void LcdHandler::messageAvailable()
@@ -154,50 +155,25 @@ void LcdHandler::messageAvailable()
 		if (ba.size() == 0)
 			continue;
 
-		if (ba.left(5) == "hello") {
+		if (ba.left(5) == "HELLO") {
 			sendConnect();
 			continue;
 		}
-		// We don't care to store this, but it tells us LCDd thinks we're in good shape
-		// Increment state to show we know we're good
-		if (ba.contains("client_set")) {
-			setName(ba);
-			ackSuccess();
+		if (ba.contains("SWITCH_TO_CHANNEL")) {
+			setChannelData(ba);
 			continue;
 		}
-		if (ba.contains("widget_set")) {
-			setWidget(ba);
-			ackSuccess();
+		if (ba.contains("SWITCH_TO_TIME")) {
+			emit metaDataEnded();
 			continue;
 		}
-		if (ba.contains("widget_add")) {
-			ackSuccess();
+		if (ba.contains("SET_CHANNEL_PROGRESS")) {
+			setChannelProgress(ba);
 			continue;
 		}
-		if (ba.contains("screen_add")) {
-			addScreen(ba);
-			ackSuccess();
-			continue;
-		}
-		if (ba.contains("screen_set")) {
-			ackSuccess();
-			continue;
-		}
-		if (ba.contains("output")) {
+		if (ba.contains("UPDATE_LEDS")) {
 			setOutput(ba);
-			ackSuccess();
 			continue;
 		}
 	}
-}
-
-void LcdHandler::ackSuccess()
-{
-	sock->write("success");
-}
-
-void LcdHandler::closeConn()
-{
-	if (sock)
-		sock->close();
 }

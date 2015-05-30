@@ -33,9 +33,6 @@ public:
 	void start();
 	void stop();
 
-protected slots:
-	void myUpdate();
-
 protected:
 	void paintEvent(QPaintEvent *event);
 

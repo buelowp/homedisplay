@@ -38,7 +38,6 @@ public:
 public slots:
 	void connCreated();
 	void connClosed();
-	void channelUpdate(QString);
 	void metaDataEnded();
 	void videoFormat(QString);
 	void audioFormat(QString);
@@ -46,6 +45,14 @@ public slots:
 	void playbackFlags(QString);
 	void updateClock();
 	void metaDataStarted();
+
+protected slots:
+	void channelUpdate(QByteArray);
+	void showTitle(QByteArray);
+	void showSubTitle(QByteArray);
+	void timeLeft(QByteArray);
+	void totalTime(QByteArray);
+	void percentComplete(int);
 
 protected:
 	void showEvent(QShowEvent*);

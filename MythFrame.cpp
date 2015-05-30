@@ -67,13 +67,12 @@ MythFrame::MythFrame(QFrame *parent) : QFrame(parent) {
 
 	pBar->setStyleSheet("QProgressBar {border: 0px solid black; border-radius: 0px; text-align: center; background-color: #000000;} QProgressBar::chunk {background-color: #00FFFF;}");
 
-	pBar->setRange(0, 64);
+	pBar->setRange(0, 100);
 	pBar->setTextVisible(false);
 	conn = NULL;
 }
 
 MythFrame::~MythFrame() {
-	conn->closeConn();
 	delete conn;
 	server->close();
 	delete server;
@@ -82,7 +81,7 @@ MythFrame::~MythFrame() {
 bool MythFrame::init()
 {
 	connect(server, SIGNAL(newConnection()), this, SLOT(connCreated()));
-	return server->listen(QHostAddress::LocalHost, 13666);
+	return server->listen(QHostAddress::Any, 6545);
 }
 
 void MythFrame::updateClock()
@@ -99,8 +98,12 @@ void MythFrame::connCreated()
 	if (conn == NULL) {
 		conn = new LcdHandler(server->nextPendingConnection());
 		connect(conn, SIGNAL(sockClosed()), this, SLOT(connClosed()));
-		mythConn->setText("<font color='blue'>MythTV</font>");
-		connect(conn, SIGNAL(channelString(QString)), this, SLOT(channelUpdate(QString)));
+		connect(conn, SIGNAL(channelNumber(QByteArray)), this, SLOT(channelUpdate(QByteArray)));
+		connect(conn, SIGNAL(showTitle(QByteArray)), this, SLOT(showTitle(QByteArray)));
+		connect(conn, SIGNAL(showSubTitle(QByteArray)), this, SLOT(showSubTitle(QByteArray)));
+		connect(conn, SIGNAL(progressTimeLeft(QByteArray)), this, SLOT(timeLeft(QByteArray)));
+		connect(conn, SIGNAL(progressTotalTime(QByteArray)), this, SLOT(totalTime(QByteArray)));
+		connect(conn, SIGNAL(progressPercentComplete(int)), this, SLOT(percentComplete(int)));
 		connect(conn, SIGNAL(progressBarUpdate(int)), pBar, SLOT(setValue(int)));
 		connect(conn, SIGNAL(metaDataEnded()), this, SLOT(metaDataEnded()));
 		connect(conn, SIGNAL(videoFormat(QString)), this, SLOT(videoFormat(QString)));
@@ -108,6 +111,8 @@ void MythFrame::connCreated()
 		connect(conn, SIGNAL(stereoFormat(QString)), this, SLOT(stereoFormat(QString)));
 		connect(conn, SIGNAL(playbackFlags(QString)), this, SLOT(playbackFlags(QString)));
 		connect(conn, SIGNAL(metaDataStarted()), this, SLOT(metaDataStarted()));
+
+		mythConn->setText("<font color='blue'>MythTV</font>");
 	}
 }
 
@@ -185,29 +190,53 @@ void MythFrame::connClosed()
 {
 	mythConn->setText("<font color='gray'>MythTV</font>");
 	if (conn) {
+		disconnect(conn, SIGNAL(sockClosed()), this, SLOT(connClosed()));
+		disconnect(conn, SIGNAL(channelNumber(QByteArray)), this, SLOT(channelUpdate(QByteArray)));
+		disconnect(conn, SIGNAL(showTitle(QByteArray)), this, SLOT(showTitle(QByteArray)));
+		disconnect(conn, SIGNAL(showSubTitle(QByteArray)), this, SLOT(showSubTitle(QByteArray)));
+		disconnect(conn, SIGNAL(progressTimeLeft(QByteArray)), this, SLOT(timeLeft(QByteArray)));
+		disconnect(conn, SIGNAL(progressTotalTime(QByteArray)), this, SLOT(totalTime(QByteArray)));
+		disconnect(conn, SIGNAL(progressPercentComplete(int)), this, SLOT(percentComplete(int)));
+		disconnect(conn, SIGNAL(metaDataEnded()), this, SLOT(metaDataEnded()));
+		disconnect(conn, SIGNAL(videoFormat(QString)), this, SLOT(videoFormat(QString)));
+		disconnect(conn, SIGNAL(audioFormat(QString)), this, SLOT(audioFormat(QString)));
+		disconnect(conn, SIGNAL(stereoFormat(QString)), this, SLOT(stereoFormat(QString)));
+		disconnect(conn, SIGNAL(playbackFlags(QString)), this, SLOT(playbackFlags(QString)));
+		disconnect(conn, SIGNAL(metaDataStarted()), this, SLOT(metaDataStarted()));
 		delete conn;
 		conn = NULL;
 	}
 }
 
-void MythFrame::channelUpdate(QString s)
+void MythFrame::channelUpdate(QByteArray s)
 {
-	if (showLabel->text().size() == 0) {
-		showLabel->setText(s);
-		return;
-	}
-	// The movie conundrum
-	if (showLabel->text() == s)
-		return;
+	channelLabel->setText(s.data());
+}
 
-	if (titleLabel->text().size() == 0) {
-		titleLabel->setText(s);
-		return;
-	}
-	if (channelLabel->text().size() == 0) {
-		channelLabel->setText(s);
-		return;
-	}
+void MythFrame::showTitle(QByteArray s)
+{
+	showLabel->setText(s.data());
+}
+
+void MythFrame::showSubTitle(QByteArray s)
+{
+	titleLabel->setText(s.data());
+}
+
+void MythFrame::timeLeft(QByteArray ba)
+{
+	qDebug() << "Time left for event" << ba;
+}
+
+void MythFrame::totalTime(QByteArray ba)
+{
+	qDebug() << "Time of event" << ba;
+}
+
+void MythFrame::percentComplete(int p)
+{
+	qDebug() << "Progress" << p;
+	pBar->setValue(50);
 }
 
 void MythFrame::startMetaData(bool event)
@@ -287,7 +316,6 @@ void MythFrame::showEvent(QShowEvent*)
 	mythFlags->show();
 	pBar->setGeometry(clockWidth, iconPanelsHeight * 2, iconPanelsWidth * 2, iconPanelsHeight / 3);
 	pBar->setStyleSheet(".QProgressBar{background: black; padding: 2px;} QProgressBar::chunk{border-radius: 3px; background: qlineargradient(x1: 0, y1: 0.5, x2: 1, y2: 0.5, stop: 0 #fff, stop: .25 #fee, stop: .5 #fbb, stop: .75 #f66, stop: 1 #f00);}");
-	pBar->setValue(64);
 
 	startMetaData(false);
 }
