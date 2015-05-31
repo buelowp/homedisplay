@@ -66,8 +66,6 @@ void LcdHandler::setOutput(QByteArray &ba)
 
 	int x = bitmap.toInt();
 
-	qDebug() << x;
-
 	if (x & 0x80000)
 		emit videoFormat("mpg");
 	else if (x & 0x100000)

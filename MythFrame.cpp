@@ -32,10 +32,11 @@ MythFrame::MythFrame(QFrame *parent) : QFrame(parent) {
 	titleLabel = new QLabel(this);
 	showLabel = new QLabel(this);
 	audioIcon = new QLabel(this);
-	videoIcon = new QLabel(this);
 	stereoIcon = new QLabel(this);
 	mythFlags = new QLabel(this);
 	lbClock = new QLabel(this);
+	lbTimeElapsed = new QLabel(this);
+	lbTotalTime = new QLabel(this);
 	pBar = new QProgressBar(this);
 
 	pTimer = new QTimer(this);
@@ -55,8 +56,6 @@ MythFrame::MythFrame(QFrame *parent) : QFrame(parent) {
 	showLabel->setPalette(pal);
 	audioIcon->setAutoFillBackground(true);
 	audioIcon->setPalette(pal);
-	videoIcon->setAutoFillBackground(true);
-	videoIcon->setPalette(pal);
 	stereoIcon->setAutoFillBackground(true);
 	stereoIcon->setPalette(pal);
 	mythFlags->setAutoFillBackground(true);
@@ -70,6 +69,8 @@ MythFrame::MythFrame(QFrame *parent) : QFrame(parent) {
 	pBar->setRange(0, 100);
 	pBar->setTextVisible(false);
 	conn = NULL;
+	bDisableProgress = false;
+	clock->start();
 }
 
 MythFrame::~MythFrame() {
@@ -101,10 +102,9 @@ void MythFrame::connCreated()
 		connect(conn, SIGNAL(channelNumber(QByteArray)), this, SLOT(channelUpdate(QByteArray)));
 		connect(conn, SIGNAL(showTitle(QByteArray)), this, SLOT(showTitle(QByteArray)));
 		connect(conn, SIGNAL(showSubTitle(QByteArray)), this, SLOT(showSubTitle(QByteArray)));
-		connect(conn, SIGNAL(progressTimeLeft(QByteArray)), this, SLOT(timeLeft(QByteArray)));
+		connect(conn, SIGNAL(progressTimeLeft(QByteArray)), this, SLOT(elapsedTime(QByteArray)));
 		connect(conn, SIGNAL(progressTotalTime(QByteArray)), this, SLOT(totalTime(QByteArray)));
 		connect(conn, SIGNAL(progressPercentComplete(int)), this, SLOT(percentComplete(int)));
-		connect(conn, SIGNAL(progressBarUpdate(int)), pBar, SLOT(setValue(int)));
 		connect(conn, SIGNAL(metaDataEnded()), this, SLOT(metaDataEnded()));
 		connect(conn, SIGNAL(videoFormat(QString)), this, SLOT(videoFormat(QString)));
 		connect(conn, SIGNAL(audioFormat(QString)), this, SLOT(audioFormat(QString)));
@@ -116,12 +116,8 @@ void MythFrame::connCreated()
 	}
 }
 
-void MythFrame::videoFormat(QString v)
+void MythFrame::videoFormat(QString)
 {
-	QFont f("Liberation Sans", 40);
-	videoIcon->setFont(f);
-	videoIcon->setAlignment(Qt::AlignCenter);
-	videoIcon->setText(v);
 }
 
 void MythFrame::audioFormat(QString v)
@@ -140,42 +136,54 @@ void MythFrame::audioFormat(QString v)
 
 void MythFrame::stereoFormat(QString f)
 {
-	stereoIcon->setFont(QFont("Liberation Sans", 40));
+	stereoIcon->setFont(QFont("Liberation Sans", 26));
 	stereoIcon->setAlignment(Qt::AlignCenter);
 
-	if (f == "stereo") {
+	if (f.compare("stereo", Qt::CaseInsensitive) == 0) {
 		stereoIcon->setText("Stereo");
-//		stereoIcon->setPixmap(QPixmap("icons/stereo.jpg"));
 	}
 	if (f == "5.1") {
-		stereoIcon->setText("5.1");
+		stereoIcon->setPixmap(QPixmap("/usr/share/mythclock/5_1.jpg"));
 	}
 	if (f == "7.1") {
-		stereoIcon->setText("7.1");
+		stereoIcon->setPixmap(QPixmap("/usr/share/mythclock/7_1.jpg"));
 	}
 }
 
 void MythFrame::playbackFlags(QString flags)
 {
-	QFont f("Liberation Sans", 26);
-	mythFlags->setFont(f);
+	QPixmap hd("/usr/share/mythclock/HD.jpg");
+
+	if (flags == "Hi-Def") {
+		if (hd.isNull())
+			qDebug() << "Error opening hd pixmap";
+
+		mythFlags->setPixmap(hd);
+	}
+	else {
+		QFont f("Liberation Sans", 20);
+		mythFlags->setFont(f);
+		mythFlags->setText(flags);
+	}
 	mythFlags->setAlignment(Qt::AlignCenter);
-	mythFlags->setText(flags);
 }
 
 void MythFrame::metaDataStarted()
 {
 	startMetaData(true);
+	clock->stop();
 }
 
 void MythFrame::metaDataEnded()
 {
 	showLabel->setText("");
 	titleLabel->setText("");
-	videoIcon->setText("");
+	channelLabel->setText("");
 	audioIcon->setText("");
 	stereoIcon->setText("");
 	mythFlags->setText("");
+	lbTimeElapsed->setText("");
+	lbTotalTime->setText("");
 	pBar->reset();
 
 	QPalette pal(QColor(0,0,0));
@@ -183,7 +191,9 @@ void MythFrame::metaDataEnded()
 	pal.setColor(QPalette::Window, Qt::black);
 	audioIcon->setAutoFillBackground(true);
 	audioIcon->setPalette(pal);
+	bDisableProgress = false;
 	startMetaData(false);
+	clock->start();
 }
 
 void MythFrame::connClosed()
@@ -194,7 +204,7 @@ void MythFrame::connClosed()
 		disconnect(conn, SIGNAL(channelNumber(QByteArray)), this, SLOT(channelUpdate(QByteArray)));
 		disconnect(conn, SIGNAL(showTitle(QByteArray)), this, SLOT(showTitle(QByteArray)));
 		disconnect(conn, SIGNAL(showSubTitle(QByteArray)), this, SLOT(showSubTitle(QByteArray)));
-		disconnect(conn, SIGNAL(progressTimeLeft(QByteArray)), this, SLOT(timeLeft(QByteArray)));
+		disconnect(conn, SIGNAL(progressTimeLeft(QByteArray)), this, SLOT(elapsedTime(QByteArray)));
 		disconnect(conn, SIGNAL(progressTotalTime(QByteArray)), this, SLOT(totalTime(QByteArray)));
 		disconnect(conn, SIGNAL(progressPercentComplete(int)), this, SLOT(percentComplete(int)));
 		disconnect(conn, SIGNAL(metaDataEnded()), this, SLOT(metaDataEnded()));
@@ -223,20 +233,33 @@ void MythFrame::showSubTitle(QByteArray s)
 	titleLabel->setText(s.data());
 }
 
-void MythFrame::timeLeft(QByteArray ba)
+void MythFrame::elapsedTime(QByteArray ba)
 {
-	qDebug() << "Time left for event" << ba;
+	qDebug() << "bDisableProgress" << bDisableProgress << "time elapsed" << ba;
+	if (!bDisableProgress) {
+		lbTimeElapsed->setStyleSheet(".QLabel{background-color: black; color: white;}");
+		lbTimeElapsed->setText(ba);
+	}
 }
 
 void MythFrame::totalTime(QByteArray ba)
 {
-	qDebug() << "Time of event" << ba;
+	qDebug() << "bDisableProgress" << bDisableProgress << "time elapsed" << ba;
+	if (ba != prevTime)
+		bDisableProgress = true;
+	else {
+		prevTime = ba;
+		lbTotalTime->setStyleSheet(".QLabel{background-color: black; color: white;}");
+		lbTotalTime->setText(ba);
+		qDebug() << "Time of event" << ba;
+	}
 }
 
 void MythFrame::percentComplete(int p)
 {
-	qDebug() << "Progress" << p;
-	pBar->setValue(50);
+	if (!bDisableProgress) {
+		pBar->setValue(p);
+	}
 }
 
 void MythFrame::startMetaData(bool event)
@@ -248,9 +271,10 @@ void MythFrame::startMetaData(bool event)
 		showLabel->show();
 		channelLabel->show();
 		audioIcon->show();
-		videoIcon->show();
 		stereoIcon->show();
 		mythFlags->show();
+		lbTimeElapsed->show();
+		lbTotalTime->show();
 		pBar->show();
 	}
 	else {
@@ -260,9 +284,10 @@ void MythFrame::startMetaData(bool event)
 		showLabel->hide();
 		channelLabel->hide();
 		audioIcon->hide();
-		videoIcon->hide();
 		stereoIcon->hide();
 		mythFlags->hide();
+		lbTimeElapsed->hide();
+		lbTotalTime->hide();
 		pBar->hide();
 	}
 }
@@ -310,11 +335,13 @@ void MythFrame::showEvent(QShowEvent*)
 	stereoIcon->setGeometry(clockWidth + iconPanelsWidth, iconPanelOffset, iconPanelsWidth, iconPanelsHeight/2);
 	stereoIcon->show();
 
-	videoIcon->setGeometry(clockWidth, iconPanelsHeight, iconPanelsWidth, iconPanelsHeight/2);
-	videoIcon->show();
 	mythFlags->setGeometry(clockWidth + iconPanelsWidth, iconPanelsHeight, iconPanelsWidth, iconPanelsHeight/2);
 	mythFlags->show();
-	pBar->setGeometry(clockWidth, iconPanelsHeight * 2, iconPanelsWidth * 2, iconPanelsHeight / 3);
+
+	lbTimeElapsed->setGeometry(clockWidth, iconPanelsHeight * 2, iconPanelsWidth, iconPanelsHeight / 2);
+	lbTotalTime->setGeometry(clockWidth + iconPanelsWidth, iconPanelsHeight * 2, iconPanelsWidth, iconPanelsHeight / 2);
+
+	pBar->setGeometry(clockWidth, iconPanelsHeight * 3, iconPanelsWidth * 2, iconPanelsHeight / 3);
 	pBar->setStyleSheet(".QProgressBar{background: black; padding: 2px;} QProgressBar::chunk{border-radius: 3px; background: qlineargradient(x1: 0, y1: 0.5, x2: 1, y2: 0.5, stop: 0 #fff, stop: .25 #fee, stop: .5 #fbb, stop: .75 #f66, stop: 1 #f00);}");
 
 	startMetaData(false);

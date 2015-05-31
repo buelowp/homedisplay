@@ -44,31 +44,10 @@ void MythClock::stop()
 
 void MythClock::paintEvent(QPaintEvent *event)
 {
-    static const QPoint hourHandFront[3] = {
-        QPoint(7, 8),
-        QPoint(-7, 8),
-        QPoint(0, -((height() / 4) - 2))
-    };
-    static const QPoint minuteHandFront[3] = {
-        QPoint(7, 8),
-        QPoint(-7, 8),
-        QPoint(0, -((height() / 3) - 2))
-    };
-    static const QPoint hourHandBack[3] = {
-        QPoint(8, 9),
-        QPoint(-8, 9),
-        QPoint(0, -((height() / 4) + 1))
-    };
-    static const QPoint minuteHandBack[3] = {
-        QPoint(8, 9),
-        QPoint(-8, 9),
-        QPoint(0, -((height() / 3) + 1))
-    };
-
-    QColor hourColorFront(Qt::white);
-    QColor minuteColorFront(Qt::white);
-    QColor hourColorBack(Qt::gray);
-    QColor minuteColorBack(Qt::gray);
+    QColor hourColorFront(Qt::darkBlue);
+    QColor minuteColorFront(Qt::blue);
+    QColor hourColorBack(Qt::darkGray);
+    QColor minuteColorBack(Qt::darkGray);
 
     int side = qMin(width(), height());
     QTime time = QTime::currentTime();
@@ -76,6 +55,33 @@ void MythClock::paintEvent(QPaintEvent *event)
     painter.setRenderHint(QPainter::Antialiasing);
     painter.translate(width() / 2, height() / 2);
     painter.scale(side / 200.0, side / 200.0);
+
+    static const QPointF hourPointsBack[4] = {
+    		QPointF(9, -5),
+			QPointF(61, -5),
+			QPointF(61, 5),
+			QPointF(9, 5)
+    };
+    static const QPointF hourPointsFront[4] = {
+    		QPointF(10, -4),
+			QPointF(60, -4),
+			QPointF(60, 4),
+			QPointF(10, 4)
+    };
+
+    painter.setPen(Qt::NoPen);
+    painter.setBrush(hourColorBack);
+    painter.save();
+    painter.rotate(30.0 * ((time.hour() + time.minute() / 60.0)) + 270);
+    painter.drawPolygon(hourPointsBack, 4);
+    painter.restore();
+
+    painter.setPen(Qt::NoPen);
+    painter.setBrush(hourColorFront);
+    painter.save();
+    painter.rotate(30.0 * ((time.hour() + time.minute() / 60.0)) + 270);
+    painter.drawPolygon(hourPointsFront, 4);
+    painter.restore();
 
     painter.setPen(Qt::darkGray);
     painter.setBrush(Qt::gray);
@@ -91,23 +97,34 @@ void MythClock::paintEvent(QPaintEvent *event)
         painter.rotate(30.0);
     }
 
+    static const QPointF minPointsBack[4] = {
+    		QPointF(9, -5),
+			QPointF(81, -5),
+			QPointF(81, 5),
+			QPointF(9, 5)
+    };
+    static const QPointF minPointsFront[4] = {
+    		QPointF(10, -4),
+			QPointF(80, -4),
+			QPointF(80, 4),
+			QPointF(10, 4)
+    };
+
     painter.setPen(Qt::NoPen);
     painter.setBrush(minuteColorBack);
     painter.save();
-    painter.rotate(6.0 * (time.minute() + time.second() / 60.0));
-    QRectF minback(-6, 6, 7.0, -(height() / 5.5));
-    painter.drawRoundedRect(minback, 20, 2);
+    painter.rotate(6 * (time.minute() + time.second() / 60.0) + 270);
+    painter.drawPolygon(minPointsBack, 4);
     painter.restore();
 
     painter.setPen(Qt::NoPen);
     painter.setBrush(minuteColorFront);
     painter.save();
-    painter.rotate(6.0 * (time.minute() + time.second() / 60.0));
-    QRectF minfront(-5, 5, 5.0, -(height() / 5.5 - 2));
-    painter.drawRoundedRect(minfront, 20, 2);
+    painter.rotate(6 * (time.minute() + time.second() / 60.0) + 270);
+    painter.drawPolygon(minPointsFront, 4);
     painter.restore();
 
-    painter.setPen(minuteColorFront);
+    painter.setPen(Qt::white);
 
     for (int j = 0; j < 60; ++j) {
     	if ((j % 5) != 0)
@@ -115,40 +132,4 @@ void MythClock::paintEvent(QPaintEvent *event)
 
     	painter.rotate(6.0);
     }
-
-    static const QPointF hourPointsBack[4] = {
-    		QPointF(19, -5),
-			QPointF(51, -5),
-			QPointF(51, 5),
-			QPointF(19, 5)
-    };
-    static const QPointF hourPointsFront[4] = {
-    		QPointF(20, -4),
-			QPointF(50, -4),
-			QPointF(50, 4),
-			QPointF(20, 4)
-    };
-
-    painter.setPen(Qt::NoPen);
-    painter.setBrush(hourColorBack);
-    painter.save();
-    painter.rotate(30.0 * ((time.hour() + time.minute() / 60.0)));
-    painter.drawPolygon(hourPointsBack, 4);
-    painter.drawLine(1, 0, 19, 0);
-    painter.restore();
-
-    painter.setPen(Qt::NoPen);
-    painter.setBrush(hourColorFront);
-    painter.save();
-    painter.rotate(30.0 * ((time.hour() + time.minute() / 60.0)));
-    painter.drawPolygon(hourPointsFront, 4);
-    painter.restore();
-/*
-    QRect button(QPoint(-15, -15), QSize(30, 30));
-    painter.setPen(Qt::black);
-    painter.setBrush(QColor(Qt::black));
-    painter.save();
-    painter.drawEllipse(button);
-    painter.restore();
-    */
 }

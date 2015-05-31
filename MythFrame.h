@@ -50,7 +50,7 @@ protected slots:
 	void channelUpdate(QByteArray);
 	void showTitle(QByteArray);
 	void showSubTitle(QByteArray);
-	void timeLeft(QByteArray);
+	void elapsedTime(QByteArray);
 	void totalTime(QByteArray);
 	void percentComplete(int);
 
@@ -66,11 +66,14 @@ private:
 	QLabel *titleLabel;
 	QLabel *showLabel;
 	QLabel *audioIcon;
-	QLabel *videoIcon;
 	QLabel *stereoIcon;
 	QLabel *mythFlags;
+	QLabel *lbTotalTime;
+	QLabel *lbTimeElapsed;
 	QLabel *lbClock;
 	QTimer *pTimer;
+	QByteArray prevTime;
+	bool bDisableProgress;
 
 	QProgressBar *pBar;
 };
