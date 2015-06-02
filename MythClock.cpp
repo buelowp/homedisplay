@@ -26,6 +26,7 @@ MythClock::MythClock(QWidget *parent) : QWidget(parent) {
 
 	pTimer = new QTimer(this);
 	connect(pTimer, SIGNAL(timeout()), this, SLOT(update()));
+	bRunning = false;
 }
 
 MythClock::~MythClock() {
@@ -33,16 +34,22 @@ MythClock::~MythClock() {
 
 void MythClock::start()
 {
-	pTimer->setInterval(250);
-	pTimer->start();
+	if (!bRunning) {
+		pTimer->setInterval(250);
+		pTimer->start();
+		bRunning = true;
+	}
 }
 
 void MythClock::stop()
 {
-	pTimer->stop();
+	if (bRunning) {
+		pTimer->stop();
+		bRunning = false;
+	}
 }
 
-void MythClock::paintEvent(QPaintEvent *event)
+void MythClock::paintEvent(QPaintEvent*)
 {
     QColor hourColorFront(Qt::darkBlue);
     QColor minuteColorFront(Qt::blue);

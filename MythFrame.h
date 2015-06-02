@@ -25,6 +25,7 @@
 #include <QtWidgets>
 
 #include "MythClock.h"
+#include "MythDigitalClock.h"
 #include "LcdHandler.h"
 
 class MythFrame : public QFrame {
@@ -58,10 +59,9 @@ protected:
 	void showEvent(QShowEvent*);
 
 private:
-	MythClock *clock;
+	QLabel *digitalClock;
 	QTcpServer *server;
 	LcdHandler *conn;
-	QLabel *mythConn;
 	QLabel *channelLabel;
 	QLabel *titleLabel;
 	QLabel *showLabel;

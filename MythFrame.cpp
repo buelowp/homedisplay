@@ -25,9 +25,8 @@ MythFrame::MythFrame(QFrame *parent) : QFrame(parent) {
 	setAutoFillBackground(true);
 	setPalette(pal);
 
-	clock = new MythClock(this);
+	digitalClock = new QLabel(this);
 	server = new QTcpServer(this);
-	mythConn = new QLabel(this);
 	channelLabel = new QLabel(this);
 	titleLabel = new QLabel(this);
 	showLabel = new QLabel(this);
@@ -45,9 +44,6 @@ MythFrame::MythFrame(QFrame *parent) : QFrame(parent) {
 	pTimer->start();
 
 	// Set the Myth connection indicator background black.
-	mythConn->setAutoFillBackground(true);
-	mythConn->setPalette(pal);
-	mythConn->setAlignment(Qt::AlignRight);
 	channelLabel->setAutoFillBackground(true);
 	channelLabel->setPalette(pal);
 	titleLabel->setAutoFillBackground(true);
@@ -70,7 +66,6 @@ MythFrame::MythFrame(QFrame *parent) : QFrame(parent) {
 	pBar->setTextVisible(false);
 	conn = NULL;
 	bDisableProgress = false;
-	clock->start();
 }
 
 MythFrame::~MythFrame() {
@@ -90,8 +85,10 @@ void MythFrame::updateClock()
 	QTime t = QTime::currentTime();
 	QDate d = QDate::currentDate();
 
-	QString display("<font style='font-size:110px; color:white; font-weight: bold;'>%1</font><br><font style='font-size:20px; color:gray;'>%2</font>");
-	lbClock->setText(display.arg(t.toString("h:mm a")).arg(d.toString()));
+	QString smallDisplay("<font style='font-size:100px; color:white; font-weight: bold;'>%1</font><br><font style='font-size:40px; color:gray;'>%2</font>");
+	QString largeDisplay("<font style='font-size:250px; color:white; font-weight: bold;'>%1</font>");
+	lbClock->setText(smallDisplay.arg(t.toString("h:mm a")).arg(d.toString()));
+	digitalClock->setText(smallDisplay.arg(t.toString("h:mm")));
 }
 
 void MythFrame::connCreated()
@@ -111,8 +108,6 @@ void MythFrame::connCreated()
 		connect(conn, SIGNAL(stereoFormat(QString)), this, SLOT(stereoFormat(QString)));
 		connect(conn, SIGNAL(playbackFlags(QString)), this, SLOT(playbackFlags(QString)));
 		connect(conn, SIGNAL(metaDataStarted()), this, SLOT(metaDataStarted()));
-
-		mythConn->setText("<font color='blue'>MythTV</font>");
 	}
 }
 
@@ -124,7 +119,7 @@ void MythFrame::audioFormat(QString v)
 {
 	if (v == "dts") {
 		audioIcon->setStyleSheet(".QLabel{background-color: red; color: white; border-radius: 3px;}");
-		QFont f("Liberation Sans", 40);
+		QFont f("Liberation Sans", 20);
 		audioIcon->setAlignment(Qt::AlignCenter);
 		audioIcon->setFont(f);
 		audioIcon->setText(v);
@@ -136,7 +131,7 @@ void MythFrame::audioFormat(QString v)
 
 void MythFrame::stereoFormat(QString f)
 {
-	stereoIcon->setFont(QFont("Liberation Sans", 26));
+	stereoIcon->setFont(QFont("Liberation Sans", 12));
 	stereoIcon->setAlignment(Qt::AlignCenter);
 
 	if (f.compare("stereo", Qt::CaseInsensitive) == 0) {
@@ -171,7 +166,6 @@ void MythFrame::playbackFlags(QString flags)
 void MythFrame::metaDataStarted()
 {
 	startMetaData(true);
-	clock->stop();
 }
 
 void MythFrame::metaDataEnded()
@@ -191,14 +185,11 @@ void MythFrame::metaDataEnded()
 	pal.setColor(QPalette::Window, Qt::black);
 	audioIcon->setAutoFillBackground(true);
 	audioIcon->setPalette(pal);
-	bDisableProgress = false;
 	startMetaData(false);
-	clock->start();
 }
 
 void MythFrame::connClosed()
 {
-	mythConn->setText("<font color='gray'>MythTV</font>");
 	if (conn) {
 		disconnect(conn, SIGNAL(sockClosed()), this, SLOT(connClosed()));
 		disconnect(conn, SIGNAL(channelNumber(QByteArray)), this, SLOT(channelUpdate(QByteArray)));
@@ -235,24 +226,15 @@ void MythFrame::showSubTitle(QByteArray s)
 
 void MythFrame::elapsedTime(QByteArray ba)
 {
-	qDebug() << "bDisableProgress" << bDisableProgress << "time elapsed" << ba;
-	if (!bDisableProgress) {
-		lbTimeElapsed->setStyleSheet(".QLabel{background-color: black; color: white;}");
-		lbTimeElapsed->setText(ba);
-	}
+	lbTimeElapsed->setStyleSheet(".QLabel{font-size:30px; background-color: black; color: white;}");
+	lbTimeElapsed->setText(ba);
 }
 
 void MythFrame::totalTime(QByteArray ba)
 {
-	qDebug() << "bDisableProgress" << bDisableProgress << "time elapsed" << ba;
-	if (ba != prevTime)
-		bDisableProgress = true;
-	else {
-		prevTime = ba;
-		lbTotalTime->setStyleSheet(".QLabel{background-color: black; color: white;}");
-		lbTotalTime->setText(ba);
-		qDebug() << "Time of event" << ba;
-	}
+	prevTime = ba;
+	lbTotalTime->setStyleSheet(".QLabel{font-size:30px; background-color: black; color: white;}");
+	lbTotalTime->setText(ba);
 }
 
 void MythFrame::percentComplete(int p)
@@ -265,7 +247,7 @@ void MythFrame::percentComplete(int p)
 void MythFrame::startMetaData(bool event)
 {
 	if (event) {
-		clock->hide();
+		digitalClock->hide();
 		lbClock->show();
 		titleLabel->show();
 		showLabel->show();
@@ -278,7 +260,7 @@ void MythFrame::startMetaData(bool event)
 		pBar->show();
 	}
 	else {
-		clock->show();
+		digitalClock->show();
 		lbClock->hide();
 		titleLabel->hide();
 		showLabel->hide();
@@ -294,55 +276,52 @@ void MythFrame::startMetaData(bool event)
 
 void MythFrame::showEvent(QShowEvent*)
 {
-	int clockWidth = (width() / 4) * 3;
-	int clockHeight = (height() / 3) * 2;
-	int titlePanels = height() / 9;
-	int iconPanelOffset = height() / 20;
-	int iconPanelsWidth = width() / 8;
-	int iconPanelsHeight = ((height() / 4) - (iconPanelOffset / 3));
+	int clockWidth = 600;
+	int clockHeight = 330;
+	int titlePanelsHeight = 50;
+	int iconPanelsWidth = 100;
+	int iconPanelsHeight = 66;
 
-	clock->setGeometry(0, 0, width(), height());
+	digitalClock->setGeometry(0, 0, width(), height());
+
 	lbClock->setGeometry(0, 0, clockWidth, clockHeight);
 	QFont clockFont("Liberation Sans");
 	lbClock->setFont(clockFont);
 	lbClock->setAlignment(Qt::AlignCenter);
 	lbClock->show();
 
-	mythConn->setText("<font color='gray'>MythTV</font>");
-	mythConn->setGeometry(clockWidth, 0, width() / 4, height() / 20);
-	QFont f("Times", 20);
-	mythConn->setFont(f);
-
-	QFont c("Liberation Sans", 30);
+	QFont c("Liberation Sans", 15);
 	titleLabel->setFont(c);
 	showLabel->setFont(c);
-	showLabel->setGeometry(0, lbClock->height(), width(), titlePanels);
+	showLabel->setGeometry(0, lbClock->height(), width(), titlePanelsHeight);
 	showLabel->setIndent(10);
 	showLabel->show();
-	titleLabel->setGeometry(0, lbClock->height() + titlePanels, width(), titlePanels);
+	titleLabel->setGeometry(0, lbClock->height() + titlePanelsHeight, width(), titlePanelsHeight);
 	titleLabel->show();
 	titleLabel->setIndent(10);
 	titleLabel->setFont(c);
-	channelLabel->setGeometry(0, lbClock->height() + (titlePanels * 2), width(), titlePanels);
+	channelLabel->setGeometry(0, lbClock->height() + (titlePanelsHeight * 2), width(), titlePanelsHeight);
 	channelLabel->show();
 	channelLabel->setIndent(10);
 	channelLabel->setFont(c);
 
-	audioIcon->setGeometry(clockWidth, iconPanelOffset, iconPanelsWidth, iconPanelsHeight/2);
+	audioIcon->setGeometry(clockWidth, 0, iconPanelsWidth, iconPanelsHeight);
 	audioIcon->show();
-	audioIcon->setStyleSheet(".QLabel{border-radius: 3px;}");
 
-	stereoIcon->setGeometry(clockWidth + iconPanelsWidth, iconPanelOffset, iconPanelsWidth, iconPanelsHeight/2);
+	stereoIcon->setGeometry(clockWidth + iconPanelsWidth, 0, iconPanelsWidth, iconPanelsHeight);
 	stereoIcon->show();
 
-	mythFlags->setGeometry(clockWidth + iconPanelsWidth, iconPanelsHeight, iconPanelsWidth, iconPanelsHeight/2);
+	mythFlags->setGeometry(clockWidth + iconPanelsWidth, iconPanelsHeight, iconPanelsWidth, iconPanelsHeight);
 	mythFlags->show();
 
-	lbTimeElapsed->setGeometry(clockWidth, iconPanelsHeight * 2, iconPanelsWidth, iconPanelsHeight / 2);
-	lbTotalTime->setGeometry(clockWidth + iconPanelsWidth, iconPanelsHeight * 2, iconPanelsWidth, iconPanelsHeight / 2);
+	lbTimeElapsed->setGeometry(clockWidth, iconPanelsHeight * 2, iconPanelsWidth * 2, iconPanelsHeight);
+	lbTimeElapsed->setAlignment(Qt::AlignCenter);
 
-	pBar->setGeometry(clockWidth, iconPanelsHeight * 3, iconPanelsWidth * 2, iconPanelsHeight / 3);
-	pBar->setStyleSheet(".QProgressBar{background: black; padding: 2px;} QProgressBar::chunk{border-radius: 3px; background: qlineargradient(x1: 0, y1: 0.5, x2: 1, y2: 0.5, stop: 0 #fff, stop: .25 #fee, stop: .5 #fbb, stop: .75 #f66, stop: 1 #f00);}");
+	lbTotalTime->setGeometry(clockWidth, iconPanelsHeight * 3, iconPanelsWidth * 2, iconPanelsHeight);
+	lbTotalTime->setAlignment(Qt::AlignCenter);
+
+	pBar->setGeometry(clockWidth, iconPanelsHeight * 4, iconPanelsWidth * 2, iconPanelsHeight);
+	pBar->setStyleSheet(".QProgressBar{border: 2px solid black; background: black; padding: 2px;} QProgressBar::chunk{border-radius: 3px; background: qlineargradient(x1: 0, y1: 0.5, x2: 1, y2: 0.5, stop: 0 #fff, stop: .25 #fee, stop: .5 #fbb, stop: .75 #f66, stop: 1 #f00);}");
 
 	startMetaData(false);
 }

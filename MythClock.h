@@ -34,10 +34,11 @@ public:
 	void stop();
 
 protected:
-	void paintEvent(QPaintEvent *event);
+	void paintEvent(QPaintEvent*);
 
 private:
 	QTimer *pTimer;
+	bool bRunning;
 };
 
 #endif /* MYTHCLOCK_H_ */
