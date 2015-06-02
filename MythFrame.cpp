@@ -38,6 +38,8 @@ MythFrame::MythFrame(QFrame *parent) : QFrame(parent) {
 	lbTotalTime = new QLabel(this);
 	pBar = new QProgressBar(this);
 
+	clockColor = "#FFC266";
+
 	pTimer = new QTimer(this);
 	connect(pTimer, SIGNAL(timeout()), this, SLOT(updateClock()));
 	pTimer->setInterval(500);
@@ -84,16 +86,23 @@ void MythFrame::updateClock()
 {
 	QTime t = QTime::currentTime();
 	QDate d = QDate::currentDate();
+	int hour;
+
+	if (t.hour() < 13)
+		hour = t.hour() + 1;
+	else
+		hour = t.hour() - 12;
 
 	QString smallDisplay("<font style='font-size:100px; color:white; font-weight: bold;'>%1</font><br><font style='font-size:40px; color:gray;'>%2</font>");
-	QString largeDisplay("<font style='font-size:250px; color:white; font-weight: bold;'>%1</font>");
+	QString largeDisplay("<font style='font-size:275px; color:%1; font-weight: bold;'>%2:%3</font>");
 	lbClock->setText(smallDisplay.arg(t.toString("h:mm a")).arg(d.toString()));
-	digitalClock->setText(smallDisplay.arg(t.toString("h:mm")));
+	digitalClock->setText(largeDisplay.arg(clockColor).arg(hour).arg(t.toString("mm")));
 }
 
 void MythFrame::connCreated()
 {
 	if (conn == NULL) {
+		clockColor = "#fff";
 		conn = new LcdHandler(server->nextPendingConnection());
 		connect(conn, SIGNAL(sockClosed()), this, SLOT(connClosed()));
 		connect(conn, SIGNAL(channelNumber(QByteArray)), this, SLOT(channelUpdate(QByteArray)));
@@ -191,6 +200,7 @@ void MythFrame::metaDataEnded()
 void MythFrame::connClosed()
 {
 	if (conn) {
+		clockColor = "#FFC266";
 		disconnect(conn, SIGNAL(sockClosed()), this, SLOT(connClosed()));
 		disconnect(conn, SIGNAL(channelNumber(QByteArray)), this, SLOT(channelUpdate(QByteArray)));
 		disconnect(conn, SIGNAL(showTitle(QByteArray)), this, SLOT(showTitle(QByteArray)));
@@ -283,9 +293,11 @@ void MythFrame::showEvent(QShowEvent*)
 	int iconPanelsHeight = 66;
 
 	digitalClock->setGeometry(0, 0, width(), height());
+	digitalClock->setAlignment(Qt::AlignCenter);
 
 	lbClock->setGeometry(0, 0, clockWidth, clockHeight);
 	QFont clockFont("Liberation Sans");
+	digitalClock->setFont(clockFont);
 	lbClock->setFont(clockFont);
 	lbClock->setAlignment(Qt::AlignCenter);
 	lbClock->show();

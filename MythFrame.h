@@ -75,6 +75,7 @@ private:
 	bool bDisableProgress;
 
 	QProgressBar *pBar;
+	QString clockColor;
 };
 
 #endif /* MYTHFRAME_H_ */
