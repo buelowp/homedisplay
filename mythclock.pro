@@ -10,10 +10,8 @@ MOC_DIR = .moc
 SOURCES = MythClock.cpp \
 	MythFrame.cpp \
 	LcdHandler.cpp \
-	MythDigitalClock.cpp \
 	main.cpp
 		
 HEADERS = MythClock.h \
 	MythFrame.h \
 	LcdHandler.h \
-	MythDigitalClock.h
