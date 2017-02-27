@@ -94,7 +94,7 @@ void MythFrame::updateClock()
 		hour = t.hour() - 12;
 
 	QString smallDisplay("<font style='font-size:100px; color:white; font-weight: bold;'>%1</font><br><font style='font-size:40px; color:gray;'>%2</font>");
-	QString largeDisplay("<font style='font-size:275px; color:%1; font-weight: bold;'>%2:%3</font>");
+	QString largeDisplay("<font style='font-size:200px; color:%1; font-weight: bold;'>%2:%3</font>");
 	lbClock->setText(smallDisplay.arg(t.toString("h:mm a")).arg(d.toString()));
 	digitalClock->setText(largeDisplay.arg(clockColor).arg(hour).arg(t.toString("mm")));
 }
