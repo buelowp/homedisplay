@@ -20,7 +20,7 @@
 
 LcdHandler::LcdHandler()
 {
-	sock = NULL;
+	m_isAvail = true;
 }
 
 LcdHandler::LcdHandler(QTcpSocket *s) {
@@ -35,15 +35,15 @@ LcdHandler::LcdHandler(QTcpSocket *s) {
 
 LcdHandler::~LcdHandler()
 {
-	if (sock)
-		delete sock;
+	sock->deleteLater();
+	m_isAvail = false;
 }
 
 void LcdHandler::disconnected()
 {
-	delete sock;
-	sock = NULL;
 	emit sockClosed();
+	sock->deleteLater();
+	m_isAvail = false;
 }
 
 void LcdHandler::error(QAbstractSocket::SocketError)

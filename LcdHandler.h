@@ -74,6 +74,7 @@ private:
 	int lcdState;
 	QTcpSocket *sock;
 	QString name;
+	bool m_isAvail;
 };
 
 #endif /* LCDHANDLER_H_ */

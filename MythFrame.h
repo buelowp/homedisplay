@@ -53,6 +53,7 @@ protected slots:
 	void elapsedTime(QByteArray);
 	void totalTime(QByteArray);
 	void percentComplete(int);
+	void showNYECountDown();
 
 protected:
 	void showEvent(QShowEvent*);
@@ -71,6 +72,7 @@ private:
 	QLabel *lbTimeElapsed;
 	QLabel *lbClock;
 	QLabel *m_lbDate;
+	QLabel *m_lbCountdown;
 	QTimer *pTimer;
 	QByteArray prevTime;
 	bool bDisableProgress;

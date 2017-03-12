@@ -38,6 +38,7 @@ MythFrame::MythFrame(QFrame *parent) : QFrame(parent) {
 	lbTimeElapsed = new QLabel(this);
 	lbTotalTime = new QLabel(this);
 	pBar = new QProgressBar(this);
+	m_lbCountdown = new QLabel(this);
 
 	clockColor = "#FFC266";
 
@@ -62,7 +63,6 @@ MythFrame::MythFrame(QFrame *parent) : QFrame(parent) {
 	lbClock->setAutoFillBackground(true);
 	lbClock->setPalette(pal);
 
-
 	pBar->setStyleSheet("QProgressBar {border: 0px solid black; border-radius: 0px; text-align: center; background-color: #000000;} QProgressBar::chunk {background-color: #00FFFF;}");
 
 	pBar->setRange(0, 100);
@@ -72,15 +72,37 @@ MythFrame::MythFrame(QFrame *parent) : QFrame(parent) {
 }
 
 MythFrame::~MythFrame() {
-	delete conn;
+	conn->deleteLater();
 	server->close();
-	delete server;
+	server->deleteLater();;
 }
 
 bool MythFrame::init()
 {
+	QDateTime dt = QDateTime::currentDateTime();
+	QTime t(23, 59);
+	QDate d(dt.date().year(), 12, 31);
+	QDateTime nye(d, t);
+
+	QTimer::singleShot(dt.msecsTo(nye), this, SLOT(showNYECountDown()));
+	qDebug() << __PRETTY_FUNCTION__ << ": setting NYE timer to" << dt.msecsTo(nye) << "msecs";
+
 	connect(server, SIGNAL(newConnection()), this, SLOT(connCreated()));
 	return server->listen(QHostAddress::Any, 6545);
+}
+
+void MythFrame::showNYECountDown()
+{
+	QTime t = QTime::currentTime();
+
+	if (t.hour() == 23) {
+		QString countdown("<font style='font-size:200px; color:white; font-weight: bold;'>%1</font>");
+		m_lbCountdown->setText(countdown.arg(60 - t.second()));
+		m_lbCountdown->show();
+		QTimer::singleShot(1000, this, SLOT(showNYECountDown()));
+	}
+	else
+		m_lbCountdown->hide();
 }
 
 void MythFrame::updateClock()
@@ -100,7 +122,7 @@ void MythFrame::updateClock()
 	QString dateDisplay("<font style='font-size:50px; color:'%1'; font-weight: bold;>%2</font>");
 	QString largeDisplay("<font style='font-size:140px; color:%1; font-weight: bold;'>%2</font>");
 	lbClock->setText(smallDisplay.arg(t.toString("h:mm a")).arg(d.toString()));
-	m_lbDate->setText(dateDisplay.arg(clockColor).arg(d.toString("dddd MMMM d yyyy")));
+	m_lbDate->setText(dateDisplay.arg(clockColor).arg(d.toString("dddd MMMM d, yyyy")));
 	digitalClock->setText(largeDisplay.arg(clockColor).arg(t.toString("h:mm A")));
 }
 
@@ -219,8 +241,7 @@ void MythFrame::connClosed()
 		disconnect(conn, SIGNAL(stereoFormat(QString)), this, SLOT(stereoFormat(QString)));
 		disconnect(conn, SIGNAL(playbackFlags(QString)), this, SLOT(playbackFlags(QString)));
 		disconnect(conn, SIGNAL(metaDataStarted()), this, SLOT(metaDataStarted()));
-		delete conn;
-		conn = NULL;
+		conn->deleteLater();;
 	}
 }
 
@@ -310,6 +331,10 @@ void MythFrame::showEvent(QShowEvent*)
 	m_lbDate->setAlignment(Qt::AlignCenter);
 	lbClock->show();
 	m_lbDate->show();
+
+	m_lbCountdown->setGeometry(0, 0, 480, 800);
+	m_lbCountdown->setAlignment(Qt::AlignCenter);
+	m_lbCountdown->hide();
 
 	QFont c("Liberation Sans", 15);
 	titleLabel->setFont(c);
