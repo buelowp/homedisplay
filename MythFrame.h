@@ -70,6 +70,7 @@ private:
 	QLabel *lbTotalTime;
 	QLabel *lbTimeElapsed;
 	QLabel *lbClock;
+	QLabel *m_lbDate;
 	QTimer *pTimer;
 	QByteArray prevTime;
 	bool bDisableProgress;

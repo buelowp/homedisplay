@@ -34,6 +34,7 @@ MythFrame::MythFrame(QFrame *parent) : QFrame(parent) {
 	stereoIcon = new QLabel(this);
 	mythFlags = new QLabel(this);
 	lbClock = new QLabel(this);
+	m_lbDate = new QLabel(this);
 	lbTimeElapsed = new QLabel(this);
 	lbTotalTime = new QLabel(this);
 	pBar = new QProgressBar(this);
@@ -86,17 +87,21 @@ void MythFrame::updateClock()
 {
 	QTime t = QTime::currentTime();
 	QDate d = QDate::currentDate();
-	int hour;
+	int hour = 0;
 
-	if (t.hour() < 13)
-		hour = t.hour() + 1;
-	else
+	if (t.hour() >= 13)
 		hour = t.hour() - 12;
+	else if (t.hour() < 13)
+		hour = t.hour() + 1;
+	else if (t.hour() == 0)
+		hour = 12;
 
-	QString smallDisplay("<font style='font-size:100px; color:white; font-weight: bold;'>%1</font><br><font style='font-size:40px; color:gray;'>%2</font>");
-	QString largeDisplay("<font style='font-size:200px; color:%1; font-weight: bold;'>%2:%3</font>");
+	QString smallDisplay("<font style='font-size:80px; color:white; font-weight: bold;'>%1</font><br><font style='font-size:40px; color:gray;'>%2</font>");
+	QString dateDisplay("<font style='font-size:50px; color:'%1'; font-weight: bold;>%2</font>");
+	QString largeDisplay("<font style='font-size:140px; color:%1; font-weight: bold;'>%2</font>");
 	lbClock->setText(smallDisplay.arg(t.toString("h:mm a")).arg(d.toString()));
-	digitalClock->setText(largeDisplay.arg(clockColor).arg(hour).arg(t.toString("mm")));
+	m_lbDate->setText(dateDisplay.arg(clockColor).arg(d.toString("dddd MMMM d yyyy")));
+	digitalClock->setText(largeDisplay.arg(clockColor).arg(t.toString("h:mm A")));
 }
 
 void MythFrame::connCreated()
@@ -286,21 +291,25 @@ void MythFrame::startMetaData(bool event)
 
 void MythFrame::showEvent(QShowEvent*)
 {
-	int clockWidth = 600;
+	int clockWidth = 800;
 	int clockHeight = 330;
 	int titlePanelsHeight = 50;
 	int iconPanelsWidth = 100;
 	int iconPanelsHeight = 66;
 
-	digitalClock->setGeometry(0, 0, width(), height());
+	digitalClock->setGeometry(0, 0, width(), (2 * (height() / 3)));
 	digitalClock->setAlignment(Qt::AlignCenter);
 
 	lbClock->setGeometry(0, 0, clockWidth, clockHeight);
+	m_lbDate->setGeometry(0, (2 * (height() / 3)), 800, (height() / 3));
 	QFont clockFont("Liberation Sans");
 	digitalClock->setFont(clockFont);
+	m_lbDate->setFont(clockFont);
 	lbClock->setFont(clockFont);
 	lbClock->setAlignment(Qt::AlignCenter);
+	m_lbDate->setAlignment(Qt::AlignCenter);
 	lbClock->show();
+	m_lbDate->show();
 
 	QFont c("Liberation Sans", 15);
 	titleLabel->setFont(c);
