@@ -135,6 +135,8 @@ void MythFrame::showNYEScreen()
 {
 	QTime t = QTime::currentTime();
 
+	m_lbCountdown->show();
+
 	if (t.hour() == 23) {
 		QString countdown("<font style='font-size:200px; color:white; font-weight: bold;'>%1</font>");
 		m_lbCountdown->setText(countdown.arg(60 - t.second()));
@@ -149,14 +151,6 @@ void MythFrame::updateClock()
 {
 	QTime t = QTime::currentTime();
 	QDate d = QDate::currentDate();
-	int hour = 0;
-
-	if (t.hour() >= 13)
-		hour = t.hour() - 12;
-	else if (t.hour() < 13)
-		hour = t.hour() + 1;
-	else if (t.hour() == 0)
-		hour = 12;
 
 	QString smallDisplay("<font style='font-size:80px; color:white; font-weight: bold;'>%1</font><br><font style='font-size:40px; color:gray;'>%2</font>");
 	QString dateDisplay("<font style='font-size:50px; color:'%1'; font-weight: bold;>%2</font>");
@@ -350,8 +344,6 @@ void MythFrame::showEvent(QShowEvent *e)
 
 	m_metaProgressBar->setGeometry(clockWidth, iconPanelsHeight * 4, iconPanelsWidth * 2, iconPanelsHeight);
 	m_metaProgressBar->setStyleSheet(".QProgressBar{border: 2px solid black; background: black; padding: 2px;} QProgressBar::chunk{border-radius: 3px; background: qlineargradient(x1: 0, y1: 0.5, x2: 1, y2: 0.5, stop: 0 #fff, stop: .25 #fee, stop: .5 #fbb, stop: .75 #f66, stop: 1 #f00);}");
-
-	startMetaData(false);
 }
 
 void MythFrame::hidePrimaryScreen()
@@ -392,11 +384,6 @@ void MythFrame::showPrimaryScreen()
 {
 	m_primaryClock->show();
 	m_primaryDate->show();
-}
-
-void MythFrame::showNYEScreen()
-{
-	m_lbCountdown->show();
 }
 
 void MythFrame::hideNYEScreen()

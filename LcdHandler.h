@@ -41,7 +41,7 @@ public:
 	virtual ~LcdHandler();
 
 	void addSocket(QTcpSocket *sock);
-	void isValid() { return m_isAvail; }
+	bool isValid() { return m_isAvail; }
 
 signals:
 	void sockClosed();

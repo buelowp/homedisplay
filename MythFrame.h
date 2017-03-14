@@ -33,7 +33,6 @@ public:
 	MythFrame(QFrame *parent = 0);
 	virtual ~MythFrame();
 	bool init();
-	void startMetaData(bool);
 
 signals:
 	void lcdDisconnect();
@@ -52,8 +51,6 @@ public slots:
 	void playbackFlags(QString);
 	void updateClock();
 	void metaDataStarted();
-	void switchToVideoPlayback();
-	void switchToPrimaryDisplay();
 
 protected slots:
 	void channelUpdate(QByteArray);
