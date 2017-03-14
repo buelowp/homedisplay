@@ -19,11 +19,8 @@
 #ifndef LCDHANDLER_H_
 #define LCDHANDLER_H_
 
-#include <QtCore>
-#include <QtNetwork>
-#include <QtGui>
-#include <QtWidgets>
-#include <QtDebug>
+#include <QtCore/QtCore>
+#include <QtNetwork/QtNetwork>
 
 #define MYTH_FLAG_SPEAKER_MASK		0x30
 #define MYTH_FLAG_SPEAKER_STEREO	(1 << 4)
@@ -44,6 +41,7 @@ public:
 	virtual ~LcdHandler();
 
 	void addSocket(QTcpSocket *sock);
+	void isValid() { return m_isAvail; }
 
 signals:
 	void sockClosed();

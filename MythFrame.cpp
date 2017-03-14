@@ -25,56 +25,58 @@ MythFrame::MythFrame(QFrame *parent) : QFrame(parent) {
 	setAutoFillBackground(true);
 	setPalette(pal);
 
-	digitalClock = new QLabel(this);
-	server = new QTcpServer(this);
-	channelLabel = new QLabel(this);
-	titleLabel = new QLabel(this);
-	showLabel = new QLabel(this);
-	audioIcon = new QLabel(this);
-	stereoIcon = new QLabel(this);
-	mythFlags = new QLabel(this);
-	lbClock = new QLabel(this);
-	m_lbDate = new QLabel(this);
-	lbTimeElapsed = new QLabel(this);
-	lbTotalTime = new QLabel(this);
-	pBar = new QProgressBar(this);
+	m_primaryClock = new QLabel(this);
+	m_server = new QTcpServer(this);
+	m_metaChannel = new QLabel(this);
+	m_metaTitle = new QLabel(this);
+	m_metaShow = new QLabel(this);
+	m_metaAudioImage = new QLabel(this);
+	m_metaStereoImage = new QLabel(this);
+	m_metaFlags = new QLabel(this);
+	m_metaClock = new QLabel(this);
+	m_primaryDate = new QLabel(this);
+	m_metaTimeElapsed = new QLabel(this);
+	m_metaTime = new QLabel(this);
+	m_metaProgressBar = new QProgressBar(this);
 	m_lbCountdown = new QLabel(this);
 
-	clockColor = "#FFC266";
+	m_clockColor = "#FFC266";
 
-	pTimer = new QTimer(this);
-	connect(pTimer, SIGNAL(timeout()), this, SLOT(updateClock()));
-	pTimer->setInterval(500);
-	pTimer->start();
+	m_clockTimer = new QTimer(this);
+	connect(m_clockTimer, SIGNAL(timeout()), this, SLOT(updateClock()));
+	m_clockTimer->setInterval(50);
+	m_clockTimer->start();
 
 	// Set the Myth connection indicator background black.
-	channelLabel->setAutoFillBackground(true);
-	channelLabel->setPalette(pal);
-	titleLabel->setAutoFillBackground(true);
-	titleLabel->setPalette(pal);
-	showLabel->setAutoFillBackground(true);
-	showLabel->setPalette(pal);
-	audioIcon->setAutoFillBackground(true);
-	audioIcon->setPalette(pal);
-	stereoIcon->setAutoFillBackground(true);
-	stereoIcon->setPalette(pal);
-	mythFlags->setAutoFillBackground(true);
-	mythFlags->setPalette(pal);
-	lbClock->setAutoFillBackground(true);
-	lbClock->setPalette(pal);
+	m_metaChannel->setAutoFillBackground(true);
+	m_metaChannel->setPalette(pal);
+	m_metaTitle->setAutoFillBackground(true);
+	m_metaTitle->setPalette(pal);
+	m_metaShow->setAutoFillBackground(true);
+	m_metaShow->setPalette(pal);
+	m_metaAudioImage->setAutoFillBackground(true);
+	m_metaAudioImage->setPalette(pal);
+	m_metaStereoImage->setAutoFillBackground(true);
+	m_metaStereoImage->setPalette(pal);
+	m_metaFlags->setAutoFillBackground(true);
+	m_metaFlags->setPalette(pal);
+	m_metaClock->setAutoFillBackground(true);
+	m_metaClock->setPalette(pal);
 
-	pBar->setStyleSheet("QProgressBar {border: 0px solid black; border-radius: 0px; text-align: center; background-color: #000000;} QProgressBar::chunk {background-color: #00FFFF;}");
+	m_metaProgressBar->setStyleSheet("QProgressBar {border: 0px solid black; border-radius: 0px; text-align: center; background-color: #000000;} QProgressBar::chunk {background-color: #00FFFF;}");
 
-	pBar->setRange(0, 100);
-	pBar->setTextVisible(false);
-	conn = NULL;
+	m_metaProgressBar->setRange(0, 100);
+	m_metaProgressBar->setTextVisible(false);
 	bDisableProgress = false;
+	m_clockColor = "#FFC266";
+
+
 }
 
 MythFrame::~MythFrame() {
-	conn->deleteLater();
-	server->close();
-	server->deleteLater();;
+	m_mythLcd->deleteLater();
+	m_server->close();
+	m_server->deleteLater();;
 }
 
 bool MythFrame::init()
@@ -82,16 +84,54 @@ bool MythFrame::init()
 	QDateTime dt = QDateTime::currentDateTime();
 	QTime t(23, 59);
 	QDate d(dt.date().year(), 12, 31);
-	QDateTime nye(d, t);
+	QDateTime nye_mseconds(d, t);
 
-	QTimer::singleShot(dt.msecsTo(nye), this, SLOT(showNYECountDown()));
-	qDebug() << __PRETTY_FUNCTION__ << ": setting NYE timer to" << dt.msecsTo(nye) << "msecs";
+	QTimer::singleShot(dt.msecsTo(nye_mseconds), this, SLOT(showNYECountDown()));
+	qDebug() << __PRETTY_FUNCTION__ << ": setting NYE timer to" << dt.msecsTo(nye_mseconds) << "msecs";
 
-	connect(server, SIGNAL(newConnection()), this, SLOT(connCreated()));
-	return server->listen(QHostAddress::Any, 6545);
+	QState *clean = new QState();
+	QState *primary = new QState();
+	QState *metadata = new QState();
+	QState *nye = new QState();
+	QState *disconnected = new QState();
+
+	disconnected->addTransition(m_server, SIGNAL(newConnection()), primary);
+	primary->addTransition(this, SIGNAL(lcdDisconnect()), disconnected);
+	metadata->addTransition(this, SIGNAL(lcdDisconnect()), disconnected);
+	metadata->addTransition(this, SIGNAL(videoPlaybackEnded()), primary);
+	nye->addTransition(this, SIGNAL(lcdDisconnect()), disconnected);
+	nye->addTransition(this, SIGNAL(nyeEventDone()), primary);
+	primary->addTransition(this, SIGNAL(videoPlaybackStarted()), metadata);
+	primary->addTransition(this, SIGNAL(starNYE()), nye);
+	metadata->addTransition(this, SIGNAL(starNYE()), nye);
+	disconnected->addTransition(this, SIGNAL(starNYE()), nye);
+
+	connect(primary, SIGNAL(entered()), this, SLOT(connCreated()));
+	connect(disconnected, SIGNAL(entered()), this, SLOT(connClosed()));
+	connect(metadata, SIGNAL(entered()), this, SLOT(metaDataStarted()));
+	connect(metadata, SIGNAL(exited()), this, SLOT(hideMetadataScreen()));
+	connect(primary, SIGNAL(exited()), this, SLOT(hidePrimaryScreen()));
+	connect(nye, SIGNAL(exited()), this, SLOT(hideNYEScreen()));
+	connect(metadata, SIGNAL(entered()), this, SLOT(showMetadataScreen()));
+	connect(primary, SIGNAL(entered()), this, SLOT(showPrimaryScreen()));
+	connect(nye, SIGNAL(entered()), this, SLOT(showNYEScreen()));
+
+	m_states.addState(primary);
+	m_states.addState(metadata);
+	m_states.addState(disconnected);
+	m_states.addState(nye);
+	m_states.addState(clean);
+	m_states.setInitialState(clean);
+
+	return m_server->listen(QHostAddress::Any, 6545);
 }
 
 void MythFrame::showNYECountDown()
+{
+	emit startNYE();
+}
+
+void MythFrame::showNYEScreen()
 {
 	QTime t = QTime::currentTime();
 
@@ -99,10 +139,10 @@ void MythFrame::showNYECountDown()
 		QString countdown("<font style='font-size:200px; color:white; font-weight: bold;'>%1</font>");
 		m_lbCountdown->setText(countdown.arg(60 - t.second()));
 		m_lbCountdown->show();
-		QTimer::singleShot(1000, this, SLOT(showNYECountDown()));
+		QTimer::singleShot(1000, this, SLOT(showNYEScreen()));
 	}
 	else
-		m_lbCountdown->hide();
+		emit stopNYE();
 }
 
 void MythFrame::updateClock()
@@ -121,30 +161,30 @@ void MythFrame::updateClock()
 	QString smallDisplay("<font style='font-size:80px; color:white; font-weight: bold;'>%1</font><br><font style='font-size:40px; color:gray;'>%2</font>");
 	QString dateDisplay("<font style='font-size:50px; color:'%1'; font-weight: bold;>%2</font>");
 	QString largeDisplay("<font style='font-size:140px; color:%1; font-weight: bold;'>%2</font>");
-	lbClock->setText(smallDisplay.arg(t.toString("h:mm a")).arg(d.toString()));
-	m_lbDate->setText(dateDisplay.arg(clockColor).arg(d.toString("dddd MMMM d, yyyy")));
-	digitalClock->setText(largeDisplay.arg(clockColor).arg(t.toString("h:mm A")));
+	m_metaClock->setText(smallDisplay.arg(t.toString("h:mm a")).arg(d.toString()));
+	m_primaryDate->setText(dateDisplay.arg(m_clockColor).arg(d.toString("dddd MMMM d, yyyy")));
+	m_primaryClock->setText(largeDisplay.arg(m_clockColor).arg(t.toString("h:mm A")));
 }
 
 void MythFrame::connCreated()
 {
-	if (conn == NULL) {
-		clockColor = "#fff";
-		conn = new LcdHandler(server->nextPendingConnection());
-		connect(conn, SIGNAL(sockClosed()), this, SLOT(connClosed()));
-		connect(conn, SIGNAL(channelNumber(QByteArray)), this, SLOT(channelUpdate(QByteArray)));
-		connect(conn, SIGNAL(showTitle(QByteArray)), this, SLOT(showTitle(QByteArray)));
-		connect(conn, SIGNAL(showSubTitle(QByteArray)), this, SLOT(showSubTitle(QByteArray)));
-		connect(conn, SIGNAL(progressTimeLeft(QByteArray)), this, SLOT(elapsedTime(QByteArray)));
-		connect(conn, SIGNAL(progressTotalTime(QByteArray)), this, SLOT(totalTime(QByteArray)));
-		connect(conn, SIGNAL(progressPercentComplete(int)), this, SLOT(percentComplete(int)));
-		connect(conn, SIGNAL(metaDataEnded()), this, SLOT(metaDataEnded()));
-		connect(conn, SIGNAL(videoFormat(QString)), this, SLOT(videoFormat(QString)));
-		connect(conn, SIGNAL(audioFormat(QString)), this, SLOT(audioFormat(QString)));
-		connect(conn, SIGNAL(stereoFormat(QString)), this, SLOT(stereoFormat(QString)));
-		connect(conn, SIGNAL(playbackFlags(QString)), this, SLOT(playbackFlags(QString)));
-		connect(conn, SIGNAL(metaDataStarted()), this, SLOT(metaDataStarted()));
-	}
+	m_clockColor = "#FFFFFF";
+
+	m_mythLcd = new LcdHandler(m_server->nextPendingConnection());
+
+	connect(m_mythLcd, SIGNAL(sockClosed()), this, SLOT(connClosed()));
+	connect(m_mythLcd, SIGNAL(channelNumber(QByteArray)), this, SLOT(channelUpdate(QByteArray)));
+	connect(m_mythLcd, SIGNAL(showTitle(QByteArray)), this, SLOT(showTitle(QByteArray)));
+	connect(m_mythLcd, SIGNAL(showSubTitle(QByteArray)), this, SLOT(showSubTitle(QByteArray)));
+	connect(m_mythLcd, SIGNAL(progressTimeLeft(QByteArray)), this, SLOT(elapsedTime(QByteArray)));
+	connect(m_mythLcd, SIGNAL(progressTotalTime(QByteArray)), this, SLOT(totalTime(QByteArray)));
+	connect(m_mythLcd, SIGNAL(progressPercentComplete(int)), this, SLOT(percentComplete(int)));
+	connect(m_mythLcd, SIGNAL(videoFormat(QString)), this, SLOT(videoFormat(QString)));
+	connect(m_mythLcd, SIGNAL(audioFormat(QString)), this, SLOT(audioFormat(QString)));
+	connect(m_mythLcd, SIGNAL(stereoFormat(QString)), this, SLOT(stereoFormat(QString)));
+	connect(m_mythLcd, SIGNAL(playbackFlags(QString)), this, SLOT(playbackFlags(QString)));
+	connect(m_mythLcd, SIGNAL(metaDataStarted()), this, SLOT(metaDataStarted()));
+	connect(m_mythLcd, SIGNAL(metaDataEnded()), this, SLOT(metaDataEnded()));
 }
 
 void MythFrame::videoFormat(QString)
@@ -154,30 +194,30 @@ void MythFrame::videoFormat(QString)
 void MythFrame::audioFormat(QString v)
 {
 	if (v == "dts") {
-		audioIcon->setStyleSheet(".QLabel{background-color: red; color: white; border-radius: 3px;}");
+		m_metaAudioImage->setStyleSheet(".QLabel{background-color: red; color: white; border-radius: 3px;}");
 		QFont f("Liberation Sans", 20);
-		audioIcon->setAlignment(Qt::AlignCenter);
-		audioIcon->setFont(f);
-		audioIcon->setText(v);
+		m_metaAudioImage->setAlignment(Qt::AlignCenter);
+		m_metaAudioImage->setFont(f);
+		m_metaAudioImage->setText(v);
 	}
 	else {
-		audioIcon->setText(v);
+		m_metaAudioImage->setText(v);
 	}
 }
 
 void MythFrame::stereoFormat(QString f)
 {
-	stereoIcon->setFont(QFont("Liberation Sans", 12));
-	stereoIcon->setAlignment(Qt::AlignCenter);
+	m_metaStereoImage->setFont(QFont("Liberation Sans", 12));
+	m_metaStereoImage->setAlignment(Qt::AlignCenter);
 
 	if (f.compare("stereo", Qt::CaseInsensitive) == 0) {
-		stereoIcon->setText("Stereo");
+		m_metaStereoImage->setText("Stereo");
 	}
 	if (f == "5.1") {
-		stereoIcon->setPixmap(QPixmap("/usr/share/mythclock/5_1.jpg"));
+		m_metaStereoImage->setPixmap(QPixmap("/usr/share/mythclock/5_1.jpg"));
 	}
 	if (f == "7.1") {
-		stereoIcon->setPixmap(QPixmap("/usr/share/mythclock/7_1.jpg"));
+		m_metaStereoImage->setPixmap(QPixmap("/usr/share/mythclock/7_1.jpg"));
 	}
 }
 
@@ -189,185 +229,177 @@ void MythFrame::playbackFlags(QString flags)
 		if (hd.isNull())
 			qDebug() << "Error opening hd pixmap";
 
-		mythFlags->setPixmap(hd);
+		m_metaFlags->setPixmap(hd);
 	}
 	else {
 		QFont f("Liberation Sans", 20);
-		mythFlags->setFont(f);
-		mythFlags->setText(flags);
+		m_metaFlags->setFont(f);
+		m_metaFlags->setText(flags);
 	}
-	mythFlags->setAlignment(Qt::AlignCenter);
+	m_metaFlags->setAlignment(Qt::AlignCenter);
 }
 
 void MythFrame::metaDataStarted()
 {
-	startMetaData(true);
+	emit videoPlaybackStarted();
 }
 
 void MythFrame::metaDataEnded()
 {
-	showLabel->setText("");
-	titleLabel->setText("");
-	channelLabel->setText("");
-	audioIcon->setText("");
-	stereoIcon->setText("");
-	mythFlags->setText("");
-	lbTimeElapsed->setText("");
-	lbTotalTime->setText("");
-	pBar->reset();
-
-	QPalette pal(QColor(0,0,0));
-	audioIcon->setBackgroundRole(QPalette::Window);
-	pal.setColor(QPalette::Window, Qt::black);
-	audioIcon->setAutoFillBackground(true);
-	audioIcon->setPalette(pal);
-	startMetaData(false);
+	emit videoPlaybackEnded();
 }
 
 void MythFrame::connClosed()
 {
-	if (conn) {
-		clockColor = "#FFC266";
-		disconnect(conn, SIGNAL(sockClosed()), this, SLOT(connClosed()));
-		disconnect(conn, SIGNAL(channelNumber(QByteArray)), this, SLOT(channelUpdate(QByteArray)));
-		disconnect(conn, SIGNAL(showTitle(QByteArray)), this, SLOT(showTitle(QByteArray)));
-		disconnect(conn, SIGNAL(showSubTitle(QByteArray)), this, SLOT(showSubTitle(QByteArray)));
-		disconnect(conn, SIGNAL(progressTimeLeft(QByteArray)), this, SLOT(elapsedTime(QByteArray)));
-		disconnect(conn, SIGNAL(progressTotalTime(QByteArray)), this, SLOT(totalTime(QByteArray)));
-		disconnect(conn, SIGNAL(progressPercentComplete(int)), this, SLOT(percentComplete(int)));
-		disconnect(conn, SIGNAL(metaDataEnded()), this, SLOT(metaDataEnded()));
-		disconnect(conn, SIGNAL(videoFormat(QString)), this, SLOT(videoFormat(QString)));
-		disconnect(conn, SIGNAL(audioFormat(QString)), this, SLOT(audioFormat(QString)));
-		disconnect(conn, SIGNAL(stereoFormat(QString)), this, SLOT(stereoFormat(QString)));
-		disconnect(conn, SIGNAL(playbackFlags(QString)), this, SLOT(playbackFlags(QString)));
-		disconnect(conn, SIGNAL(metaDataStarted()), this, SLOT(metaDataStarted()));
-		conn->deleteLater();;
-	}
+	m_mythLcd->deleteLater();
+	emit lcdDisconnect();
 }
 
 void MythFrame::channelUpdate(QByteArray s)
 {
-	channelLabel->setText(s.data());
+	m_metaChannel->setText(s.data());
 }
 
 void MythFrame::showTitle(QByteArray s)
 {
-	showLabel->setText(s.data());
+	m_metaShow->setText(s.data());
 }
 
 void MythFrame::showSubTitle(QByteArray s)
 {
-	titleLabel->setText(s.data());
+	m_metaTitle->setText(s.data());
 }
 
 void MythFrame::elapsedTime(QByteArray ba)
 {
-	lbTimeElapsed->setStyleSheet(".QLabel{font-size:30px; background-color: black; color: white;}");
-	lbTimeElapsed->setText(ba);
+	m_metaTimeElapsed->setStyleSheet(".QLabel{font-size:30px; background-color: black; color: white;}");
+	m_metaTimeElapsed->setText(ba);
 }
 
 void MythFrame::totalTime(QByteArray ba)
 {
 	prevTime = ba;
-	lbTotalTime->setStyleSheet(".QLabel{font-size:30px; background-color: black; color: white;}");
-	lbTotalTime->setText(ba);
+	m_metaTime->setStyleSheet(".QLabel{font-size:30px; background-color: black; color: white;}");
+	m_metaTime->setText(ba);
 }
 
 void MythFrame::percentComplete(int p)
 {
 	if (!bDisableProgress) {
-		pBar->setValue(p);
+		m_metaProgressBar->setValue(p);
 	}
 }
 
-void MythFrame::startMetaData(bool event)
+void MythFrame::showEvent(QShowEvent *e)
 {
-	if (event) {
-		digitalClock->hide();
-		lbClock->show();
-		titleLabel->show();
-		showLabel->show();
-		channelLabel->show();
-		audioIcon->show();
-		stereoIcon->show();
-		mythFlags->show();
-		lbTimeElapsed->show();
-		lbTotalTime->show();
-		pBar->show();
-	}
-	else {
-		digitalClock->show();
-		lbClock->hide();
-		titleLabel->hide();
-		showLabel->hide();
-		channelLabel->hide();
-		audioIcon->hide();
-		stereoIcon->hide();
-		mythFlags->hide();
-		lbTimeElapsed->hide();
-		lbTotalTime->hide();
-		pBar->hide();
-	}
-}
+	Q_UNUSED(e)
 
-void MythFrame::showEvent(QShowEvent*)
-{
 	int clockWidth = 800;
 	int clockHeight = 330;
 	int titlePanelsHeight = 50;
 	int iconPanelsWidth = 100;
 	int iconPanelsHeight = 66;
 
-	digitalClock->setGeometry(0, 0, width(), (2 * (height() / 3)));
-	digitalClock->setAlignment(Qt::AlignCenter);
+	m_primaryClock->setGeometry(0, 0, width(), (2 * (height() / 3)));
+	m_primaryClock->setAlignment(Qt::AlignCenter);
+	m_primaryDate->setGeometry(0, (2 * (height() / 3)), 800, (height() / 3));
 
-	lbClock->setGeometry(0, 0, clockWidth, clockHeight);
-	m_lbDate->setGeometry(0, (2 * (height() / 3)), 800, (height() / 3));
+	m_metaClock->setGeometry(0, 0, clockWidth, clockHeight);
 	QFont clockFont("Liberation Sans");
-	digitalClock->setFont(clockFont);
-	m_lbDate->setFont(clockFont);
-	lbClock->setFont(clockFont);
-	lbClock->setAlignment(Qt::AlignCenter);
-	m_lbDate->setAlignment(Qt::AlignCenter);
-	lbClock->show();
-	m_lbDate->show();
+	m_primaryClock->setFont(clockFont);
+	m_primaryDate->setFont(clockFont);
+	m_metaClock->setFont(clockFont);
+	m_metaClock->setAlignment(Qt::AlignCenter);
+	m_primaryDate->setAlignment(Qt::AlignCenter);
+	m_metaClock->show();
+	m_primaryDate->show();
 
 	m_lbCountdown->setGeometry(0, 0, 480, 800);
 	m_lbCountdown->setAlignment(Qt::AlignCenter);
 	m_lbCountdown->hide();
 
 	QFont c("Liberation Sans", 15);
-	titleLabel->setFont(c);
-	showLabel->setFont(c);
-	showLabel->setGeometry(0, lbClock->height(), width(), titlePanelsHeight);
-	showLabel->setIndent(10);
-	showLabel->show();
-	titleLabel->setGeometry(0, lbClock->height() + titlePanelsHeight, width(), titlePanelsHeight);
-	titleLabel->show();
-	titleLabel->setIndent(10);
-	titleLabel->setFont(c);
-	channelLabel->setGeometry(0, lbClock->height() + (titlePanelsHeight * 2), width(), titlePanelsHeight);
-	channelLabel->show();
-	channelLabel->setIndent(10);
-	channelLabel->setFont(c);
+	m_metaTitle->setFont(c);
+	m_metaShow->setFont(c);
+	m_metaShow->setGeometry(0, m_metaClock->height(), width(), titlePanelsHeight);
+	m_metaShow->setIndent(10);
+	m_metaShow->show();
+	m_metaTitle->setGeometry(0, m_metaClock->height() + titlePanelsHeight, width(), titlePanelsHeight);
+	m_metaTitle->show();
+	m_metaTitle->setIndent(10);
+	m_metaTitle->setFont(c);
+	m_metaChannel->setGeometry(0, m_metaClock->height() + (titlePanelsHeight * 2), width(), titlePanelsHeight);
+	m_metaChannel->show();
+	m_metaChannel->setIndent(10);
+	m_metaChannel->setFont(c);
 
-	audioIcon->setGeometry(clockWidth, 0, iconPanelsWidth, iconPanelsHeight);
-	audioIcon->show();
+	m_metaAudioImage->setGeometry(clockWidth, 0, iconPanelsWidth, iconPanelsHeight);
+	m_metaAudioImage->show();
 
-	stereoIcon->setGeometry(clockWidth + iconPanelsWidth, 0, iconPanelsWidth, iconPanelsHeight);
-	stereoIcon->show();
+	m_metaStereoImage->setGeometry(clockWidth + iconPanelsWidth, 0, iconPanelsWidth, iconPanelsHeight);
+	m_metaStereoImage->show();
 
-	mythFlags->setGeometry(clockWidth + iconPanelsWidth, iconPanelsHeight, iconPanelsWidth, iconPanelsHeight);
-	mythFlags->show();
+	m_metaFlags->setGeometry(clockWidth + iconPanelsWidth, iconPanelsHeight, iconPanelsWidth, iconPanelsHeight);
+	m_metaFlags->show();
 
-	lbTimeElapsed->setGeometry(clockWidth, iconPanelsHeight * 2, iconPanelsWidth * 2, iconPanelsHeight);
-	lbTimeElapsed->setAlignment(Qt::AlignCenter);
+	m_metaTimeElapsed->setGeometry(clockWidth, iconPanelsHeight * 2, iconPanelsWidth * 2, iconPanelsHeight);
+	m_metaTimeElapsed->setAlignment(Qt::AlignCenter);
 
-	lbTotalTime->setGeometry(clockWidth, iconPanelsHeight * 3, iconPanelsWidth * 2, iconPanelsHeight);
-	lbTotalTime->setAlignment(Qt::AlignCenter);
+	m_metaTime->setGeometry(clockWidth, iconPanelsHeight * 3, iconPanelsWidth * 2, iconPanelsHeight);
+	m_metaTime->setAlignment(Qt::AlignCenter);
 
-	pBar->setGeometry(clockWidth, iconPanelsHeight * 4, iconPanelsWidth * 2, iconPanelsHeight);
-	pBar->setStyleSheet(".QProgressBar{border: 2px solid black; background: black; padding: 2px;} QProgressBar::chunk{border-radius: 3px; background: qlineargradient(x1: 0, y1: 0.5, x2: 1, y2: 0.5, stop: 0 #fff, stop: .25 #fee, stop: .5 #fbb, stop: .75 #f66, stop: 1 #f00);}");
+	m_metaProgressBar->setGeometry(clockWidth, iconPanelsHeight * 4, iconPanelsWidth * 2, iconPanelsHeight);
+	m_metaProgressBar->setStyleSheet(".QProgressBar{border: 2px solid black; background: black; padding: 2px;} QProgressBar::chunk{border-radius: 3px; background: qlineargradient(x1: 0, y1: 0.5, x2: 1, y2: 0.5, stop: 0 #fff, stop: .25 #fee, stop: .5 #fbb, stop: .75 #f66, stop: 1 #f00);}");
 
 	startMetaData(false);
+}
+
+void MythFrame::hidePrimaryScreen()
+{
+	m_primaryClock->hide();
+	m_primaryDate->hide();
+}
+
+void MythFrame::hideMetadataScreen()
+{
+	m_metaClock->hide();
+	m_metaTitle->hide();
+	m_metaShow->hide();
+	m_metaChannel->hide();
+	m_metaAudioImage->hide();
+	m_metaStereoImage->hide();
+	m_metaFlags->hide();
+	m_metaTimeElapsed->hide();
+	m_metaTime->hide();
+	m_metaProgressBar->hide();
+}
+
+void MythFrame::showMetadataScreen()
+{
+	m_metaClock->show();
+	m_metaTitle->show();
+	m_metaShow->show();
+	m_metaChannel->show();
+	m_metaAudioImage->show();
+	m_metaStereoImage->show();
+	m_metaFlags->show();
+	m_metaTimeElapsed->show();
+	m_metaTime->show();
+	m_metaProgressBar->show();
+}
+
+void MythFrame::showPrimaryScreen()
+{
+	m_primaryClock->show();
+	m_primaryDate->show();
+}
+
+void MythFrame::showNYEScreen()
+{
+	m_lbCountdown->show();
+}
+
+void MythFrame::hideNYEScreen()
+{
+	m_lbCountdown->hide();
 }

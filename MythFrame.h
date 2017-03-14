@@ -19,10 +19,10 @@
 #ifndef MYTHFRAME_H_
 #define MYTHFRAME_H_
 
-#include <QtGui>
-#include <QtNetwork>
-#include <QtCore>
-#include <QtWidgets>
+#include <QtGui/QtGui>
+#include <QtNetwork/QtNetwork>
+#include <QtCore/QtCore>
+#include <QtWidgets/QtWidgets>
 
 #include "MythClock.h"
 #include "LcdHandler.h"
@@ -35,6 +35,13 @@ public:
 	bool init();
 	void startMetaData(bool);
 
+signals:
+	void lcdDisconnect();
+	void videoPlaybackStarted();
+	void videoPlaybackEnded();
+	void startNYE();
+	void stopNYE();
+
 public slots:
 	void connCreated();
 	void connClosed();
@@ -45,6 +52,8 @@ public slots:
 	void playbackFlags(QString);
 	void updateClock();
 	void metaDataStarted();
+	void switchToVideoPlayback();
+	void switchToPrimaryDisplay();
 
 protected slots:
 	void channelUpdate(QByteArray);
@@ -54,31 +63,40 @@ protected slots:
 	void totalTime(QByteArray);
 	void percentComplete(int);
 	void showNYECountDown();
+	void hidePrimaryScreen();
+	void showPrimaryScreen();
+	void hideMetadataScreen();
+	void showMetadataScreen();
+	void showNYEScreen();
+	void hideNYEScreen();
 
 protected:
 	void showEvent(QShowEvent*);
 
 private:
-	QLabel *digitalClock;
-	QTcpServer *server;
-	LcdHandler *conn;
-	QLabel *channelLabel;
-	QLabel *titleLabel;
-	QLabel *showLabel;
-	QLabel *audioIcon;
-	QLabel *stereoIcon;
-	QLabel *mythFlags;
-	QLabel *lbTotalTime;
-	QLabel *lbTimeElapsed;
-	QLabel *lbClock;
-	QLabel *m_lbDate;
+
+	QLabel *m_primaryClock;
+	QTcpServer *m_server;
+	LcdHandler *m_mythLcd;
+	QLabel *m_metaChannel;
+	QLabel *m_metaTitle;
+	QLabel *m_metaShow;
+	QLabel *m_metaAudioImage;
+	QLabel *m_metaStereoImage;
+	QLabel *m_metaFlags;
+	QLabel *m_metaTime;
+	QLabel *m_metaTimeElapsed;
+	QLabel *m_metaClock;
+	QLabel *m_primaryDate;
 	QLabel *m_lbCountdown;
-	QTimer *pTimer;
+	QTimer *m_clockTimer;
 	QByteArray prevTime;
 	bool bDisableProgress;
 
-	QProgressBar *pBar;
-	QString clockColor;
+	QProgressBar *m_metaProgressBar;
+	QString m_clockColor;
+
+	QStateMachine m_states;
 };
 
 #endif /* MYTHFRAME_H_ */
