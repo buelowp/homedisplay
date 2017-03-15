@@ -248,19 +248,19 @@ void MythFrame::connClosed()
 
 void MythFrame::channelUpdate(QByteArray s)
 {
-	qDebug() << __PRETTY_FUNCTION__ << ":" << ba;
+	qDebug() << __PRETTY_FUNCTION__ << ":" << s;
 	m_metaChannel->setText(s.data());
 }
 
 void MythFrame::showTitle(QByteArray s)
 {
-	qDebug() << __PRETTY_FUNCTION__ << ":" << ba;
+	qDebug() << __PRETTY_FUNCTION__ << ":" << s;
 	m_metaShow->setText(s.data());
 }
 
 void MythFrame::showSubTitle(QByteArray s)
 {
-	qDebug() << __PRETTY_FUNCTION__ << ":" << ba;
+	qDebug() << __PRETTY_FUNCTION__ << ":" << s;
 	m_metaTitle->setText(s.data());
 }
 
