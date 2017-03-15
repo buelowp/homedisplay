@@ -140,6 +140,7 @@ void LcdHandler::messageAvailable()
 
 	while (1) {
 		QByteArray ba = sock->readLine();
+		qDebug() << __PRETTY_FUNCTION__ << ba;
 		if (ba.size() == 0)
 			break;
 		else {

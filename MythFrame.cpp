@@ -63,14 +63,8 @@ MythFrame::MythFrame(QFrame *parent) : QFrame(parent) {
 	m_metaClock->setAutoFillBackground(true);
 	m_metaClock->setPalette(pal);
 
-	m_metaProgressBar->setStyleSheet("QProgressBar {border: 0px solid black; border-radius: 0px; text-align: center; background-color: #000000;} QProgressBar::chunk {background-color: #00FFFF;}");
-
-	m_metaProgressBar->setRange(0, 100);
-	m_metaProgressBar->setTextVisible(false);
 	bDisableProgress = false;
 	m_clockColor = "#FFC266";
-
-
 }
 
 MythFrame::~MythFrame() {
@@ -187,6 +181,7 @@ void MythFrame::videoFormat(QString)
 
 void MythFrame::audioFormat(QString v)
 {
+	qDebug() << __PRETTY_FUNCTION__ << ":" << v;
 	if (v == "dts") {
 		m_metaAudioImage->setStyleSheet(".QLabel{background-color: red; color: white; border-radius: 3px;}");
 		QFont f("Liberation Sans", 20);
@@ -204,6 +199,7 @@ void MythFrame::stereoFormat(QString f)
 	m_metaStereoImage->setFont(QFont("Liberation Sans", 12));
 	m_metaStereoImage->setAlignment(Qt::AlignCenter);
 
+	qDebug() << __PRETTY_FUNCTION__ << ":" << f;
 	if (f.compare("stereo", Qt::CaseInsensitive) == 0) {
 		m_metaStereoImage->setText("Stereo");
 	}
@@ -219,6 +215,7 @@ void MythFrame::playbackFlags(QString flags)
 {
 	QPixmap hd("/usr/share/mythclock/HD.jpg");
 
+	qDebug() << __PRETTY_FUNCTION__ << ":" << flags;
 	if (flags == "Hi-Def") {
 		if (hd.isNull())
 			qDebug() << "Error opening hd pixmap";
@@ -251,34 +248,38 @@ void MythFrame::connClosed()
 
 void MythFrame::channelUpdate(QByteArray s)
 {
+	qDebug() << __PRETTY_FUNCTION__ << ":" << ba;
 	m_metaChannel->setText(s.data());
 }
 
 void MythFrame::showTitle(QByteArray s)
 {
+	qDebug() << __PRETTY_FUNCTION__ << ":" << ba;
 	m_metaShow->setText(s.data());
 }
 
 void MythFrame::showSubTitle(QByteArray s)
 {
+	qDebug() << __PRETTY_FUNCTION__ << ":" << ba;
 	m_metaTitle->setText(s.data());
 }
 
 void MythFrame::elapsedTime(QByteArray ba)
 {
-	m_metaTimeElapsed->setStyleSheet(".QLabel{font-size:30px; background-color: black; color: white;}");
+	qDebug() << __PRETTY_FUNCTION__ << ":" << ba;
 	m_metaTimeElapsed->setText(ba);
 }
 
 void MythFrame::totalTime(QByteArray ba)
 {
+	qDebug() << __PRETTY_FUNCTION__ << ":" << ba;
 	prevTime = ba;
-	m_metaTime->setStyleSheet(".QLabel{font-size:30px; background-color: black; color: white;}");
 	m_metaTime->setText(ba);
 }
 
 void MythFrame::percentComplete(int p)
 {
+	qDebug() << __PRETTY_FUNCTION__ << ":" << p << "%";
 	if (!bDisableProgress) {
 		m_metaProgressBar->setValue(p);
 	}
@@ -288,62 +289,50 @@ void MythFrame::showEvent(QShowEvent *e)
 {
 	Q_UNUSED(e)
 
-	int clockWidth = 800;
-	int clockHeight = 330;
-	int titlePanelsHeight = 50;
-	int iconPanelsWidth = 100;
-	int iconPanelsHeight = 66;
-
 	m_primaryClock->setGeometry(0, 0, width(), (2 * (height() / 3)));
 	m_primaryClock->setAlignment(Qt::AlignCenter);
 	m_primaryDate->setGeometry(0, (2 * (height() / 3)), 800, (height() / 3));
 
-	m_metaClock->setGeometry(0, 0, clockWidth, clockHeight);
+	m_metaTitle->setGeometry(0, 0, width(), 200);
+	m_metaShow->setGeometry(0, 200, 600, 80);
+	m_metaChannel->setGeometry(0, 280, 600, 80);
+	m_metaClock->setGeometry(0, 360, 600, 80);
+	m_metaProgressBar->setGeometry(0, 440, width(), 40);
+
+	m_metaAudioImage->setGeometry(600, 200, 100, 60);
+	m_metaStereoImage->setGeometry(700, 200, 100, 60);
+	m_metaFlags->setGeometry(650, 260, 100, 60);
+	m_metaTimeElapsed->setGeometry(600, 320, 200, 60);
+	m_metaTime->setGeometry(600, 380, 200, 60);
+
+	m_lbCountdown->setGeometry(0, 0, 480, 800);
+
+	m_metaTime->setAlignment(Qt::AlignCenter);
+	m_metaTimeElapsed->setAlignment(Qt::AlignCenter);
+	m_lbCountdown->setAlignment(Qt::AlignCenter);
+	m_metaClock->setAlignment(Qt::AlignCenter);
+	m_primaryDate->setAlignment(Qt::AlignCenter);
+
 	QFont clockFont("Liberation Sans");
 	m_primaryClock->setFont(clockFont);
 	m_primaryDate->setFont(clockFont);
 	m_metaClock->setFont(clockFont);
-	m_metaClock->setAlignment(Qt::AlignCenter);
-	m_primaryDate->setAlignment(Qt::AlignCenter);
-	m_metaClock->show();
-	m_primaryDate->show();
-
-	m_lbCountdown->setGeometry(0, 0, 480, 800);
-	m_lbCountdown->setAlignment(Qt::AlignCenter);
-	m_lbCountdown->hide();
 
 	QFont c("Liberation Sans", 15);
 	m_metaTitle->setFont(c);
 	m_metaShow->setFont(c);
-	m_metaShow->setGeometry(0, m_metaClock->height(), width(), titlePanelsHeight);
 	m_metaShow->setIndent(10);
-	m_metaShow->show();
-	m_metaTitle->setGeometry(0, m_metaClock->height() + titlePanelsHeight, width(), titlePanelsHeight);
-	m_metaTitle->show();
 	m_metaTitle->setIndent(10);
 	m_metaTitle->setFont(c);
-	m_metaChannel->setGeometry(0, m_metaClock->height() + (titlePanelsHeight * 2), width(), titlePanelsHeight);
-	m_metaChannel->show();
 	m_metaChannel->setIndent(10);
 	m_metaChannel->setFont(c);
 
-	m_metaAudioImage->setGeometry(clockWidth, 0, iconPanelsWidth, iconPanelsHeight);
-	m_metaAudioImage->show();
-
-	m_metaStereoImage->setGeometry(clockWidth + iconPanelsWidth, 0, iconPanelsWidth, iconPanelsHeight);
-	m_metaStereoImage->show();
-
-	m_metaFlags->setGeometry(clockWidth + iconPanelsWidth, iconPanelsHeight, iconPanelsWidth, iconPanelsHeight);
-	m_metaFlags->show();
-
-	m_metaTimeElapsed->setGeometry(clockWidth, iconPanelsHeight * 2, iconPanelsWidth * 2, iconPanelsHeight);
-	m_metaTimeElapsed->setAlignment(Qt::AlignCenter);
-
-	m_metaTime->setGeometry(clockWidth, iconPanelsHeight * 3, iconPanelsWidth * 2, iconPanelsHeight);
-	m_metaTime->setAlignment(Qt::AlignCenter);
-
-	m_metaProgressBar->setGeometry(clockWidth, iconPanelsHeight * 4, iconPanelsWidth * 2, iconPanelsHeight);
 	m_metaProgressBar->setStyleSheet(".QProgressBar{border: 2px solid black; background: black; padding: 2px;} QProgressBar::chunk{border-radius: 3px; background: qlineargradient(x1: 0, y1: 0.5, x2: 1, y2: 0.5, stop: 0 #fff, stop: .25 #fee, stop: .5 #fbb, stop: .75 #f66, stop: 1 #f00);}");
+	m_metaTime->setStyleSheet(".QLabel{font-size:50px; background-color: black; color: white;}");
+	m_metaTimeElapsed->setStyleSheet(".QLabel{font-size:50px; background-color: black; color: white;}");
+
+	m_metaProgressBar->setRange(0, 100);
+	m_metaProgressBar->setTextVisible(false);
 }
 
 void MythFrame::hidePrimaryScreen()
