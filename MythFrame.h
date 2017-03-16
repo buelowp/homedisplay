@@ -41,6 +41,8 @@ signals:
 	void startNYE();
 	void stopNYE();
 	void nyeEventDone();
+    void lcdConnected();
+    void toConnectedState();
 
 public slots:
 	void connCreated();
@@ -52,6 +54,8 @@ public slots:
 	void playbackFlags(QString);
 	void updateClock();
 	void metaDataStarted();
+    void disconnectClock();
+    void mythConnected();
 
 protected slots:
 	void channelUpdate(QByteArray);

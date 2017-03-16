@@ -65,6 +65,8 @@ MythFrame::MythFrame(QFrame *parent) : QFrame(parent) {
 
 	bDisableProgress = false;
 	m_clockColor = "#FFC266";
+    
+    connect(m_server, SIGNAL(newConnection()), this, SLOT(connCreated()));
 }
 
 MythFrame::~MythFrame() {
@@ -79,7 +81,7 @@ void MythFrame::setNYETimeout()
     QTime t(23, 59, 0);
     QDate d(dt.date().year(), 12, 31);
     QDateTime nye_mseconds(d, t);
-    int timeout = dt.msecsTo(nye_mseconds);     // Forcing the conversion to an int, that's what QTimer takes
+    int timeout = (int)dt.msecsTo(nye_mseconds);     // Forcing the conversion to an int, that's what QTimer takes
 
     if (timeout == 0) {
         emit startNYE();
@@ -97,13 +99,12 @@ void MythFrame::setNYETimeout()
 bool MythFrame::init()
 {
 
-	QState *clean = new QState();
 	QState *primary = new QState();
 	QState *metadata = new QState();
 	QState *nye = new QState();
 	QState *disconnected = new QState();
 
-	disconnected->addTransition(m_server, SIGNAL(newConnection()), primary);
+	disconnected->addTransition(this, SIGNAL(toConnectedState()), primary);
 	primary->addTransition(this, SIGNAL(lcdDisconnect()), disconnected);
 	metadata->addTransition(this, SIGNAL(lcdDisconnect()), disconnected);
 	metadata->addTransition(this, SIGNAL(videoPlaybackEnded()), primary);
@@ -114,8 +115,7 @@ bool MythFrame::init()
 	metadata->addTransition(this, SIGNAL(startNYE()), nye);
 	disconnected->addTransition(this, SIGNAL(startNYE()), nye);
 
-	connect(primary, SIGNAL(entered()), this, SLOT(connCreated()));
-	connect(disconnected, SIGNAL(entered()), this, SLOT(connClosed()));
+	connect(disconnected, SIGNAL(entered()), this, SLOT(disconnectClock()));
 	connect(metadata, SIGNAL(entered()), this, SLOT(metaDataStarted()));
 	connect(metadata, SIGNAL(exited()), this, SLOT(hideMetadataScreen()));
 	connect(primary, SIGNAL(exited()), this, SLOT(hidePrimaryScreen()));
@@ -123,20 +123,20 @@ bool MythFrame::init()
 	connect(metadata, SIGNAL(entered()), this, SLOT(showMetadataScreen()));
 	connect(primary, SIGNAL(entered()), this, SLOT(showPrimaryScreen()));
 	connect(nye, SIGNAL(entered()), this, SLOT(showNYEScreen()));
-    connect(clean, SIGNAL(entered()), this, SLOT(showPrimaryScreen()));
 
 	m_states.addState(primary);
 	m_states.addState(metadata);
-	m_states.addState(disconnected);
 	m_states.addState(nye);
-	m_states.addState(clean);
-	m_states.setInitialState(clean);
+	m_states.addState(disconnected);
+	m_states.setInitialState(disconnected);
 
     showPrimaryScreen();
     hideNYEScreen();
     hideMetadataScreen();
     
     setNYETimeout();
+
+    m_states.start();
     
 	return m_server->listen(QHostAddress::Any, 6545);
 }
@@ -194,6 +194,12 @@ void MythFrame::connCreated()
 	connect(m_mythLcd, SIGNAL(playbackFlags(QString)), this, SLOT(playbackFlags(QString)));
 	connect(m_mythLcd, SIGNAL(metaDataStarted()), this, SLOT(metaDataStarted()));
 	connect(m_mythLcd, SIGNAL(metaDataEnded()), this, SLOT(metaDataEnded()));
+    connect(m_mythLcd, SIGNAL(mythConnected()), this, SLOT(mythConnected()));
+}
+
+void MythFrame::mythConnected()
+{
+    emit toConnectedState();
 }
 
 void MythFrame::videoFormat(QString)
@@ -263,6 +269,7 @@ void MythFrame::metaDataEnded()
 
 void MythFrame::connClosed()
 {
+    qDebug() << __PRETTY_FUNCTION__;
 	m_mythLcd->deleteLater();
 	emit lcdDisconnect();
 }
@@ -402,4 +409,10 @@ void MythFrame::hideNYEScreen()
 {
     qDebug() << __PRETTY_FUNCTION__;
 	m_lbCountdown->hide();
+}
+
+void MythFrame::disconnectClock()
+{
+    m_clockColor = "#FFC266";
+    showPrimaryScreen();
 }

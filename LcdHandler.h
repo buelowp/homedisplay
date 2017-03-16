@@ -57,6 +57,7 @@ signals:
 	void channelNumber(QByteArray);
 	void showTitle(QByteArray);
 	void showSubTitle(QByteArray);
+    void mythConnected();
 
 public slots:
 	void disconnected();

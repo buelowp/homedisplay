@@ -41,6 +41,7 @@ LcdHandler::~LcdHandler()
 
 void LcdHandler::disconnected()
 {
+    qDebug() << __PRETTY_FUNCTION__;
 	emit sockClosed();
 	sock->deleteLater();
 	m_isAvail = false;
@@ -53,9 +54,11 @@ void LcdHandler::error(QAbstractSocket::SocketError)
 
 void LcdHandler::sendConnect()
 {
+    qDebug() << __PRETTY_FUNCTION__;
 	if (sock->state() == QAbstractSocket::ConnectedState) {
 		sock->write("CONNECTED 64 2\n");
 		lcdState++;
+        emit mythConnected();
 	}
 }
 
@@ -66,6 +69,8 @@ void LcdHandler::setOutput(QByteArray &ba)
 
 	int x = bitmap.toInt();
 
+    qDebug() << __PRETTY_FUNCTION__ << ":" << ba;
+    
 	if (x & 0x80000)
 		emit videoFormat("mpg");
 	else if (x & 0x100000)
@@ -99,6 +104,8 @@ void LcdHandler::setChannelProgress(QByteArray &ba)
 {
 	QList<QByteArray> list = ba.split(' ');
 
+    qDebug() << __PRETTY_FUNCTION__ << ":" << ba;
+    
 	QByteArray timeLeft = list[1];
 	if (timeLeft.size() > 1) {
 		emit progressTimeLeft(timeLeft.mid(1, timeLeft.size()));
@@ -118,6 +125,8 @@ void LcdHandler::setChannelData(QByteArray &ba)
 {
 	QList<QByteArray> list = ba.split('"');
 
+    qDebug() << __PRETTY_FUNCTION__ << ":" << ba;
+    
 	emit metaDataStarted();
 
 	QByteArray chanNum = list[1];
@@ -138,6 +147,8 @@ void LcdHandler::messageAvailable()
 	QList<QByteArray> lines;
 	QList<QByteArray>::iterator i;
 
+    qDebug() << __PRETTY_FUNCTION__;
+    
 	while (1) {
 		QByteArray ba = sock->readLine();
 		qDebug() << __PRETTY_FUNCTION__ << ba;
