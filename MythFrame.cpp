@@ -73,15 +73,29 @@ MythFrame::~MythFrame() {
 	m_server->deleteLater();;
 }
 
+void MythFrame::setNYETimeout()
+{
+    QDateTime dt = QDateTime::currentDateTime();
+    QTime t(23, 59, 0);
+    QDate d(dt.date().year(), 12, 31);
+    QDateTime nye_mseconds(d, t);
+    int timeout = dt.msecsTo(nye_mseconds);     // Forcing the conversion to an int, that's what QTimer takes
+
+    if (timeout == 0) {
+        emit startNYE();
+    }
+    else if (timeout < 0) {
+        qDebug() << __PRETTY_FUNCTION__ << ": Setting timeout to 1000000 and will retry to set the acutal timeout then";
+        QTimer::singleShot(10000000, this, SLOT(setNYETimeout()));
+    }
+    else {
+        qDebug() << __PRETTY_FUNCTION__ << ": Setting timeout to" << timeout;
+        QTimer::singleShot(timeout, this, SLOT(showNYECountDown()));
+    }
+}
+
 bool MythFrame::init()
 {
-	QDateTime dt = QDateTime::currentDateTime();
-	QTime t(23, 59);
-	QDate d(dt.date().year(), 12, 31);
-	QDateTime nye_mseconds(d, t);
-
-	QTimer::singleShot(dt.msecsTo(nye_mseconds), this, SLOT(showNYECountDown()));
-	qDebug() << __PRETTY_FUNCTION__ << ": setting NYE timer to" << dt.msecsTo(nye_mseconds) << "msecs";
 
 	QState *clean = new QState();
 	QState *primary = new QState();
@@ -96,9 +110,9 @@ bool MythFrame::init()
 	nye->addTransition(this, SIGNAL(lcdDisconnect()), disconnected);
 	nye->addTransition(this, SIGNAL(nyeEventDone()), primary);
 	primary->addTransition(this, SIGNAL(videoPlaybackStarted()), metadata);
-	primary->addTransition(this, SIGNAL(starNYE()), nye);
-	metadata->addTransition(this, SIGNAL(starNYE()), nye);
-	disconnected->addTransition(this, SIGNAL(starNYE()), nye);
+	primary->addTransition(this, SIGNAL(startNYE()), nye);
+	metadata->addTransition(this, SIGNAL(startNYE()), nye);
+	disconnected->addTransition(this, SIGNAL(startNYE()), nye);
 
 	connect(primary, SIGNAL(entered()), this, SLOT(connCreated()));
 	connect(disconnected, SIGNAL(entered()), this, SLOT(connClosed()));
@@ -109,6 +123,7 @@ bool MythFrame::init()
 	connect(metadata, SIGNAL(entered()), this, SLOT(showMetadataScreen()));
 	connect(primary, SIGNAL(entered()), this, SLOT(showPrimaryScreen()));
 	connect(nye, SIGNAL(entered()), this, SLOT(showNYEScreen()));
+    connect(clean, SIGNAL(entered()), this, SLOT(showPrimaryScreen()));
 
 	m_states.addState(primary);
 	m_states.addState(metadata);
@@ -117,6 +132,12 @@ bool MythFrame::init()
 	m_states.addState(clean);
 	m_states.setInitialState(clean);
 
+    showPrimaryScreen();
+    hideNYEScreen();
+    hideMetadataScreen();
+    
+    setNYETimeout();
+    
 	return m_server->listen(QHostAddress::Any, 6545);
 }
 
@@ -147,7 +168,7 @@ void MythFrame::updateClock()
 	QDate d = QDate::currentDate();
 
 	QString smallDisplay("<font style='font-size:80px; color:white; font-weight: bold;'>%1</font><br><font style='font-size:40px; color:gray;'>%2</font>");
-	QString dateDisplay("<font style='font-size:50px; color:'%1'; font-weight: bold;>%2</font>");
+	QString dateDisplay("<font style='font-size:50px; color:%1; font-weight: bold;'>%2</font>");
 	QString largeDisplay("<font style='font-size:140px; color:%1; font-weight: bold;'>%2</font>");
 	m_metaClock->setText(smallDisplay.arg(t.toString("h:mm a")).arg(d.toString()));
 	m_primaryDate->setText(dateDisplay.arg(m_clockColor).arg(d.toString("dddd MMMM d, yyyy")));
@@ -248,19 +269,19 @@ void MythFrame::connClosed()
 
 void MythFrame::channelUpdate(QByteArray s)
 {
-	qDebug() << __PRETTY_FUNCTION__ << ":" << ba;
+	qDebug() << __PRETTY_FUNCTION__ << ":" << s;
 	m_metaChannel->setText(s.data());
 }
 
 void MythFrame::showTitle(QByteArray s)
 {
-	qDebug() << __PRETTY_FUNCTION__ << ":" << ba;
+	qDebug() << __PRETTY_FUNCTION__ << ":" << s;
 	m_metaShow->setText(s.data());
 }
 
 void MythFrame::showSubTitle(QByteArray s)
 {
-	qDebug() << __PRETTY_FUNCTION__ << ":" << ba;
+	qDebug() << __PRETTY_FUNCTION__ << ":" << s;
 	m_metaTitle->setText(s.data());
 }
 
@@ -288,10 +309,10 @@ void MythFrame::percentComplete(int p)
 void MythFrame::showEvent(QShowEvent *e)
 {
 	Q_UNUSED(e)
+    QFont c("Liberation Sans", 15);
 
-	m_primaryClock->setGeometry(0, 0, width(), (2 * (height() / 3)));
-	m_primaryClock->setAlignment(Qt::AlignCenter);
-	m_primaryDate->setGeometry(0, (2 * (height() / 3)), 800, (height() / 3));
+	m_primaryClock->setGeometry(0, 0, 800, 320);
+	m_primaryDate->setGeometry(0, 320, 800, 160);
 
 	m_metaTitle->setGeometry(0, 0, width(), 200);
 	m_metaShow->setGeometry(0, 200, 600, 80);
@@ -312,13 +333,11 @@ void MythFrame::showEvent(QShowEvent *e)
 	m_lbCountdown->setAlignment(Qt::AlignCenter);
 	m_metaClock->setAlignment(Qt::AlignCenter);
 	m_primaryDate->setAlignment(Qt::AlignCenter);
+    m_primaryClock->setAlignment(Qt::AlignCenter);
 
-	QFont clockFont("Liberation Sans");
-	m_primaryClock->setFont(clockFont);
-	m_primaryDate->setFont(clockFont);
-	m_metaClock->setFont(clockFont);
-
-	QFont c("Liberation Sans", 15);
+	m_primaryClock->setFont(c);
+	m_primaryDate->setFont(c);
+	m_metaClock->setFont(c);
 	m_metaTitle->setFont(c);
 	m_metaShow->setFont(c);
 	m_metaShow->setIndent(10);
@@ -337,12 +356,14 @@ void MythFrame::showEvent(QShowEvent *e)
 
 void MythFrame::hidePrimaryScreen()
 {
+    qDebug() << __PRETTY_FUNCTION__;
 	m_primaryClock->hide();
 	m_primaryDate->hide();
 }
 
 void MythFrame::hideMetadataScreen()
 {
+    qDebug() << __PRETTY_FUNCTION__;
 	m_metaClock->hide();
 	m_metaTitle->hide();
 	m_metaShow->hide();
@@ -357,6 +378,7 @@ void MythFrame::hideMetadataScreen()
 
 void MythFrame::showMetadataScreen()
 {
+    qDebug() << __PRETTY_FUNCTION__;
 	m_metaClock->show();
 	m_metaTitle->show();
 	m_metaShow->show();
@@ -371,11 +393,13 @@ void MythFrame::showMetadataScreen()
 
 void MythFrame::showPrimaryScreen()
 {
+    qDebug() << __PRETTY_FUNCTION__;
 	m_primaryClock->show();
 	m_primaryDate->show();
 }
 
 void MythFrame::hideNYEScreen()
 {
+    qDebug() << __PRETTY_FUNCTION__;
 	m_lbCountdown->hide();
 }

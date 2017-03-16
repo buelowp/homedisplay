@@ -19,7 +19,7 @@
 #ifndef MYTHFRAME_H_
 #define MYTHFRAME_H_
 
-#include <QtGui/QtGui>
+#include <QtGui>
 #include <QtNetwork/QtNetwork>
 #include <QtCore/QtCore>
 #include <QtWidgets/QtWidgets>
@@ -40,6 +40,7 @@ signals:
 	void videoPlaybackEnded();
 	void startNYE();
 	void stopNYE();
+	void nyeEventDone();
 
 public slots:
 	void connCreated();
@@ -66,12 +67,13 @@ protected slots:
 	void showMetadataScreen();
 	void showNYEScreen();
 	void hideNYEScreen();
+    void setNYETimeout();
 
 protected:
 	void showEvent(QShowEvent*);
 
 private:
-
+    
 	QLabel *m_primaryClock;
 	QTcpServer *m_server;
 	LcdHandler *m_mythLcd;
