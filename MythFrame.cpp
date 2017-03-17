@@ -40,8 +40,6 @@ MythFrame::MythFrame(QFrame *parent) : QFrame(parent) {
 	m_metaProgressBar = new QProgressBar(this);
 	m_lbCountdown = new QLabel(this);
 
-	m_clockColor = "#FFC266";
-
 	m_clockTimer = new QTimer(this);
 	connect(m_clockTimer, SIGNAL(timeout()), this, SLOT(updateClock()));
 	m_clockTimer->setInterval(50);
@@ -63,7 +61,7 @@ MythFrame::MythFrame(QFrame *parent) : QFrame(parent) {
 	m_metaClock->setAutoFillBackground(true);
 	m_metaClock->setPalette(pal);
 
-	bDisableProgress = false;
+	m_disableProgressIndicator = false;
 	m_clockColor = "#FFC266";
     
     connect(m_server, SIGNAL(newConnection()), this, SLOT(connCreated()));
@@ -130,7 +128,7 @@ bool MythFrame::init()
 	m_states.addState(disconnected);
 	m_states.setInitialState(disconnected);
 
-    showPrimaryScreen();
+    hidePrimaryScreen();
     hideNYEScreen();
     hideMetadataScreen();
     
@@ -167,18 +165,16 @@ void MythFrame::updateClock()
 	QTime t = QTime::currentTime();
 	QDate d = QDate::currentDate();
 
-	QString smallDisplay("<font style='font-size:80px; color:white; font-weight: bold;'>%1</font><br><font style='font-size:40px; color:gray;'>%2</font>");
+	QString smallDisplay("<font style='font-size:50px; color:white; font-weight: bold;'>%1</font>");
 	QString dateDisplay("<font style='font-size:50px; color:%1; font-weight: bold;'>%2</font>");
 	QString largeDisplay("<font style='font-size:140px; color:%1; font-weight: bold;'>%2</font>");
-	m_metaClock->setText(smallDisplay.arg(t.toString("h:mm a")).arg(d.toString()));
+	m_metaClock->setText(smallDisplay.arg(t.toString("h:mm a")));
 	m_primaryDate->setText(dateDisplay.arg(m_clockColor).arg(d.toString("dddd MMMM d, yyyy")));
 	m_primaryClock->setText(largeDisplay.arg(m_clockColor).arg(t.toString("h:mm A")));
 }
 
 void MythFrame::connCreated()
 {
-	m_clockColor = "#FFFFFF";
-
 	m_mythLcd = new LcdHandler(m_server->nextPendingConnection());
 
 	connect(m_mythLcd, SIGNAL(sockClosed()), this, SLOT(connClosed()));
@@ -195,10 +191,13 @@ void MythFrame::connCreated()
 	connect(m_mythLcd, SIGNAL(metaDataStarted()), this, SLOT(metaDataStarted()));
 	connect(m_mythLcd, SIGNAL(metaDataEnded()), this, SLOT(metaDataEnded()));
     connect(m_mythLcd, SIGNAL(mythConnected()), this, SLOT(mythConnected()));
+    connect(m_mythLcd, SIGNAL(liveTV()), this, SLOT(disableProgressIndicator()));
+    connect(m_mythLcd, SIGNAL(recordedEvent()), this, SLOT(enableProgressIndicator()));
 }
 
 void MythFrame::mythConnected()
 {
+    m_clockColor = "#FFFFFF";
     emit toConnectedState();
 }
 
@@ -211,7 +210,7 @@ void MythFrame::audioFormat(QString v)
 	qDebug() << __PRETTY_FUNCTION__ << ":" << v;
 	if (v == "dts") {
 		m_metaAudioImage->setStyleSheet(".QLabel{background-color: red; color: white; border-radius: 3px;}");
-		QFont f("Liberation Sans", 20);
+		QFont f("Roboto-Regular", 20);
 		m_metaAudioImage->setAlignment(Qt::AlignCenter);
 		m_metaAudioImage->setFont(f);
 		m_metaAudioImage->setText(v);
@@ -223,7 +222,7 @@ void MythFrame::audioFormat(QString v)
 
 void MythFrame::stereoFormat(QString f)
 {
-	m_metaStereoImage->setFont(QFont("Liberation Sans", 12));
+	m_metaStereoImage->setFont(QFont("Roboto-Regular", 12));
 	m_metaStereoImage->setAlignment(Qt::AlignCenter);
 
 	qDebug() << __PRETTY_FUNCTION__ << ":" << f;
@@ -250,7 +249,7 @@ void MythFrame::playbackFlags(QString flags)
 		m_metaFlags->setPixmap(hd);
 	}
 	else {
-		QFont f("Liberation Sans", 20);
+		QFont f("Roboto-Regular", 20);
 		m_metaFlags->setFont(f);
 		m_metaFlags->setText(flags);
 	}
@@ -264,6 +263,12 @@ void MythFrame::metaDataStarted()
 
 void MythFrame::metaDataEnded()
 {
+    m_metaShow->clear();
+    m_metaTime->clear();
+    m_metaFlags->clear();
+    m_metaTitle->clear();
+    m_metaChannel->clear();
+    m_disableProgressIndicator = false;
 	emit videoPlaybackEnded();
 }
 
@@ -276,56 +281,104 @@ void MythFrame::connClosed()
 
 void MythFrame::channelUpdate(QByteArray s)
 {
-	qDebug() << __PRETTY_FUNCTION__ << ":" << s;
-	m_metaChannel->setText(s.data());
+    QString style = QString("<font style='font-size:30px; color:white;'>%1</font>");
+    qDebug() << __PRETTY_FUNCTION__ << ":" << s;
+	m_metaChannel->setText(style.arg(s.data()));
 }
 
 void MythFrame::showTitle(QByteArray s)
 {
-	qDebug() << __PRETTY_FUNCTION__ << ":" << s;
-	m_metaShow->setText(s.data());
+    QString style = QString("<font style='font-size:70px; color:white; font-weight: bold;'>%1</font>");
+
+    qDebug() << __PRETTY_FUNCTION__ << ":" << s;
+    m_metaShow->setText(style.arg(s.data()));
 }
 
 void MythFrame::showSubTitle(QByteArray s)
 {
-	qDebug() << __PRETTY_FUNCTION__ << ":" << s;
-	m_metaTitle->setText(s.data());
+    QString style = QString("<font style='font-size:30px; color:white;'>%1</font>");
+    qDebug() << __PRETTY_FUNCTION__ << ":" << s;
+    m_metaTitle->setText(style.arg(s.data()));
 }
 
 void MythFrame::elapsedTime(QByteArray ba)
 {
-	qDebug() << __PRETTY_FUNCTION__ << ":" << ba;
-	m_metaTimeElapsed->setText(ba);
+    QString format = QString("<font style='font-size:30px; color:white;'>%1:%2:%3</font>");
+    QList<QByteArray> segments = ba.split(':');
+    
+    if (m_disableProgressIndicator)
+        return;
+    
+//	qDebug() << __PRETTY_FUNCTION__ << ":" << ba;
+    if (segments.size() == 2) {
+        QString m = segments.at(0).data();
+        QString s = segments.at(1).data();
+        m_metaTimeElapsed->setText(format.arg("0").arg(m, 2, '0').arg(s, 2, '0'));
+    }
+    if (segments.size() == 3) {
+        QString h = segments.at(0).data();
+        QString m = segments.at(1).data();
+        QString s = segments.at(2).data();
+        m_metaTimeElapsed->setText(format.arg(h, 1, '0').arg(m, 2, '0').arg(s, 2, '0'));
+    }
 }
 
 void MythFrame::totalTime(QByteArray ba)
 {
-	qDebug() << __PRETTY_FUNCTION__ << ":" << ba;
+    QString format = QString("<font style='font-size:30px; color:white;'>%1:%2:%3</font>");
+    QList<QByteArray> segments = ba.split(':');
+    
+    if (m_disableProgressIndicator)
+        return;
+    
+//	qDebug() << __PRETTY_FUNCTION__ << ":" << ba;
 	prevTime = ba;
-	m_metaTime->setText(ba);
+    if (segments.size() == 2) {
+        QString m = segments.at(0).data();
+        QString s = segments.at(1).data();
+        m_metaTime->setText(format.arg("0").arg(m, 2, '0').arg(s, 2, '0'));
+    }
+    if (segments.size() == 3) {
+        QString h = segments.at(0).data();
+        QString m = segments.at(1).data();
+        QString s = segments.at(2).data();
+        m_metaTime->setText(format.arg(h, 1, '0').arg(m, 2, '0').arg(s, 2, '0'));
+    }
 }
 
 void MythFrame::percentComplete(int p)
 {
-	qDebug() << __PRETTY_FUNCTION__ << ":" << p << "%";
-	if (!bDisableProgress) {
+//	qDebug() << __PRETTY_FUNCTION__ << ":" << p << "%";
+	if (!m_disableProgressIndicator) {
 		m_metaProgressBar->setValue(p);
 	}
+}
+
+void MythFrame::disableProgressIndicator()
+{
+    qDebug() << __PRETTY_FUNCTION__;
+    m_disableProgressIndicator = true;
+}
+
+void MythFrame::enableProgressIndicator()
+{
+    qDebug() << __PRETTY_FUNCTION__;
+    m_disableProgressIndicator = false;
 }
 
 void MythFrame::showEvent(QShowEvent *e)
 {
 	Q_UNUSED(e)
-    QFont c("Liberation Sans", 15);
+    QFont c("Roboto-Regular", 15);
 
 	m_primaryClock->setGeometry(0, 0, 800, 320);
 	m_primaryDate->setGeometry(0, 320, 800, 160);
 
-	m_metaTitle->setGeometry(0, 0, width(), 200);
-	m_metaShow->setGeometry(0, 200, 600, 80);
+    m_metaShow->setGeometry(0, 0, 800, 200);
+	m_metaTitle->setGeometry(0, 200, 600, 80);
 	m_metaChannel->setGeometry(0, 280, 600, 80);
 	m_metaClock->setGeometry(0, 360, 600, 80);
-	m_metaProgressBar->setGeometry(0, 440, width(), 40);
+	m_metaProgressBar->setGeometry(0, 440, 800, 40);
 
 	m_metaAudioImage->setGeometry(600, 200, 100, 60);
 	m_metaStereoImage->setGeometry(700, 200, 100, 60);

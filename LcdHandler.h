@@ -58,6 +58,8 @@ signals:
 	void showTitle(QByteArray);
 	void showSubTitle(QByteArray);
     void mythConnected();
+    void liveTV();
+    void recordedEvent();
 
 public slots:
 	void disconnected();

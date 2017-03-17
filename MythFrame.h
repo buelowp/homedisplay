@@ -56,6 +56,8 @@ public slots:
 	void metaDataStarted();
     void disconnectClock();
     void mythConnected();
+    void disableProgressIndicator();
+    void enableProgressIndicator();
 
 protected slots:
 	void channelUpdate(QByteArray);
@@ -94,7 +96,7 @@ private:
 	QLabel *m_lbCountdown;
 	QTimer *m_clockTimer;
 	QByteArray prevTime;
-	bool bDisableProgress;
+	bool m_disableProgressIndicator;
 
 	QProgressBar *m_metaProgressBar;
 	QString m_clockColor;

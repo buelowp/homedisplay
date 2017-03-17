@@ -69,7 +69,7 @@ void LcdHandler::setOutput(QByteArray &ba)
 
 	int x = bitmap.toInt();
 
-    qDebug() << __PRETTY_FUNCTION__ << ":" << ba;
+//    qDebug() << __PRETTY_FUNCTION__ << ":" << ba;
     
 	if (x & 0x80000)
 		emit videoFormat("mpg");
@@ -104,7 +104,7 @@ void LcdHandler::setChannelProgress(QByteArray &ba)
 {
 	QList<QByteArray> list = ba.split(' ');
 
-    qDebug() << __PRETTY_FUNCTION__ << ":" << ba;
+//    qDebug() << __PRETTY_FUNCTION__ << ":" << ba;
     
 	QByteArray timeLeft = list[1];
 	if (timeLeft.size() > 1) {
@@ -125,8 +125,7 @@ void LcdHandler::setChannelData(QByteArray &ba)
 {
 	QList<QByteArray> list = ba.split('"');
 
-    qDebug() << __PRETTY_FUNCTION__ << ":" << ba;
-    
+//    qDebug() << __PRETTY_FUNCTION__ << ":" << ba;
 	emit metaDataStarted();
 
 	QByteArray chanNum = list[1];
@@ -147,8 +146,6 @@ void LcdHandler::messageAvailable()
 	QList<QByteArray> lines;
 	QList<QByteArray>::iterator i;
 
-    qDebug() << __PRETTY_FUNCTION__;
-    
 	while (1) {
 		QByteArray ba = sock->readLine();
 		qDebug() << __PRETTY_FUNCTION__ << ba;
@@ -165,6 +162,12 @@ void LcdHandler::messageAvailable()
 		if (ba.size() == 0)
 			continue;
 
+        if (ba.contains("Watch Live TV\" NOTCHECKABLE TRUE"))
+            emit liveTV();
+        
+        if (ba.contains("Watch Live TV\" NOTCHECKABLE FALSE"))
+            emit recordedEvent();
+        
 		if (ba.left(5) == "HELLO") {
 			sendConnect();
 			continue;
