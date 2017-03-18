@@ -165,12 +165,19 @@ void MythFrame::updateClock()
 	QTime t = QTime::currentTime();
 	QDate d = QDate::currentDate();
 
-	QString smallDisplay("<font style='font-size:50px; color:white; font-weight: bold;'>%1</font>");
-	QString dateDisplay("<font style='font-size:50px; color:%1; font-weight: bold;'>%2</font>");
-	QString largeDisplay("<font style='font-size:140px; color:%1; font-weight: bold;'>%2</font>");
-	m_metaClock->setText(smallDisplay.arg(t.toString("h:mm a")));
-	m_primaryDate->setText(dateDisplay.arg(m_clockColor).arg(d.toString("dddd MMMM d, yyyy")));
-	m_primaryClock->setText(largeDisplay.arg(m_clockColor).arg(t.toString("h:mm A")));
+    if (t.hour() > 1 && t.hour() < 5) {
+        m_metaClock->clear();
+        m_primaryDate->clear();
+        m_primaryClock->clear();
+    }
+    else {
+        QString smallDisplay("<font style='font-size:50px; color:white; font-weight: bold;'>%1</font>");
+        QString dateDisplay("<font style='font-size:50px; color:%1; font-weight: bold;'>%2</font>");
+        QString largeDisplay("<font style='font-size:140px; color:%1; font-weight: bold;'>%2</font>");
+        m_metaClock->setText(smallDisplay.arg(t.toString("h:mm a")));
+        m_primaryDate->setText(dateDisplay.arg(m_clockColor).arg(d.toString("dddd MMMM d, yyyy")));
+        m_primaryClock->setText(largeDisplay.arg(m_clockColor).arg(t.toString("h:mm A")));
+    }
 }
 
 void MythFrame::connCreated()
