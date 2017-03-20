@@ -85,7 +85,7 @@ void MythFrame::setNYETimeout()
         emit startNYE();
     }
     else if (timeout < 0) {
-        qDebug() << __PRETTY_FUNCTION__ << ": Setting timeout to 1000000 and will retry to set the acutal timeout then";
+//        qDebug() << __PRETTY_FUNCTION__ << ": Setting timeout to 1000000 and will retry to set the acutal timeout then";
         QTimer::singleShot(10000000, this, SLOT(setNYETimeout()));
     }
     else {
@@ -214,14 +214,13 @@ void MythFrame::videoFormat(QString)
 
 void MythFrame::audioFormat(QString v)
 {
-	qDebug() << __PRETTY_FUNCTION__ << ":" << v;
+//	qDebug() << __PRETTY_FUNCTION__ << ":" << v;
 	if (v == "dts") {
-		m_metaAudioImage->setStyleSheet(".QLabel{background-color: red; color: white; border-radius: 3px;}");
-		QFont f("Roboto-Regular", 20);
-		m_metaAudioImage->setAlignment(Qt::AlignCenter);
-		m_metaAudioImage->setFont(f);
-		m_metaAudioImage->setText(v);
+        m_metaAudioImage->setPixmap(QPixmap("/Users/pete/Projects/MythClock/icons/dts.png"));
 	}
+    else if (v == "ac3") {
+        m_metaAudioImage->setPixmap(QPixmap("/Users/pete/Projects/MythClock/icons/ac3.png"));
+    }
 	else {
 		m_metaAudioImage->setText(v);
 	}
@@ -232,23 +231,24 @@ void MythFrame::stereoFormat(QString f)
 	m_metaStereoImage->setFont(QFont("Roboto-Regular", 12));
 	m_metaStereoImage->setAlignment(Qt::AlignCenter);
 
-	qDebug() << __PRETTY_FUNCTION__ << ":" << f;
+//	qDebug() << __PRETTY_FUNCTION__ << ":" << f;
 	if (f.compare("stereo", Qt::CaseInsensitive) == 0) {
-		m_metaStereoImage->setText("Stereo");
+        m_metaStereoImage->setPixmap(QPixmap("/Users/pete/Projects/MythClock/icons/stereo.png"));
+//		m_metaStereoImage->setText("Stereo");
 	}
 	if (f == "5.1") {
-		m_metaStereoImage->setPixmap(QPixmap("/usr/share/mythclock/5_1.jpg"));
+		m_metaStereoImage->setPixmap(QPixmap("/Users/pete/Projects/MythClock/icons/5_1.jpg"));
 	}
 	if (f == "7.1") {
-		m_metaStereoImage->setPixmap(QPixmap("/usr/share/mythclock/7_1.jpg"));
+		m_metaStereoImage->setPixmap(QPixmap("/Users/pete/Projects/MythClock/icons/7_1.jpg"));
 	}
 }
 
 void MythFrame::playbackFlags(QString flags)
 {
-	QPixmap hd("/usr/share/mythclock/HD.jpg");
+	QPixmap hd("/Users/pete/Projects/MythClock/icons/HD.png");
 
-	qDebug() << __PRETTY_FUNCTION__ << ":" << flags;
+//	qDebug() << __PRETTY_FUNCTION__ << ":" << flags;
 	if (flags == "Hi-Def") {
 		if (hd.isNull())
 			qDebug() << "Error opening hd pixmap";
@@ -265,6 +265,16 @@ void MythFrame::playbackFlags(QString flags)
 
 void MythFrame::metaDataStarted()
 {
+    if (m_disableProgressIndicator) {
+        m_metaProgressBar->show();
+        m_metaTime->show();
+        m_metaTimeElapsed->show();
+    }
+    else {
+        m_metaProgressBar->hide();
+        m_metaTime->hide();
+        m_metaTimeElapsed->hide();
+    }
 	emit videoPlaybackStarted();
 }
 
@@ -275,13 +285,15 @@ void MythFrame::metaDataEnded()
     m_metaFlags->clear();
     m_metaTitle->clear();
     m_metaChannel->clear();
+    m_metaProgressBar->reset();
+    m_metaTimeElapsed->clear();
     m_disableProgressIndicator = false;
 	emit videoPlaybackEnded();
 }
 
 void MythFrame::connClosed()
 {
-    qDebug() << __PRETTY_FUNCTION__;
+//    qDebug() << __PRETTY_FUNCTION__;
 	m_mythLcd->deleteLater();
 	emit lcdDisconnect();
 }
@@ -289,7 +301,7 @@ void MythFrame::connClosed()
 void MythFrame::channelUpdate(QByteArray s)
 {
     QString style = QString("<font style='font-size:30px; color:white;'>%1</font>");
-    qDebug() << __PRETTY_FUNCTION__ << ":" << s;
+//    qDebug() << __PRETTY_FUNCTION__ << ":" << s;
 	m_metaChannel->setText(style.arg(s.data()));
 }
 
@@ -297,14 +309,14 @@ void MythFrame::showTitle(QByteArray s)
 {
     QString style = QString("<font style='font-size:70px; color:white; font-weight: bold;'>%1</font>");
 
-    qDebug() << __PRETTY_FUNCTION__ << ":" << s;
+//    qDebug() << __PRETTY_FUNCTION__ << ":" << s;
     m_metaShow->setText(style.arg(s.data()));
 }
 
 void MythFrame::showSubTitle(QByteArray s)
 {
     QString style = QString("<font style='font-size:30px; color:white;'>%1</font>");
-    qDebug() << __PRETTY_FUNCTION__ << ":" << s;
+//    qDebug() << __PRETTY_FUNCTION__ << ":" << s;
     m_metaTitle->setText(style.arg(s.data()));
 }
 
@@ -363,13 +375,13 @@ void MythFrame::percentComplete(int p)
 
 void MythFrame::disableProgressIndicator()
 {
-    qDebug() << __PRETTY_FUNCTION__;
+//    qDebug() << __PRETTY_FUNCTION__;
     m_disableProgressIndicator = true;
 }
 
 void MythFrame::enableProgressIndicator()
 {
-    qDebug() << __PRETTY_FUNCTION__;
+//    qDebug() << __PRETTY_FUNCTION__;
     m_disableProgressIndicator = false;
 }
 
@@ -423,14 +435,14 @@ void MythFrame::showEvent(QShowEvent *e)
 
 void MythFrame::hidePrimaryScreen()
 {
-    qDebug() << __PRETTY_FUNCTION__;
+//    qDebug() << __PRETTY_FUNCTION__;
 	m_primaryClock->hide();
 	m_primaryDate->hide();
 }
 
 void MythFrame::hideMetadataScreen()
 {
-    qDebug() << __PRETTY_FUNCTION__;
+//    qDebug() << __PRETTY_FUNCTION__;
 	m_metaClock->hide();
 	m_metaTitle->hide();
 	m_metaShow->hide();
@@ -445,7 +457,7 @@ void MythFrame::hideMetadataScreen()
 
 void MythFrame::showMetadataScreen()
 {
-    qDebug() << __PRETTY_FUNCTION__;
+//    qDebug() << __PRETTY_FUNCTION__;
 	m_metaClock->show();
 	m_metaTitle->show();
 	m_metaShow->show();
@@ -460,14 +472,14 @@ void MythFrame::showMetadataScreen()
 
 void MythFrame::showPrimaryScreen()
 {
-    qDebug() << __PRETTY_FUNCTION__;
+//    qDebug() << __PRETTY_FUNCTION__;
 	m_primaryClock->show();
 	m_primaryDate->show();
 }
 
 void MythFrame::hideNYEScreen()
 {
-    qDebug() << __PRETTY_FUNCTION__;
+//    qDebug() << __PRETTY_FUNCTION__;
 	m_lbCountdown->hide();
 }
 

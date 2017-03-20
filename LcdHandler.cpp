@@ -71,32 +71,32 @@ void LcdHandler::setOutput(QByteArray &ba)
 
 //    qDebug() << __PRETTY_FUNCTION__ << ":" << ba;
     
-	if (x & 0x80000)
+	if ((x & 0x80000) == 0x80000)
 		emit videoFormat("mpg");
-	else if (x & 0x100000)
+    if ((x & 0x10000) == 0x10000)
+        emit audioFormat("mpeg2");
+    if ((x & 0x100000) == 0x100000)
 		emit videoFormat("divx");
-	else if (x & 0x180000)
+    if ((x & 0x180000) == 0x180000)
 		emit videoFormat("xvid");
-	else if (x & 0x200000)
+    if ((x & 0x180000) == 0x180000)
 		emit videoFormat("wmv");
 
-	if (x & 0x10000)
-		emit audioFormat("mpeg2");
-	if (x & 0x20000)
+    if ((x & 0x40000) == 0x40000)
+        emit audioFormat("wma");
+    else if ((x & 0x30000) == 0x30000)
+        emit audioFormat("dts");
+	else if ((x & 0x20000) == 0x20000)
 		emit audioFormat("ac3");
-	if (x & 0x30000)
-		emit audioFormat("dts");
-	if (x & 0x40000)
-		emit audioFormat("wma");
 
-	if (x & 0x10)
+    if ((x & 0x30) == 0x30)
+        emit stereoFormat("7.1");
+    else if ((x & 0x20) == 0x20)
+        emit stereoFormat("5.1");
+	else if ((x & 0x10) == 0x10)
 		emit stereoFormat("stereo");
-	else if (x & 0x20)
-		emit stereoFormat("5.1");
-	else if (x & 0x30)
-		emit stereoFormat("7.1");
 
-	if (x & 0x400)
+	if ((x & 0x400) == 0x400)
 		emit playbackFlags("Hi-Def");
 }
 
@@ -148,7 +148,7 @@ void LcdHandler::messageAvailable()
 
 	while (1) {
 		QByteArray ba = sock->readLine();
-		qDebug() << __PRETTY_FUNCTION__ << ba;
+//		qDebug() << __PRETTY_FUNCTION__ << ba;
 		if (ba.size() == 0)
 			break;
 		else {
