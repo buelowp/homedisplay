@@ -69,7 +69,7 @@ void LcdHandler::setOutput(QByteArray &ba)
 
 	int x = bitmap.toInt();
 
-//    qDebug() << __PRETTY_FUNCTION__ << ":" << ba;
+    qDebug() << __PRETTY_FUNCTION__ << ":" << ba;
     
 	if ((x & 0x80000) == 0x80000)
 		emit videoFormat("mpg");
@@ -104,7 +104,7 @@ void LcdHandler::setChannelProgress(QByteArray &ba)
 {
 	QList<QByteArray> list = ba.split(' ');
 
-//    qDebug() << __PRETTY_FUNCTION__ << ":" << ba;
+    qDebug() << __PRETTY_FUNCTION__ << ":" << ba;
     
 	QByteArray timeLeft = list[1];
 	if (timeLeft.size() > 1) {
@@ -125,7 +125,7 @@ void LcdHandler::setChannelData(QByteArray &ba)
 {
 	QList<QByteArray> list = ba.split('"');
 
-//    qDebug() << __PRETTY_FUNCTION__ << ":" << ba;
+    qDebug() << __PRETTY_FUNCTION__ << ":" << ba;
 	emit metaDataStarted();
 
 	QByteArray chanNum = list[1];
@@ -148,7 +148,7 @@ void LcdHandler::messageAvailable()
 
 	while (1) {
 		QByteArray ba = sock->readLine();
-//		qDebug() << __PRETTY_FUNCTION__ << ba;
+		qDebug() << __PRETTY_FUNCTION__ << ba;
 		if (ba.size() == 0)
 			break;
 		else {

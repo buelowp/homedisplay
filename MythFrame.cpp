@@ -216,10 +216,10 @@ void MythFrame::audioFormat(QString v)
 {
 //	qDebug() << __PRETTY_FUNCTION__ << ":" << v;
 	if (v == "dts") {
-        m_metaAudioImage->setPixmap(QPixmap("/Users/pete/Projects/MythClock/icons/dts.png"));
+        m_metaAudioImage->setPixmap(QPixmap("/usr/share/mythclock/dts.png"));
 	}
     else if (v == "ac3") {
-        m_metaAudioImage->setPixmap(QPixmap("/Users/pete/Projects/MythClock/icons/ac3.png"));
+        m_metaAudioImage->setPixmap(QPixmap("/usr/share/mythclock/ac3.png"));
     }
 	else {
 		m_metaAudioImage->setText(v);
@@ -233,20 +233,20 @@ void MythFrame::stereoFormat(QString f)
 
 //	qDebug() << __PRETTY_FUNCTION__ << ":" << f;
 	if (f.compare("stereo", Qt::CaseInsensitive) == 0) {
-        m_metaStereoImage->setPixmap(QPixmap("/Users/pete/Projects/MythClock/icons/stereo.png"));
+        m_metaStereoImage->setPixmap(QPixmap("/usr/share/mythclock/stereo.png"));
 //		m_metaStereoImage->setText("Stereo");
 	}
 	if (f == "5.1") {
-		m_metaStereoImage->setPixmap(QPixmap("/Users/pete/Projects/MythClock/icons/5_1.jpg"));
+		m_metaStereoImage->setPixmap(QPixmap("/usr/share/mythclock/5_1.jpg"));
 	}
 	if (f == "7.1") {
-		m_metaStereoImage->setPixmap(QPixmap("/Users/pete/Projects/MythClock/icons/7_1.jpg"));
+		m_metaStereoImage->setPixmap(QPixmap("/usr/share/mythclock/7_1.jpg"));
 	}
 }
 
 void MythFrame::playbackFlags(QString flags)
 {
-	QPixmap hd("/Users/pete/Projects/MythClock/icons/HD.png");
+	QPixmap hd("/usr/share/mythclock/HD.png");
 
 //	qDebug() << __PRETTY_FUNCTION__ << ":" << flags;
 	if (flags == "Hi-Def") {
