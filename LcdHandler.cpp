@@ -35,6 +35,7 @@ LcdHandler::LcdHandler(QTcpSocket *s) {
 
 LcdHandler::~LcdHandler()
 {
+    sock->close();
 	sock->deleteLater();
 	m_isAvail = false;
 }

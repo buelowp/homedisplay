@@ -68,6 +68,7 @@ MythFrame::MythFrame(QFrame *parent) : QFrame(parent) {
 }
 
 MythFrame::~MythFrame() {
+    m_mythLcd->close();
 	m_mythLcd->deleteLater();
 	m_server->close();
 	m_server->deleteLater();;
