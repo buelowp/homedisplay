@@ -42,7 +42,7 @@ public:
 
 	void addSocket(QTcpSocket *sock);
 	bool isValid() { return m_isAvail; }
-    void close() { sock->close(); }
+    void close() { if (m_isAvail) sock->close(); }
 
 signals:
 	void sockClosed();
