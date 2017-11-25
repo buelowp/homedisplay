@@ -175,7 +175,7 @@ void MythFrame::updateClock()
     }
     else {
         QString smallDisplay("<font style='font-size:50px; color:white; font-weight: bold;'>%1</font>");
-        QString dateDisplay("<font style='font-size:50px; color:%1; font-weight: bold;'>%2</font>");
+        QString dateDisplay("<font style='font-size:45px; color:%1; font-weight: bold;'>%2</font>");
         QString largeDisplay("<font style='font-size:140px; color:%1; font-weight: bold;'>%2</font>");
         m_metaClock->setText(smallDisplay.arg(t.toString("h:mm a")));
         m_primaryDate->setText(dateDisplay.arg(m_clockColor).arg(d.toString("dddd MMMM d, yyyy")));
