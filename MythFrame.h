@@ -26,6 +26,7 @@
 
 #include "MythClock.h"
 #include "LcdHandler.h"
+#include "qmqttsubscriber.h"
 
 class MythFrame : public QFrame {
 	Q_OBJECT
@@ -43,6 +44,8 @@ signals:
 	void nyeEventDone();
     void lcdConnected();
     void toConnectedState();
+    void startLightning();
+    void endLightning();
 
 public slots:
 	void connCreated();
@@ -74,12 +77,21 @@ protected slots:
 	void showNYEScreen();
 	void hideNYEScreen();
     void setNYETimeout();
+    void messageReceivedOnTopic(QString, QString);
+    void connectionComplete();
+    void disconnectedEvent();
+    void lightningTimeout();
+    void showLightningScreen();
+    void hideLightningScreen();
 
 protected:
 	void showEvent(QShowEvent*);
 
 private:
+    void setupMqttSubscriber();
     
+    QMqttSubscriber *m_mqttClient;
+
 	QLabel *m_primaryClock;
 	QTcpServer *m_server;
 	LcdHandler *m_mythLcd;
@@ -95,8 +107,10 @@ private:
 	QLabel *m_primaryDate;
 	QLabel *m_lbCountdown;
 	QTimer *m_clockTimer;
+    QLabel *m_lightningLabel;
 	QByteArray prevTime;
 	bool m_disableProgressIndicator;
+    QTimer *m_lightningTimer;
 
 	QProgressBar *m_metaProgressBar;
 	QString m_clockColor;

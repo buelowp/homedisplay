@@ -2,7 +2,7 @@ TEMPLATE = app
 
 CONFIG += gui debug core
 
-QT += network widgets
+QT += network widgets qmqtt
 
 OBJECTS_DIR = .obj
 MOC_DIR = .moc
@@ -10,11 +10,13 @@ MOC_DIR = .moc
 SOURCES = MythClock.cpp \
 	MythFrame.cpp \
 	LcdHandler.cpp \
-	main.cpp
+	main.cpp \
+	qmqttsubscriber.cpp \
 		
 HEADERS = MythClock.h \
 	MythFrame.h \
 	LcdHandler.h \
+	qmqttsubscriber.h
 
 ICONS = icons/5_1.jpg \
 	icons/7_1.jpg \

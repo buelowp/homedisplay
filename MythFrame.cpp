@@ -39,6 +39,7 @@ MythFrame::MythFrame(QFrame *parent) : QFrame(parent) {
 	m_metaTime = new QLabel(this);
 	m_metaProgressBar = new QProgressBar(this);
 	m_lbCountdown = new QLabel(this);
+    m_lightningLabel = new QLabel(this);
 
 	m_clockTimer = new QTimer(this);
 	connect(m_clockTimer, SIGNAL(timeout()), this, SLOT(updateClock()));
@@ -62,9 +63,10 @@ MythFrame::MythFrame(QFrame *parent) : QFrame(parent) {
 	m_metaClock->setPalette(pal);
 
 	m_disableProgressIndicator = false;
-	m_clockColor = "#FFC266";
+	m_clockColor = "#FFFFFF";
     
     connect(m_server, SIGNAL(newConnection()), this, SLOT(connCreated()));
+    setupMqttSubscriber();
 }
 
 MythFrame::~MythFrame() {
@@ -74,6 +76,29 @@ MythFrame::~MythFrame() {
     }
 	m_server->close();
 	m_server->deleteLater();;
+}
+
+void MythFrame::setupMqttSubscriber()
+{
+    QSettings settings(QSettings::IniFormat, QSettings::UserScope, "MythClock", "MythClock");
+    QString hostname = settings.value("mqttserver").toString();
+    QHostInfo lookup = QHostInfo::fromName(hostname);
+    QList<QHostAddress> addresses = lookup.addresses();
+    
+    if (addresses.size() > 0) {
+        m_mqttClient = new QMqttSubscriber(addresses.at(0), settings.value("mqttport").toInt(), this);
+        qDebug() << __PRETTY_FUNCTION__ << ": setting host address to" << addresses.at(0);
+    }
+    else {
+        m_mqttClient = new QMqttSubscriber(QHostAddress::LocalHost, settings.value("mqttport").toInt(), this);
+        qDebug() << __PRETTY_FUNCTION__ << ": Using localhost";
+    }
+    connect(m_mqttClient, SIGNAL(connectionComplete()), this, SLOT(connectionComplete()));
+    connect(m_mqttClient, SIGNAL(disconnectedEvent()), this, SLOT(disconnectedEvent()));
+    connect(m_mqttClient, SIGNAL(messageReceivedOnTopic(QString, QString)), this, SLOT(messageReceivedOnTopic(QString, QString)));
+    m_mqttClient->connectToHost();
+    m_lightningTimer = new QTimer();
+    connect(m_lightningTimer, SIGNAL(timeout()), this, SLOT(lightningTimeout()));
 }
 
 void MythFrame::setNYETimeout()
@@ -99,24 +124,20 @@ void MythFrame::setNYETimeout()
 
 bool MythFrame::init()
 {
-
 	QState *primary = new QState();
 	QState *metadata = new QState();
 	QState *nye = new QState();
-	QState *disconnected = new QState();
+    QState *lightning = new QState();
 
-	disconnected->addTransition(this, SIGNAL(toConnectedState()), primary);
-	primary->addTransition(this, SIGNAL(lcdDisconnect()), disconnected);
-	metadata->addTransition(this, SIGNAL(lcdDisconnect()), disconnected);
+	metadata->addTransition(this, SIGNAL(lcdDisconnect()), primary);
 	metadata->addTransition(this, SIGNAL(videoPlaybackEnded()), primary);
-	nye->addTransition(this, SIGNAL(lcdDisconnect()), disconnected);
 	nye->addTransition(this, SIGNAL(nyeEventDone()), primary);
 	primary->addTransition(this, SIGNAL(videoPlaybackStarted()), metadata);
 	primary->addTransition(this, SIGNAL(startNYE()), nye);
+    primary->addTransition(this, SIGNAL(startLightning()), lightning);
 	metadata->addTransition(this, SIGNAL(startNYE()), nye);
-	disconnected->addTransition(this, SIGNAL(startNYE()), nye);
+    lightning->addTransition(this, SIGNAL(endLightning()), primary);
 
-	connect(disconnected, SIGNAL(entered()), this, SLOT(disconnectClock()));
 	connect(metadata, SIGNAL(entered()), this, SLOT(metaDataStarted()));
 	connect(metadata, SIGNAL(exited()), this, SLOT(hideMetadataScreen()));
 	connect(primary, SIGNAL(exited()), this, SLOT(hidePrimaryScreen()));
@@ -124,16 +145,19 @@ bool MythFrame::init()
 	connect(metadata, SIGNAL(entered()), this, SLOT(showMetadataScreen()));
 	connect(primary, SIGNAL(entered()), this, SLOT(showPrimaryScreen()));
 	connect(nye, SIGNAL(entered()), this, SLOT(showNYEScreen()));
+    connect(lightning, SIGNAL(entered()), this, SLOT(showLightningScreen()));
+    connect(lightning, SIGNAL(exited()), this, SLOT(hideLightningScreen()));
 
 	m_states.addState(primary);
 	m_states.addState(metadata);
 	m_states.addState(nye);
-	m_states.addState(disconnected);
-	m_states.setInitialState(disconnected);
+    m_states.addState(lightning);
+	m_states.setInitialState(primary);
 
     hidePrimaryScreen();
     hideNYEScreen();
     hideMetadataScreen();
+    hideLightningScreen();
     
     setNYETimeout();
 
@@ -156,6 +180,7 @@ void MythFrame::showNYEScreen()
 	if (t.hour() == 23) {
 		QString countdown("<font style='font-size:200px; color:white; font-weight: bold;'>%1</font>");
 		m_lbCountdown->setText(countdown.arg(60 - t.second()));
+        m_lbCountdown->setAlignment(Qt::AlignCenter);
 		m_lbCountdown->show();
 		QTimer::singleShot(1000, this, SLOT(showNYEScreen()));
 	}
@@ -434,6 +459,10 @@ void MythFrame::showEvent(QShowEvent *e)
 
 	m_metaProgressBar->setRange(0, 100);
 	m_metaProgressBar->setTextVisible(false);
+    
+    QFont l("Roboto-Regular", 20);
+    m_lightningLabel->setFont(l);
+    m_lightningLabel->setGeometry(0, 140, 800, 200);
 }
 
 void MythFrame::hidePrimaryScreen()
@@ -486,8 +515,62 @@ void MythFrame::hideNYEScreen()
 	m_lbCountdown->hide();
 }
 
+void MythFrame::hideLightningScreen()
+{
+    m_lightningLabel->hide();
+    m_lightningTimer->stop();
+}
+
 void MythFrame::disconnectClock()
 {
     m_clockColor = "#FFC266";
     showPrimaryScreen();
 }
+
+void MythFrame::showLightningScreen()
+{
+    m_lightningLabel->show();
+}
+
+void MythFrame::connectionComplete()
+{
+    m_mqttClient->subscribe("lightning/#");
+}
+
+void MythFrame::disconnectedEvent()
+{
+    qDebug() << __PRETTY_FUNCTION__ << ": MQTT connection lost";
+    m_mqttClient->connectToHost();
+}
+
+void MythFrame::lightningTimeout()
+{
+    emit endLightning();
+}
+
+void MythFrame::messageReceivedOnTopic(QString t, QString p)
+{
+    qDebug() << __PRETTY_FUNCTION__ << ": Topic:" << t << ", payload: " << p;
+    double d = p.toDouble();
+    double distance = d * .621;
+    QColor color;
+    
+    if (d > 15) {
+        color = Qt::green;
+    }
+    else if (d > 5) {
+        color = Qt::yellow;
+    }
+    else {
+        color = Qt::red;
+    }
+    
+    m_lightningLabel->setTextFormat(Qt::RichText);
+    m_lightningLabel->setAlignment(Qt::AlignCenter);
+    m_lightningLabel->setText(QString("Lightning Detected<br><font color=\"%1\">%2</font> miles away").arg(color.name()).arg(distance, 0, 'f', 1));
+    m_lightningTimer->stop();
+    m_lightningTimer->setInterval(1000 * 30);
+    m_lightningTimer->start();
+    emit startLightning();
+}
+
