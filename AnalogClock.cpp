@@ -16,7 +16,7 @@
 
 */
 
-#include "MythClock.h"
+#include "AnalogClock.h"
 
 MythClock::MythClock(QWidget *parent) : QWidget(parent) {
 	QPalette pal(palette());

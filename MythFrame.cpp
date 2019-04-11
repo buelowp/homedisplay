@@ -61,6 +61,8 @@ MythFrame::MythFrame(QFrame *parent) : QFrame(parent) {
 	m_metaFlags->setPalette(pal);
 	m_metaClock->setAutoFillBackground(true);
 	m_metaClock->setPalette(pal);
+    
+    m_kodi = new KodiLcdServer(this);
 
 	m_disableProgressIndicator = false;
 	m_clockColor = "#FFFFFF";
@@ -162,6 +164,7 @@ bool MythFrame::init()
     setNYETimeout();
 
     m_states.start();
+    m_kodi->exec();
     
 	return m_server->listen(QHostAddress::Any, 6545);
 }
@@ -210,7 +213,7 @@ void MythFrame::updateClock()
 
 void MythFrame::connCreated()
 {
-	m_mythLcd = new LcdHandler(m_server->nextPendingConnection());
+	m_mythLcd = new MythLcdServer(m_server->nextPendingConnection());
 
 	connect(m_mythLcd, SIGNAL(sockClosed()), this, SLOT(connClosed()));
 	connect(m_mythLcd, SIGNAL(channelNumber(QByteArray)), this, SLOT(channelUpdate(QByteArray)));

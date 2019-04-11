@@ -25,8 +25,9 @@
 #include <QtWidgets/QtWidgets>
 
 #include "AnalogClock.h"
-#include "LcdHandler.h"
+#include "MythLcdServer.h"
 #include "qmqttsubscriber.h"
+#include "KodiLcdServer.h"
 
 class MythFrame : public QFrame {
 	Q_OBJECT
@@ -94,7 +95,7 @@ private:
 
 	QLabel *m_primaryClock;
 	QTcpServer *m_server;
-	LcdHandler *m_mythLcd;
+	MythLcdServer *m_mythLcd;
 	QLabel *m_metaChannel;
 	QLabel *m_metaTitle;
 	QLabel *m_metaShow;
@@ -111,6 +112,7 @@ private:
 	QByteArray prevTime;
 	bool m_disableProgressIndicator;
     QTimer *m_lightningTimer;
+    KodiLcdServer *m_kodi;
 
 	QProgressBar *m_metaProgressBar;
 	QString m_clockColor;

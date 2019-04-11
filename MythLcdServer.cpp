@@ -16,14 +16,14 @@
 
 */
 
-#include "LcdHandler.h"
+#include "MythLcdServer.h"
 
-LcdHandler::LcdHandler()
+MythLcdServer::MythLcdServer()
 {
 	m_isAvail = true;
 }
 
-LcdHandler::LcdHandler(QTcpSocket *s) {
+MythLcdServer::MythLcdServer(QTcpSocket *s) {
 	if (s) {
 		sock = s;
 		connect(sock, SIGNAL(disconnected()), this, SLOT(disconnected()));
@@ -33,14 +33,14 @@ LcdHandler::LcdHandler(QTcpSocket *s) {
 	lcdState = 0;
 }
 
-LcdHandler::~LcdHandler()
+MythLcdServer::~MythLcdServer()
 {
     sock->close();
 	sock->deleteLater();
 	m_isAvail = false;
 }
 
-void LcdHandler::disconnected()
+void MythLcdServer::disconnected()
 {
     qDebug() << __PRETTY_FUNCTION__;
 	emit sockClosed();
@@ -49,12 +49,12 @@ void LcdHandler::disconnected()
 	m_isAvail = false;
 }
 
-void LcdHandler::error(QAbstractSocket::SocketError)
+void MythLcdServer::error(QAbstractSocket::SocketError)
 {
-	qDebug() << "LcdHandler:" << sock->errorString();
+	qDebug() << "MythLcdServer:" << sock->errorString();
 }
 
-void LcdHandler::sendConnect()
+void MythLcdServer::sendConnect()
 {
 //    qDebug() << __PRETTY_FUNCTION__;
 	if (sock->state() == QAbstractSocket::ConnectedState) {
@@ -64,7 +64,7 @@ void LcdHandler::sendConnect()
 	}
 }
 
-void LcdHandler::setOutput(QByteArray &ba)
+void MythLcdServer::setOutput(QByteArray &ba)
 {
 	QList<QByteArray> list = ba.split(' ');
 	QByteArray bitmap = list[1];
@@ -102,7 +102,7 @@ void LcdHandler::setOutput(QByteArray &ba)
 		emit playbackFlags("Hi-Def");
 }
 
-void LcdHandler::setChannelProgress(QByteArray &ba)
+void MythLcdServer::setChannelProgress(QByteArray &ba)
 {
 	QList<QByteArray> list = ba.split(' ');
 
@@ -123,7 +123,7 @@ void LcdHandler::setChannelProgress(QByteArray &ba)
 	}
 }
 
-void LcdHandler::setChannelData(QByteArray &ba)
+void MythLcdServer::setChannelData(QByteArray &ba)
 {
 	QList<QByteArray> list = ba.split('"');
 
@@ -143,7 +143,7 @@ void LcdHandler::setChannelData(QByteArray &ba)
 		emit showSubTitle(sub);
 }
 
-void LcdHandler::messageAvailable()
+void MythLcdServer::messageAvailable()
 {
 	QList<QByteArray> lines;
 	QList<QByteArray>::iterator i;

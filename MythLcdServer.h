@@ -33,12 +33,12 @@
 #define MYTH_AUDIO_FORMAT_DTS		(3 << 16)
 #define MYTH_AUDIO_FORMAT_WMA		(4 << 16)
 
-class LcdHandler : public QObject {
+class MythLcdServer : public QObject {
 	Q_OBJECT
 public:
-	LcdHandler(QTcpSocket *sock);
-	LcdHandler();
-	virtual ~LcdHandler();
+	MythLcdServer(QTcpSocket *sock);
+	MythLcdServer();
+	virtual ~MythLcdServer();
 
 	void addSocket(QTcpSocket *sock);
 	bool isValid() { return m_isAvail; }
