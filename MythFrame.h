@@ -24,7 +24,7 @@
 #include <QtCore/QtCore>
 #include <QtWidgets/QtWidgets>
 
-#include "MythClock.h"
+#include "AnalogClock.h"
 #include "LcdHandler.h"
 #include "qmqttsubscriber.h"
 
