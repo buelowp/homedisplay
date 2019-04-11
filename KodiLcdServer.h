@@ -58,7 +58,7 @@ public slots:
 signals:
     void connectionError();
     void apiError();
-    void progressPercentComplete(int);
+    void progressPercentComplete(double);
     void metaDataEnded();
 	void videoFormat(QString);
 	void audioFormat(QString);

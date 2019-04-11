@@ -70,6 +70,7 @@ protected slots:
 	void elapsedTime(QByteArray);
 	void totalTime(QByteArray);
 	void percentComplete(int);
+    void percentComplete(double);
 	void showNYECountDown();
 	void hidePrimaryScreen();
 	void showPrimaryScreen();

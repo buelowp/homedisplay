@@ -89,7 +89,7 @@ void MythFrame::setupKodi()
 	connect(m_kodi, SIGNAL(showSubTitle(QByteArray)), this, SLOT(showSubTitle(QByteArray)));
 	connect(m_kodi, SIGNAL(progressTimeLeft(QByteArray)), this, SLOT(elapsedTime(QByteArray)));
 	connect(m_kodi, SIGNAL(progressTotalTime(QByteArray)), this, SLOT(totalTime(QByteArray)));
-	connect(m_kodi, SIGNAL(progressPercentComplete(int)), this, SLOT(percentComplete(int)));
+	connect(m_kodi, SIGNAL(progressPercentComplete(double)), this, SLOT(percentComplete(double)));
 	connect(m_kodi, SIGNAL(videoFormat(QString)), this, SLOT(videoFormat(QString)));
 	connect(m_kodi, SIGNAL(audioFormat(QString)), this, SLOT(audioFormat(QString)));
 	connect(m_kodi, SIGNAL(stereoFormat(QString)), this, SLOT(stereoFormat(QString)));
@@ -288,7 +288,6 @@ void MythFrame::stereoFormat(QString f)
 //	qDebug() << __PRETTY_FUNCTION__ << ":" << f;
 	if (f.compare("stereo", Qt::CaseInsensitive) == 0) {
         m_metaStereoImage->setPixmap(QPixmap("/usr/share/mythclock/stereo.png"));
-//		m_metaStereoImage->setText("Stereo");
 	}
 	if (f == "5.1") {
 		m_metaStereoImage->setPixmap(QPixmap("/usr/share/mythclock/5_1.jpg"));
@@ -361,7 +360,7 @@ void MythFrame::channelUpdate(QByteArray s)
 
 void MythFrame::showTitle(QByteArray s)
 {
-    QString style = QString("<font style='font-size:70px; color:white; font-weight: bold;'>%1</font>");
+    QString style = QString("<font style='font-size:50px; color:white; font-weight: bold;'>%1</font>");
 
     qDebug() << __PRETTY_FUNCTION__ << ":" << s;
     m_metaShow->setText(style.arg(s.data()));
@@ -420,10 +419,16 @@ void MythFrame::totalTime(QByteArray ba)
 
 void MythFrame::percentComplete(int p)
 {
-//	qDebug() << __PRETTY_FUNCTION__ << ":" << p << "%";
-	if (!m_disableProgressIndicator) {
-		m_metaProgressBar->setValue(p);
-	}
+    if (!m_disableProgressIndicator) {
+        m_metaProgressBar->setValue(p);
+    }
+}
+
+void MythFrame::percentComplete(double p)
+{
+    if (!m_disableProgressIndicator) {
+        m_metaProgressBar->setValue(static_cast<int>(p));
+    }
 }
 
 void MythFrame::disableProgressIndicator()

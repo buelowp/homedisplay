@@ -158,10 +158,35 @@ void KodiLcdServer::parsePlaybackMetaData(QJsonObject json)
 {
     QJsonObject time = json["time"].toObject();
     QJsonObject totalTime = json["totaltime"].toObject();
+    QJsonObject audioStream = json["currentaudiostream"].toObject();
+    QJsonObject videoStream = json["currentvideostream"].toObject();
+    int channels = audioStream["channels"].toInt();
+    QString codec = audioStream["codec"].toString();
+    int width = videoStream["width"].toInt();
     
     emit progressTotalTime(QString("%1:%2:%3").arg(totalTime["hours"].toInt()).arg(totalTime["minutes"].toInt()).arg(totalTime["seconds"].toInt()).toUtf8());
     emit progressTimeLeft(QString("%1:%2:%3").arg(time["hours"].toInt()).arg(time["minutes"].toInt()).arg(time["seconds"].toInt()).toUtf8());
-    emit progressPercentComplete(json["percentage"].toInt());
+    emit progressPercentComplete(json["percentage"].toDouble());
+    if (codec.contains("dts"))
+        emit audioFormat("dts");
+    if (codec.contains("ac3"))
+        emit audioFormat("ac3");
+    
+    if (width > 1800)
+        emit playbackFlags("Hi-Def");
+    
+    switch (channels) {
+        case 5:
+            emit stereoFormat("5.1");
+            break;
+        case 7:
+            emit stereoFormat("7.1");
+            break;
+        case 2:
+        default:
+            emit stereoFormat("stereo");
+            break;
+    }
 }
 
 void KodiLcdServer::kodiError(QAbstractSocket::SocketError socketError)
@@ -192,6 +217,8 @@ void KodiLcdServer::getPlaybackMetaData()
         params.append("percentage");
         params.append("time");
         params.append("totaltime");
+        params.append("currentaudiostream");
+        params.append("currentvideostream");
         
         properties["playerid"] = m_playerId;
         properties["properties"] = params;
