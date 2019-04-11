@@ -31,13 +31,14 @@
 
 #define ONE_SECOND  1000
 #define ONE_MINUTE  (ONE_SECOND * 60)
-#define PING_ID     1
-#define PLAYER_ID   2
+#define PING_ID             1
+#define PLAYER_ID           2
+#define INT_METADATA_ID     3
 
 /**
  * @todo write docs
  */
-class KodiLcdServer : QObject
+class KodiLcdServer : public QObject
 {
     Q_OBJECT
 public:
@@ -52,12 +53,34 @@ public slots:
     void ping();
     void exec();
     void testForPlayback();
+    void getPlaybackMetaData();
     
 signals:
     void connectionError();
     void apiError();
+    void progressPercentComplete(int);
+    void metaDataEnded();
+	void videoFormat(QString);
+	void audioFormat(QString);
+	void stereoFormat(QString);
+	void playbackFlags(QString);
+	void metaDataStarted();
+	void progressTimeLeft(QByteArray);
+	void progressTotalTime(QByteArray);
+	void channelNumber(QByteArray);
+	void showTitle(QByteArray);
+	void showSubTitle(QByteArray);
+    void recordedEvent();
+    void clientConnected();
     
 private:
+    void playerData(QJsonArray&);
+    void metaDataStartedEvent(QJsonObject);
+    void requestAudioMetaData();
+    void requestVideoMetaData();
+    void requestPlaybackProperties();
+    void parsePlaybackMetaData(QJsonObject);
+    
     QTimer *m_connectionTimer;
     QTimer *m_pingTimer;
     QTimer *m_metadataTimer;
@@ -66,6 +89,8 @@ private:
     
     qint64 m_lastPing;
     bool m_connected;
+    bool m_mediaPlaybackStarted;
+    int m_playerId;
 };
 
 #endif // KODILCDSERVER_H

@@ -63,6 +63,7 @@ MythFrame::MythFrame(QFrame *parent) : QFrame(parent) {
 	m_metaClock->setPalette(pal);
     
     m_kodi = new KodiLcdServer(this);
+    setupKodi();
 
 	m_disableProgressIndicator = false;
 	m_clockColor = "#FFFFFF";
@@ -78,6 +79,28 @@ MythFrame::~MythFrame() {
     }
 	m_server->close();
 	m_server->deleteLater();;
+}
+
+void MythFrame::setupKodi()
+{
+    connect(m_kodi, SIGNAL(clientConnected()), this, SLOT(kodiConnected()));
+	connect(m_kodi, SIGNAL(channelNumber(QByteArray)), this, SLOT(channelUpdate(QByteArray)));
+	connect(m_kodi, SIGNAL(showTitle(QByteArray)), this, SLOT(showTitle(QByteArray)));
+	connect(m_kodi, SIGNAL(showSubTitle(QByteArray)), this, SLOT(showSubTitle(QByteArray)));
+	connect(m_kodi, SIGNAL(progressTimeLeft(QByteArray)), this, SLOT(elapsedTime(QByteArray)));
+	connect(m_kodi, SIGNAL(progressTotalTime(QByteArray)), this, SLOT(totalTime(QByteArray)));
+	connect(m_kodi, SIGNAL(progressPercentComplete(int)), this, SLOT(percentComplete(int)));
+	connect(m_kodi, SIGNAL(videoFormat(QString)), this, SLOT(videoFormat(QString)));
+	connect(m_kodi, SIGNAL(audioFormat(QString)), this, SLOT(audioFormat(QString)));
+	connect(m_kodi, SIGNAL(stereoFormat(QString)), this, SLOT(stereoFormat(QString)));
+	connect(m_kodi, SIGNAL(playbackFlags(QString)), this, SLOT(playbackFlags(QString)));
+	connect(m_kodi, SIGNAL(metaDataStarted()), this, SLOT(metaDataStarted()));
+	connect(m_kodi, SIGNAL(metaDataEnded()), this, SLOT(metaDataEnded()));
+}
+
+void MythFrame::kodiConnected()
+{
+    qDebug() << __PRETTY_FUNCTION__ << ": Connected to Kodi media server";
 }
 
 void MythFrame::setupMqttSubscriber()
@@ -340,7 +363,7 @@ void MythFrame::showTitle(QByteArray s)
 {
     QString style = QString("<font style='font-size:70px; color:white; font-weight: bold;'>%1</font>");
 
-//    qDebug() << __PRETTY_FUNCTION__ << ":" << s;
+    qDebug() << __PRETTY_FUNCTION__ << ":" << s;
     m_metaShow->setText(style.arg(s.data()));
 }
 
@@ -382,7 +405,6 @@ void MythFrame::totalTime(QByteArray ba)
         return;
     
 //	qDebug() << __PRETTY_FUNCTION__ << ":" << ba;
-	prevTime = ba;
     if (segments.size() == 2) {
         QString m = segments.at(0).data();
         QString s = segments.at(1).data();

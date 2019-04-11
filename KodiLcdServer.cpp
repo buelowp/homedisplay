@@ -28,6 +28,9 @@
 KodiLcdServer::KodiLcdServer(QObject *parent) : QObject(parent)
 {
     m_connected = false;
+    m_mediaPlaybackStarted = false;
+    m_playerId = 0;
+    
     m_connectionTimer = new QTimer(this);
     m_metadataTimer = new QTimer(this);
     m_pingTimer = new QTimer(this);
@@ -40,6 +43,7 @@ KodiLcdServer::KodiLcdServer(QObject *parent) : QObject(parent)
     connect(m_kodi, SIGNAL(error(QAbstractSocket::SocketError)), this, SLOT(kodiError(QAbstractSocket::SocketError)));
     connect(m_pingTimer, SIGNAL(timeout()), this, SLOT(ping()));
     connect(m_mediaCheck, SIGNAL(timeout()), this, SLOT(testForPlayback()));
+    connect(m_metadataTimer, SIGNAL(timeout()), this, SLOT(getPlaybackMetaData()));
 }
 
 KodiLcdServer::~KodiLcdServer()
@@ -57,7 +61,7 @@ void KodiLcdServer::ping()
         p["jsonrpc"] = "2.0";
         p["method"] = "JSONRPC.Ping";
         
-        m_kodi->write(QJsonDocument(p).toJson());
+        m_kodi->write(QJsonDocument(p).toJson(QJsonDocument::Compact));
     }
     else {
         qDebug() << __PRETTY_FUNCTION__ << ": No Kodi PONG response in 10 seconds, closing connection";
@@ -91,11 +95,26 @@ void KodiLcdServer::kodiConnected()
     qDebug() << __PRETTY_FUNCTION__ << ": Connected to Kodi";
     m_pingTimer->setInterval(ONE_SECOND);
     m_pingTimer->start();
-    m_mediaCheck->setInterval(ONE_MINUTE);
-    m_mediaCheck->start();
     m_connected = true;
+    emit clientConnected();
+}
 
-    testForPlayback();    
+void KodiLcdServer::metaDataStartedEvent(QJsonObject json)
+{
+    QJsonObject data = json["data"].toObject();
+    QJsonObject item = data["item"].toObject();
+    QJsonObject player = data["player"].toObject();
+    
+    qDebug() << player;
+    m_playerId = player["playerid"].toInt();
+    
+    emit showTitle(item["title"].toVariant().toByteArray());
+    requestAudioMetaData();
+    requestVideoMetaData();
+}
+
+void KodiLcdServer::playerData(QJsonArray&)
+{
 }
 
 void KodiLcdServer::kodiResponse()
@@ -106,16 +125,43 @@ void KodiLcdServer::kodiResponse()
     if (response.isObject()) {
         QJsonObject o = response.object();
         
-        if (o.contains("id")) {
+        if (o.contains("method")) {
+            if (o["method"] == "Player.OnPlay") {
+                m_mediaPlaybackStarted = true;
+                emit metaDataStarted();
+                m_metadataTimer->setInterval(1000);
+                m_metadataTimer->start();
+                metaDataStartedEvent(o["params"].toObject());
+            }
+            else if (o["method"] == "Player.OnStop") {
+                m_mediaPlaybackStarted = false;
+                m_metadataTimer->stop();
+                emit metaDataEnded();
+            }
+            else {
+                qDebug() << ba;
+            }
+        }
+        else {
             if (o["id"] == PING_ID) {
                 if (o["result"] == "pong")
                     m_lastPing = QDateTime::currentSecsSinceEpoch();
             }
-            if (o["id"] == PLAYER_ID) {
-                qDebug() << ba;
-            }                
+            else if (o["id"] == INT_METADATA_ID) {
+                parsePlaybackMetaData(o["result"].toObject());
+            }
         }
     }
+}
+
+void KodiLcdServer::parsePlaybackMetaData(QJsonObject json)
+{
+    QJsonObject time = json["time"].toObject();
+    QJsonObject totalTime = json["totaltime"].toObject();
+    
+    emit progressTotalTime(QString("%1:%2:%3").arg(totalTime["hours"].toInt()).arg(totalTime["minutes"].toInt()).arg(totalTime["seconds"].toInt()).toUtf8());
+    emit progressTimeLeft(QString("%1:%2:%3").arg(time["hours"].toInt()).arg(time["minutes"].toInt()).arg(time["seconds"].toInt()).toUtf8());
+    emit progressPercentComplete(json["percentage"].toInt());
 }
 
 void KodiLcdServer::kodiError(QAbstractSocket::SocketError socketError)
@@ -132,6 +178,44 @@ void KodiLcdServer::testForPlayback()
         test["jsonrpc"] = "2.0";
         test["method"] = "Player.GetActivePlayers";
         
-        m_kodi->write(QJsonDocument(test).toJson());
+        m_kodi->write(QJsonDocument(test).toJson(QJsonDocument::Compact));
     }
+}
+
+void KodiLcdServer::getPlaybackMetaData()
+{
+    QJsonObject request;
+    QJsonObject properties;
+    QJsonArray params;
+    
+    if (m_connected) {
+        params.append("percentage");
+        params.append("time");
+        params.append("totaltime");
+        
+        properties["playerid"] = m_playerId;
+        properties["properties"] = params;
+
+        request["jsonrpc"] = "2.0";
+        request["method"] = "Player.GetProperties";
+        request["params"] = properties;
+        request["id"] = INT_METADATA_ID;
+
+        m_kodi->write(QJsonDocument(request).toJson(QJsonDocument::Compact));
+    }
+}
+
+void KodiLcdServer::requestAudioMetaData()
+{
+    if (m_playerId) {
+        
+    }
+}
+
+void KodiLcdServer::requestPlaybackProperties()
+{
+}
+
+void KodiLcdServer::requestVideoMetaData()
+{
 }

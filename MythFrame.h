@@ -84,12 +84,14 @@ protected slots:
     void lightningTimeout();
     void showLightningScreen();
     void hideLightningScreen();
+    void kodiConnected();
 
 protected:
 	void showEvent(QShowEvent*);
 
 private:
     void setupMqttSubscriber();
+    void setupKodi();
     
     QMqttSubscriber *m_mqttClient;
 
