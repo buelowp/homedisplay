@@ -27,9 +27,11 @@
 
 KodiLcdServer::KodiLcdServer(QObject *parent) : QObject(parent)
 {
+    m_connected = false;
     m_connectionTimer = new QTimer(this);
     m_metadataTimer = new QTimer(this);
     m_pingTimer = new QTimer(this);
+    m_mediaCheck = new QTimer(this);
     m_kodi = new QTcpSocket(this);
     
     connect(m_kodi, SIGNAL(connected()), this, SLOT(kodiConnected()));
@@ -37,6 +39,7 @@ KodiLcdServer::KodiLcdServer(QObject *parent) : QObject(parent)
     connect(m_kodi, SIGNAL(readyRead()), this, SLOT(kodiResponse()));
     connect(m_kodi, SIGNAL(error(QAbstractSocket::SocketError)), this, SLOT(kodiError(QAbstractSocket::SocketError)));
     connect(m_pingTimer, SIGNAL(timeout()), this, SLOT(ping()));
+    connect(m_mediaCheck, SIGNAL(timeout()), this, SLOT(testForPlayback()));
 }
 
 KodiLcdServer::~KodiLcdServer()
@@ -49,14 +52,15 @@ void KodiLcdServer::ping()
     QJsonObject p;
     qint64 now = QDateTime::currentSecsSinceEpoch();
     
-    if (now - m_lastPing < 10) {
-        p["id"] = 1;
+    if (now - m_lastPing < 11) {
+        p["id"] = PING_ID;
         p["jsonrpc"] = "2.0";
         p["method"] = "JSONRPC.Ping";
         
         m_kodi->write(QJsonDocument(p).toJson());
     }
     else {
+        qDebug() << __PRETTY_FUNCTION__ << ": No Kodi PONG response in 10 seconds, closing connection";
         m_kodi->disconnectFromHost();
     }
 }
@@ -76,7 +80,8 @@ void KodiLcdServer::exec()
 
 void KodiLcdServer::connectionClosed()
 {
-    qDebug() << __PRETTY_FUNCTION__ << ": lost connection to Kodi";
+    m_connected = false;
+    qDebug() << __PRETTY_FUNCTION__ << ": lost connection to Kodi, will restart in 60 seconds";
     m_pingTimer->stop();
     QTimer::singleShot(ONE_MINUTE, this, SLOT(start));
 }
@@ -86,6 +91,11 @@ void KodiLcdServer::kodiConnected()
     qDebug() << __PRETTY_FUNCTION__ << ": Connected to Kodi";
     m_pingTimer->setInterval(ONE_SECOND);
     m_pingTimer->start();
+    m_mediaCheck->setInterval(ONE_MINUTE);
+    m_mediaCheck->start();
+    m_connected = true;
+
+    testForPlayback();    
 }
 
 void KodiLcdServer::kodiResponse()
@@ -96,11 +106,14 @@ void KodiLcdServer::kodiResponse()
     if (response.isObject()) {
         QJsonObject o = response.object();
         
-        if (o.contains("result")) {
-            if (o["result"] == "pong") {
-                m_lastPing = QDateTime::currentSecsSinceEpoch();
-                qDebug() << __PRETTY_FUNCTION__ << ": pong";
+        if (o.contains("id")) {
+            if (o["id"] == PING_ID) {
+                if (o["result"] == "pong")
+                    m_lastPing = QDateTime::currentSecsSinceEpoch();
             }
+            if (o["id"] == PLAYER_ID) {
+                qDebug() << ba;
+            }                
         }
     }
 }
@@ -108,4 +121,17 @@ void KodiLcdServer::kodiResponse()
 void KodiLcdServer::kodiError(QAbstractSocket::SocketError socketError)
 {
     qDebug() << __PRETTY_FUNCTION__ << ": connection error:" << socketError;
+}
+
+void KodiLcdServer::testForPlayback()
+{
+    QJsonObject test;
+    
+    if (m_connected) {
+        test["id"] = PLAYER_ID;
+        test["jsonrpc"] = "2.0";
+        test["method"] = "Player.GetActivePlayers";
+        
+        m_kodi->write(QJsonDocument(test).toJson());
+    }
 }

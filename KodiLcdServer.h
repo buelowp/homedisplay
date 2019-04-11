@@ -31,6 +31,8 @@
 
 #define ONE_SECOND  1000
 #define ONE_MINUTE  (ONE_SECOND * 60)
+#define PING_ID     1
+#define PLAYER_ID   2
 
 /**
  * @todo write docs
@@ -49,6 +51,7 @@ public slots:
     void kodiResponse();
     void ping();
     void exec();
+    void testForPlayback();
     
 signals:
     void connectionError();
@@ -58,9 +61,11 @@ private:
     QTimer *m_connectionTimer;
     QTimer *m_pingTimer;
     QTimer *m_metadataTimer;
+    QTimer *m_mediaCheck;
     QTcpSocket *m_kodi;
     
     qint64 m_lastPing;
+    bool m_connected;
 };
 
 #endif // KODILCDSERVER_H
