@@ -87,7 +87,7 @@ void KodiLcdServer::connectionClosed()
     m_connected = false;
     qDebug() << __PRETTY_FUNCTION__ << ": lost connection to Kodi, will restart in 60 seconds";
     m_pingTimer->stop();
-    QTimer::singleShot(ONE_MINUTE, this, SLOT(start));
+    QTimer::singleShot(ONE_MINUTE, this, SLOT(start()));
 }
 
 void KodiLcdServer::kodiConnected()
