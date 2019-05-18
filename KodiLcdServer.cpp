@@ -54,9 +54,9 @@ KodiLcdServer::~KodiLcdServer()
 void KodiLcdServer::ping()
 {
     QJsonObject p;
-    qint64 now = QDateTime::currentSecsSinceEpoch();
+    qint64 now = QDateTime::currentMSecsSinceEpoch();
     
-    if (now - m_lastPing < 11) {
+    if (now - m_lastPing < 11000) {
         p["id"] = PING_ID;
         p["jsonrpc"] = "2.0";
         p["method"] = "JSONRPC.Ping";
@@ -145,7 +145,7 @@ void KodiLcdServer::kodiResponse()
         else {
             if (o["id"] == PING_ID) {
                 if (o["result"] == "pong")
-                    m_lastPing = QDateTime::currentSecsSinceEpoch();
+                    m_lastPing = QDateTime::currentMSecsSinceEpoch();
             }
             else if (o["id"] == INT_METADATA_ID) {
                 parsePlaybackMetaData(o["result"].toObject());

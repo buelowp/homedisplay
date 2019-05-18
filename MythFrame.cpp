@@ -490,7 +490,7 @@ void MythFrame::showEvent(QShowEvent *e)
 	m_metaProgressBar->setRange(0, 100);
 	m_metaProgressBar->setTextVisible(false);
     
-    QFont l("Roboto-Regular", 20);
+    QFont l("Roboto-Regular", 45);
     m_lightningLabel->setFont(l);
     m_lightningLabel->setGeometry(0, 140, 800, 200);
 }
@@ -564,7 +564,7 @@ void MythFrame::showLightningScreen()
 
 void MythFrame::connectionComplete()
 {
-    m_mqttClient->subscribe("lightning/#");
+    m_mqttClient->subscribe("weather/#");
 }
 
 void MythFrame::disconnectedEvent()
@@ -580,27 +580,33 @@ void MythFrame::lightningTimeout()
 
 void MythFrame::messageReceivedOnTopic(QString t, QString p)
 {
-    qDebug() << __PRETTY_FUNCTION__ << ": Topic:" << t << ", payload: " << p;
-    double d = p.toDouble();
-    double distance = d * .621;
+    QJsonDocument doc = QJsonDocument::fromJson(p.toLocal8Bit());
     QColor color;
-    
-    if (d > 15) {
-        color = Qt::green;
+
+    if (!doc.isNull() && !doc.isEmpty()) {
+        QJsonObject object = doc.object();
+        if (object.contains("distance")) {
+            double d = object["distance"].toString().toDouble();
+            double distance = d * .621;
+   
+            if (d > 15) {
+                color = Qt::green;
+            }
+            else if (d > 5) {
+                color = Qt::yellow;
+            }
+            else {
+                color = Qt::red;
+            }
+
+            m_lightningLabel->setTextFormat(Qt::RichText);
+            m_lightningLabel->setAlignment(Qt::AlignCenter);
+            m_lightningLabel->setText(QString("Lightning Detected<br><font color=\"%1\">%2</font> miles away").arg(color.name()).arg(distance, 0, 'f', 1));
+            m_lightningTimer->stop();
+            m_lightningTimer->setInterval(1000 * 30);
+            m_lightningTimer->start();
+            emit startLightning();
+        }
     }
-    else if (d > 5) {
-        color = Qt::yellow;
-    }
-    else {
-        color = Qt::red;
-    }
-    
-    m_lightningLabel->setTextFormat(Qt::RichText);
-    m_lightningLabel->setAlignment(Qt::AlignCenter);
-    m_lightningLabel->setText(QString("Lightning Detected<br><font color=\"%1\">%2</font> miles away").arg(color.name()).arg(distance, 0, 'f', 1));
-    m_lightningTimer->stop();
-    m_lightningTimer->setInterval(1000 * 30);
-    m_lightningTimer->start();
-    emit startLightning();
-}
+}    
 
