@@ -26,7 +26,7 @@
 #ifndef QMQTTSUBSCRIBER_H
 #define QMQTTSUBSCRIBER_H
 
-#include <qmqtt/qmqtt>
+#include <QtQmqtt/QtQmqtt>
 
 /**
  * @todo write docs

@@ -132,7 +132,7 @@ void MythFrame::setNYETimeout()
     QTime t(23, 59, 0);
     QDate d(dt.date().year(), 12, 31);
     QDateTime nye_mseconds(d, t);
-    int timeout = (int)dt.msecsTo(nye_mseconds);     // Forcing the conversion to an int, that's what QTimer takes
+    int timeout = static_cast<int>(dt.msecsTo(nye_mseconds));     // Forcing the conversion to an int, that's what QTimer takes
 
     if (timeout == 0) {
         emit startNYE();
@@ -156,7 +156,7 @@ bool MythFrame::init()
 
 	metadata->addTransition(this, SIGNAL(lcdDisconnect()), primary);
 	metadata->addTransition(this, SIGNAL(videoPlaybackEnded()), primary);
-	nye->addTransition(this, SIGNAL(nyeEventDone()), primary);
+	nye->addTransition(this, SIGNAL(stopNYE()), primary);
 	primary->addTransition(this, SIGNAL(videoPlaybackStarted()), metadata);
 	primary->addTransition(this, SIGNAL(startNYE()), nye);
     primary->addTransition(this, SIGNAL(startLightning()), lightning);
@@ -201,12 +201,9 @@ void MythFrame::showNYEScreen()
 {
 	QTime t = QTime::currentTime();
 
-	m_lbCountdown->show();
-
 	if (t.hour() == 23) {
 		QString countdown("<font style='font-size:200px; color:white; font-weight: bold;'>%1</font>");
 		m_lbCountdown->setText(countdown.arg(60 - t.second()));
-        m_lbCountdown->setAlignment(Qt::AlignCenter);
 		m_lbCountdown->show();
 		QTimer::singleShot(1000, this, SLOT(showNYEScreen()));
 	}

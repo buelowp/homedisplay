@@ -23,6 +23,7 @@
 #include <QtNetwork/QtNetwork>
 #include <QtCore/QtCore>
 #include <QtWidgets/QtWidgets>
+#include <QtQmqtt/QtQmqtt>
 
 #include "AnalogClock.h"
 #include "MythLcdServer.h"
@@ -42,7 +43,6 @@ signals:
 	void videoPlaybackEnded();
 	void startNYE();
 	void stopNYE();
-	void nyeEventDone();
     void lcdConnected();
     void toConnectedState();
     void startLightning();
