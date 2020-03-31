@@ -112,6 +112,8 @@ private:
 	QLabel *m_lbCountdown;
 	QTimer *m_clockTimer;
     QLabel *m_lightningLabel;
+    QLabel *m_temperature;
+    QLabel *m_humidity;
 	QByteArray prevTime;
 	bool m_disableProgressIndicator;
     QTimer *m_lightningTimer;

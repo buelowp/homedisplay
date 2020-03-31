@@ -40,6 +40,8 @@ MythFrame::MythFrame(QFrame *parent) : QFrame(parent) {
 	m_metaProgressBar = new QProgressBar(this);
 	m_lbCountdown = new QLabel(this);
     m_lightningLabel = new QLabel(this);
+    m_temperature = new QLabel(this);
+    m_humidity = new QLabel(this);
 
 	m_clockTimer = new QTimer(this);
 	connect(m_clockTimer, SIGNAL(timeout()), this, SLOT(updateClock()));
@@ -445,7 +447,9 @@ void MythFrame::showEvent(QShowEvent *e)
 	Q_UNUSED(e)
     QFont c("Roboto-Regular", 15);
 
-	m_primaryClock->setGeometry(0, 0, 800, 320);
+	m_primaryClock->setGeometry(0, 0, 800, 240);
+    m_temperature->setGeometry(0, 240, 400, 80);
+    m_humidity->setGeometry(400, 240, 240, 80);
 	m_primaryDate->setGeometry(0, 320, 800, 160);
 
     m_metaShow->setGeometry(0, 0, 800, 200);
@@ -460,7 +464,7 @@ void MythFrame::showEvent(QShowEvent *e)
 	m_metaTimeElapsed->setGeometry(600, 320, 200, 60);
 	m_metaTime->setGeometry(600, 380, 200, 60);
 
-	m_lbCountdown->setGeometry(0, 0, 480, 800);
+	m_lbCountdown->setGeometry(0, 0, 800, 480);
 
 	m_metaTime->setAlignment(Qt::AlignCenter);
 	m_metaTimeElapsed->setAlignment(Qt::AlignCenter);
@@ -497,6 +501,8 @@ void MythFrame::hidePrimaryScreen()
 //    qDebug() << __PRETTY_FUNCTION__;
 	m_primaryClock->hide();
 	m_primaryDate->hide();
+    m_temperature->hide();
+    m_humidity->hide()'
 }
 
 void MythFrame::hideMetadataScreen()
@@ -534,6 +540,8 @@ void MythFrame::showPrimaryScreen()
 //    qDebug() << __PRETTY_FUNCTION__;
 	m_primaryClock->show();
 	m_primaryDate->show();
+    m_temperature->show();
+    m_humidity->show();
 }
 
 void MythFrame::hideNYEScreen()
@@ -580,11 +588,27 @@ void MythFrame::messageReceivedOnTopic(QString t, QString p)
     QJsonDocument doc = QJsonDocument::fromJson(p.toLocal8Bit());
     QColor color;
 
-    if (!doc.isNull() && !doc.isEmpty()) {
+    if (t == "weather/conditions") {
+        if (doc.isObject()) {
+            QJsonObject parent = doc.object();
+            QJsonObject values = parent["environment"].toObject();
+            double t = values["farenheit"].toDouble();
+            double h = values["humidity"].toDouble();
+            
+            QString temp = QString("%1%2").arg(t, 0, 'f', 1).arg(QChar(176));
+            QString humidity = QString("%1%").arg(h, 0, 'f', 1);
+            m_temperature->setText(temp);
+            m_humidity->setText(humidity);
+        }
+    }
+    else if (t == "weather/event/lightning") {
+    }
         QJsonObject object = doc.object();
         if (object.contains("distance")) {
-            double d = object["distance"].toString().toDouble();
-            double distance = d * .621;
+            QJsonObject event = doc.object();
+            QJsonObject lightning = event["lightning"].toObject();
+            
+            int distance = lightning["distance"].toInt();
    
             if (d > 15) {
                 color = Qt::green;
