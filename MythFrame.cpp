@@ -42,6 +42,8 @@ MythFrame::MythFrame(QFrame *parent) : QFrame(parent) {
     m_lightningLabel = new QLabel(this);
     m_temperature = new QLabel(this);
     m_humidity = new QLabel(this);
+    m_temperature->setAlignment(Qt::AlignCenter);
+    m_humidity->setAlignment(Qt::AlignCenter);
 
 	m_clockTimer = new QTimer(this);
 	connect(m_clockTimer, SIGNAL(timeout()), this, SLOT(updateClock()));
@@ -483,6 +485,8 @@ void MythFrame::showEvent(QShowEvent *e)
 	m_metaTitle->setFont(c);
 	m_metaChannel->setIndent(10);
 	m_metaChannel->setFont(c);
+	m_temperature->setFont(c);
+	m_humidity->setFont(c);
 
 	m_metaProgressBar->setStyleSheet(".QProgressBar{border: 2px solid black; background: black; padding: 2px;} QProgressBar::chunk{border-radius: 3px; background: qlineargradient(x1: 0, y1: 0.5, x2: 1, y2: 0.5, stop: 0 #fff, stop: .25 #fee, stop: .5 #fbb, stop: .75 #f66, stop: 1 #f00);}");
 	m_metaTime->setStyleSheet(".QLabel{font-size:50px; background-color: black; color: white;}");
@@ -502,7 +506,7 @@ void MythFrame::hidePrimaryScreen()
 	m_primaryClock->hide();
 	m_primaryDate->hide();
     m_temperature->hide();
-    m_humidity->hide()'
+    m_humidity->hide();
 }
 
 void MythFrame::hideMetadataScreen()
@@ -595,20 +599,20 @@ void MythFrame::messageReceivedOnTopic(QString t, QString p)
             double t = values["farenheit"].toDouble();
             double h = values["humidity"].toDouble();
             
-            QString temp = QString("%1%2").arg(t, 0, 'f', 1).arg(QChar(176));
-            QString humidity = QString("%1%").arg(h, 0, 'f', 1);
+            QString temp = QString("<font style='font-size:45px; color:white; font-weight: bold;'>%1%2</font>").arg(t, 0, 'f', 1).arg(QChar(176));
+            QString humidity = QString("<font style='font-size:45px; color:white; font-weight: bold;'>%1%</font>").arg(h, 0, 'f', 1);
             m_temperature->setText(temp);
             m_humidity->setText(humidity);
         }
     }
     else if (t == "weather/event/lightning") {
-    }
         QJsonObject object = doc.object();
         if (object.contains("distance")) {
             QJsonObject event = doc.object();
             QJsonObject lightning = event["lightning"].toObject();
             
-            int distance = lightning["distance"].toInt();
+            int d = lightning["distance"].toInt();
+	    double distance = d * .621;
    
             if (d > 15) {
                 color = Qt::green;
