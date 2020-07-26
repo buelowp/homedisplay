@@ -7,18 +7,14 @@ QT += network widgets qmqtt
 OBJECTS_DIR = .obj
 MOC_DIR = .moc
 
-SOURCES = AnalogClock.cpp \
-	MythFrame.cpp \
-	MythLcdServer.cpp \
+LIBS = -lqutesonos
+
+SOURCES = MythFrame.cpp \
 	main.cpp \
-	qmqttsubscriber.cpp \
-	KodiLcdServer.cpp
+	qmqttsubscriber.cpp
 		
-HEADERS = AnalogClock.h \
-	MythFrame.h \
-	MythLcdServer.h \
-	qmqttsubscriber.h \
-	KodiLcdServer.h
+HEADERS = MythFrame.h \
+	qmqttsubscriber.h
 
 ICONS = icons/5_1.jpg \
 	icons/7_1.jpg \

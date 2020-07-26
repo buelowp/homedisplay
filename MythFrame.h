@@ -19,59 +19,36 @@
 #ifndef MYTHFRAME_H_
 #define MYTHFRAME_H_
 
-#include <QtGui>
+#include <QtGui/QtGui>
 #include <QtNetwork/QtNetwork>
 #include <QtCore/QtCore>
 #include <QtWidgets/QtWidgets>
 #include <QtQmqtt/QtQmqtt>
 
-#include "AnalogClock.h"
-#include "MythLcdServer.h"
+#include <sonosrequest.h>
+
 #include "qmqttsubscriber.h"
-#include "KodiLcdServer.h"
 
 class MythFrame : public QFrame {
 	Q_OBJECT
+	
 public:
 	MythFrame(QFrame *parent = 0);
 	virtual ~MythFrame();
-	bool init();
 
 signals:
-	void lcdDisconnect();
-	void videoPlaybackStarted();
-	void videoPlaybackEnded();
 	void startNYE();
 	void stopNYE();
-    void lcdConnected();
-    void toConnectedState();
-    void startLightning();
     void endLightning();
+    void startLightning();
+    void startSonos();
+    void endSonos();
 
 public slots:
-	void connCreated();
-	void connClosed();
-	void metaDataEnded();
-	void videoFormat(QString);
-	void audioFormat(QString);
-	void stereoFormat(QString);
-	void playbackFlags(QString);
-	void updateClock();
-	void metaDataStarted();
-    void disconnectClock();
-    void mythConnected();
-    void disableProgressIndicator();
-    void enableProgressIndicator();
+    void updateClock();
 
 protected slots:
-	void channelUpdate(QByteArray);
-	void showTitle(QByteArray);
-	void showSubTitle(QByteArray);
-	void elapsedTime(QByteArray);
-	void totalTime(QByteArray);
-	void percentComplete(int);
-    void percentComplete(double);
-	void showNYECountDown();
+    void showNYECountDown();
 	void hidePrimaryScreen();
 	void showPrimaryScreen();
 	void hideMetadataScreen();
@@ -83,43 +60,53 @@ protected slots:
     void connectionComplete();
     void disconnectedEvent();
     void lightningTimeout();
-    void showLightningScreen();
-    void hideLightningScreen();
-    void kodiConnected();
+    void sonosRequestResult(QByteArray);
+    void sonosRequestError(QNetworkReply::NetworkError);
+    void sonosUpdate();
 
 protected:
 	void showEvent(QShowEvent*);
 
 private:
     void setupMqttSubscriber();
-    void setupKodi();
+    void setupSonos();
+    void calculateMinutes(int);
     
     QMqttSubscriber *m_mqttClient;
+    SonosRequest *m_sonos;
+
+    QWidget *m_primaryLayoutWidget;
+    QWidget *m_nyeLayoutWidget;
+    QWidget *m_sonosLayoutWidget;
+
+    QHBoxLayout *m_parentWidget;
+    QGridLayout *m_primaryLayout;
+    QGridLayout *m_nyeLayout;
+    QGridLayout *m_sonosLayout;
 
 	QLabel *m_primaryClock;
-	QTcpServer *m_server;
-	MythLcdServer *m_mythLcd;
-	QLabel *m_metaChannel;
-	QLabel *m_metaTitle;
-	QLabel *m_metaShow;
-	QLabel *m_metaAudioImage;
-	QLabel *m_metaStereoImage;
-	QLabel *m_metaFlags;
-	QLabel *m_metaTime;
-	QLabel *m_metaTimeElapsed;
-	QLabel *m_metaClock;
 	QLabel *m_primaryDate;
 	QLabel *m_lbCountdown;
 	QTimer *m_clockTimer;
     QLabel *m_lightningLabel;
     QLabel *m_temperature;
     QLabel *m_humidity;
+    
+    QLabel *m_artist;
+    QLabel *m_album;
+    QLabel *m_station;
+    QLabel *m_albumArt;
+    QLabel *m_title;
+    int m_duration;
+    int m_elapsed;
+    int m_trackNumber;
+    int m_volume;
+    QProgressBar *m_elapsedIndicator;
+    
 	QByteArray prevTime;
-	bool m_disableProgressIndicator;
     QTimer *m_lightningTimer;
-    KodiLcdServer *m_kodi;
+    QTimer *m_sonosTimer;
 
-	QProgressBar *m_metaProgressBar;
 	QString m_clockColor;
 
 	QStateMachine m_states;
