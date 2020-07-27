@@ -49,6 +49,7 @@ signals:
     void result(QByteArray);
     void error(QNetworkReply::NetworkError);
     void albumArt(QByteArray);
+    void albumArtError(QNetworkReply::NetworkError);
     
 private:
     QNetworkAccessManager *m_manager;

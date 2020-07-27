@@ -63,7 +63,7 @@ void SonosRequest::getAlbumArt(QUrl url)
 void SonosRequest::albumArtFinished(QNetworkReply* reply)
 {
     if (reply->error() != QNetworkReply::NoError) {
-        emit error(reply->error());
+        emit albumArtError(reply->error());
         qDebug() << __FUNCTION__ << reply->error();
     }
     else {

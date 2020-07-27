@@ -24,8 +24,9 @@ int main(int argc, char **argv)
     QApplication app (argc, argv);
     MythFrame frame;
 
-    frame.setGeometry(0, 0, 800, 480);
-    frame.show();
+    app.setOverrideCursor(QCursor(Qt::BlankCursor));
+    frame.setFixedSize(800, 480);
+    frame.showFullScreen();
 
     return app.exec();
 }

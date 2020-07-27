@@ -29,7 +29,7 @@ MythFrame::MythFrame(QFrame *parent) : QFrame(parent) {
     m_primaryLayout = new QGridLayout(m_primaryLayoutWidget);
     m_primaryLayout->setMargin(0);
     m_primaryLayout->setSpacing(0);
-	m_primaryClock = new QLabel();
+    m_primaryClock = new QLabel();
     m_primaryClock->setAlignment(Qt::AlignCenter);
     m_primaryDate = new QLabel();
     m_primaryDate->setAlignment(Qt::AlignCenter);
@@ -38,6 +38,7 @@ MythFrame::MythFrame(QFrame *parent) : QFrame(parent) {
     m_humidity = new QLabel();
     m_temperature->setAlignment(Qt::AlignCenter);
     m_humidity->setAlignment(Qt::AlignCenter);
+    m_lightningLabel->setAlignment(Qt::AlignCenter);
 
     m_primaryLayout->addWidget(m_primaryClock, 0, 0, 1, 4);
     m_primaryLayout->addWidget(m_temperature, 2, 0, 1, 2);
@@ -66,37 +67,37 @@ MythFrame::MythFrame(QFrame *parent) : QFrame(parent) {
     m_sonosLayout->addWidget(m_station, 4, 1, 1, 3);
     m_sonosLayout->addWidget(m_elapsedIndicator, 5, 0, 1, 4);
     
-    QFont c("Roboto-Regular", 25);
-    QFont l("Roboto-Regular", 20);
+    QFont c("Roboto-Regular", 36);
+    QFont l("Roboto-Regular", 28);
     QFont p("Roboto-Regular", 100);
-    QFont d("Roboto-Regular", 40);
+    QFont d("Roboto-Regular", 36);
+    QFont t("Roboto-Regular", 60);
 
-	m_primaryClock->setFont(p);
-	m_primaryDate->setFont(d);
-	m_temperature->setFont(c);
-	m_humidity->setFont(c);
+    m_primaryClock->setFont(p);
+    m_primaryDate->setFont(d);
+    m_temperature->setFont(c);
+    m_humidity->setFont(c);
     m_artist->setFont(c);
     m_album->setFont(c);
     m_station->setFont(c);
-    m_title->setFont(d);
+    m_title->setFont(t);
     m_lightningLabel->setFont(l);
 
     m_stackedLayout = new QStackedLayout(this);
     m_stackedLayout->addWidget(m_primaryLayoutWidget);
     m_stackedLayout->addWidget(m_sonosLayoutWidget);
     m_stackedLayout->addWidget(m_nyeLayoutWidget);
-//    m_parentLayout = new QVBoxLayout();
-//    setLayout(m_parentLayout);
         
-	m_clockTimer = new QTimer(this);
-	connect(m_clockTimer, SIGNAL(timeout()), this, SLOT(updateClock()));
-	m_clockTimer->setInterval(50);
-	m_clockTimer->start();
+    m_clockTimer = new QTimer(this);
+    connect(m_clockTimer, SIGNAL(timeout()), this, SLOT(updateClock()));
+    m_clockTimer->setInterval(50);
+    m_clockTimer->start();
 
     m_sonos = new SonosRequest();
     connect(m_sonos, &SonosRequest::result, this, &MythFrame::sonosRequestResult);
     connect(m_sonos, &SonosRequest::error, this, &MythFrame::sonosRequestError);
     connect(m_sonos, &SonosRequest::albumArt, this, &MythFrame::sonosAlbumArt);
+    connect(m_sonos, &SonosRequest::albumArtError, this, &MythFrame::sonosAlbumArtError);
     setupSonos();
     
     m_sonosTimer = new QTimer(this);
@@ -146,6 +147,27 @@ MythFrame::~MythFrame()
 {
 }
 
+void MythFrame::calculateLabelFontSize(QLabel *lbl, QString text, int point)
+{
+    QFont f("Roboto-Regular", point);
+    QFontMetrics fm(lbl->font());
+    if (fm.width(text) > lbl->width()) {
+        int lblwidth = lbl->width();
+        int fmwidth = fm.width(text);
+        float factor = (float)lbl->width() / (float)fm.width(text);
+        if (factor < 1.0) {
+            if (factor < .6)
+                factor = .6;
+
+            f.setPointSizeF(point * (factor * .9));
+            qDebug() << "label width:" << lblwidth;
+            qDebug() << "font width:" << fmwidth;
+            qDebug() << "Calculated font scaling factor to be" << (float)(factor * .9);
+            qDebug() << "Reset font size for text\"" << text << "\" to" << f.pointSize();
+        }
+    }
+    lbl->setFont(f);
+}
 
 void MythFrame::setupSonos()
 {
@@ -176,6 +198,11 @@ void MythFrame::sonosRequestError(QNetworkReply::NetworkError error)
     qDebug() << __FUNCTION__ << error;
 }
 
+void MythFrame::sonosAlbumArtError(QNetworkReply::NetworkError error)
+{
+    qDebug() << __FUNCTION__ << error;
+}
+
 void MythFrame::calculateMinutes(int elapsed)
 {
     QString display = QString("%1:%2").arg(elapsed/60, 2, 10, QChar('0')).arg(elapsed%60, 2, 10, QChar('0'));
@@ -199,10 +226,14 @@ void MythFrame::sonosRequestResult(QByteArray ba)
                 QJsonObject current = parent["currentTrack"].toObject();
                 if (parent["trackNo"] != m_trackNumber) { 
                     m_artist->setText(current["artist"].toString());
+                    calculateLabelFontSize(m_artist, current["artist"].toString(), 36);
                     m_album->setText(current["album"].toString());
+                    calculateLabelFontSize(m_album, current["album"].toString(), 36);
                     m_station->setText(current["stationName"].toString());
+                    calculateLabelFontSize(m_station, current["stationName"].toString(), 36);
                     m_duration = current["duration"].toInt();
                     m_title->setText(current["title"].toString());
+                    calculateLabelFontSize(m_title, current["title"].toString(), 60);
                     m_elapsedIndicator->setMaximum(m_duration);
                     m_elapsedIndicator->setMinimum(0);
                     m_trackNumber = parent["trackNo"].toInt();

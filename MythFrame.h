@@ -29,15 +29,15 @@
 #include "qmqttsubscriber.h"
 
 class MythFrame : public QFrame {
-	Q_OBJECT
+    Q_OBJECT
 	
 public:
-	MythFrame(QFrame *parent = 0);
-	virtual ~MythFrame();
+    MythFrame(QFrame *parent = 0);
+    virtual ~MythFrame();
 
 signals:
-	void startNYE();
-	void stopNYE();
+    void startNYE();
+    void stopNYE();
     void endLightning();
     void startLightning();
     void startSonos();
@@ -63,6 +63,7 @@ protected slots:
     void sonosRequestError(QNetworkReply::NetworkError);
     void sonosUpdate();
     void sonosAlbumArt(QByteArray);
+    void sonosAlbumArtError(QNetworkReply::NetworkError);
 
 protected:
 	void showEvent(QShowEvent*);
@@ -78,6 +79,7 @@ private:
     void setupMqttSubscriber();
     void setupSonos();
     void calculateMinutes(int);
+    void calculateLabelFontSize(QLabel*, QString, int);
     
     QMqttSubscriber *m_mqttClient;
     SonosRequest *m_sonos;
