@@ -25,8 +25,7 @@
 #include <QtWidgets/QtWidgets>
 #include <QtQmqtt/QtQmqtt>
 
-#include <sonosrequest.h>
-
+#include "sonosrequest.h"
 #include "qmqttsubscriber.h"
 
 class MythFrame : public QFrame {
@@ -63,11 +62,19 @@ protected slots:
     void sonosRequestResult(QByteArray);
     void sonosRequestError(QNetworkReply::NetworkError);
     void sonosUpdate();
+    void sonosAlbumArt(QByteArray);
 
 protected:
 	void showEvent(QShowEvent*);
 
 private:
+    
+    typedef enum WIDGET_INDEX:int {
+        Primary = 0,
+        Sonos,
+        NYE,
+    } WidgetIndex;
+    
     void setupMqttSubscriber();
     void setupSonos();
     void calculateMinutes(int);

@@ -7,14 +7,14 @@ QT += network widgets qmqtt
 OBJECTS_DIR = .obj
 MOC_DIR = .moc
 
-LIBS = -lqutesonos
-
 SOURCES = MythFrame.cpp \
 	main.cpp \
-	qmqttsubscriber.cpp
+	qmqttsubscriber.cpp \
+	sonosrequest.cpp
 		
 HEADERS = MythFrame.h \
-	qmqttsubscriber.h
+	qmqttsubscriber.h \
+	sonosrequest.h
 
 ICONS = icons/5_1.jpg \
 	icons/7_1.jpg \

@@ -78,20 +78,15 @@ MythFrame::MythFrame(QFrame *parent) : QFrame(parent) {
     m_artist->setFont(c);
     m_album->setFont(c);
     m_station->setFont(c);
-    m_title->setFont(c);
+    m_title->setFont(d);
     m_lightningLabel->setFont(l);
-/*
-    m_parentLayout = new QVBoxLayout();
-    m_parentLayout->addWidget(m_primaryLayoutWidget);
-    m_parentLayout->addWidget(m_sonosLayoutWidget);
-    m_parentLayout->addWidget(m_nyeLayoutWidget);
-*/
+
     m_stackedLayout = new QStackedLayout(this);
     m_stackedLayout->addWidget(m_primaryLayoutWidget);
     m_stackedLayout->addWidget(m_sonosLayoutWidget);
     m_stackedLayout->addWidget(m_nyeLayoutWidget);
-    m_parentLayout = new QVBoxLayout();
-    setLayout(m_parentLayout);
+//    m_parentLayout = new QVBoxLayout();
+//    setLayout(m_parentLayout);
         
 	m_clockTimer = new QTimer(this);
 	connect(m_clockTimer, SIGNAL(timeout()), this, SLOT(updateClock()));
@@ -101,6 +96,7 @@ MythFrame::MythFrame(QFrame *parent) : QFrame(parent) {
     m_sonos = new SonosRequest();
     connect(m_sonos, &SonosRequest::result, this, &MythFrame::sonosRequestResult);
     connect(m_sonos, &SonosRequest::error, this, &MythFrame::sonosRequestError);
+    connect(m_sonos, &SonosRequest::albumArt, this, &MythFrame::sonosAlbumArt);
     setupSonos();
     
     m_sonosTimer = new QTimer(this);
@@ -138,9 +134,18 @@ MythFrame::MythFrame(QFrame *parent) : QFrame(parent) {
     m_states.start();
 }
 
+void MythFrame::sonosAlbumArt(QByteArray ba)
+{
+    QPixmap art;
+    
+    art.loadFromData(ba);
+    m_albumArt->setPixmap(art.scaledToWidth(200));
+}
+
 MythFrame::~MythFrame() 
 {
 }
+
 
 void MythFrame::setupSonos()
 {
@@ -201,6 +206,8 @@ void MythFrame::sonosRequestResult(QByteArray ba)
                     m_elapsedIndicator->setMaximum(m_duration);
                     m_elapsedIndicator->setMinimum(0);
                     m_trackNumber = parent["trackNo"].toInt();
+                    QUrl url = current["absoluteAlbumArtUri"].toString();
+                    m_sonos->getAlbumArt(url);
                 }
                 calculateMinutes(parent["elapsedTime"].toInt());
                 m_volume = parent["volume"].toInt();
@@ -284,29 +291,28 @@ void MythFrame::showEvent(QShowEvent *e)
 
 void MythFrame::hidePrimaryScreen()
 {
-    m_primaryLayoutWidget->hide();
 }
 
 void MythFrame::showPrimaryScreen()
 {
-    m_stackedLayout->setCurrentIndex(0);
+    m_stackedLayout->setCurrentIndex(WidgetIndex::Primary);
 }
 
 void MythFrame::hideMetadataScreen()
 {
-    m_sonosLayoutWidget->hide();
+    m_trackNumber = 0;
 }
 
 void MythFrame::showMetadataScreen()
 {
-    m_stackedLayout->setCurrentIndex(1);
+    m_stackedLayout->setCurrentIndex(WidgetIndex::Sonos);
 }
 
 void MythFrame::showNYEScreen()
 {
 	QTime t = QTime::currentTime();
 
-    m_nyeLayoutWidget->show();
+    m_stackedLayout->setCurrentIndex(WidgetIndex::NYE);
     
 	if (t.hour() == 23) {
 		QString countdown("<font style='font-size:200px; color:white; font-weight: bold;'>%1</font>");
@@ -319,7 +325,6 @@ void MythFrame::showNYEScreen()
 
 void MythFrame::hideNYEScreen()
 {
-    m_nyeLayoutWidget->hide();
 }
 
 void MythFrame::connectionComplete()
