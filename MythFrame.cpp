@@ -27,6 +27,8 @@ MythFrame::MythFrame(QFrame *parent) : QFrame(parent) {
 
     m_primaryLayoutWidget = new QWidget();
     m_primaryLayout = new QGridLayout(m_primaryLayoutWidget);
+    m_primaryLayout->setMargin(0);
+    m_primaryLayout->setSpacing(0);
 	m_primaryClock = new QLabel();
     m_primaryClock->setAlignment(Qt::AlignCenter);
     m_primaryDate = new QLabel();
@@ -37,11 +39,11 @@ MythFrame::MythFrame(QFrame *parent) : QFrame(parent) {
     m_temperature->setAlignment(Qt::AlignCenter);
     m_humidity->setAlignment(Qt::AlignCenter);
 
-    m_primaryLayout->addWidget(m_primaryClock, 0, 0, 3, 4);
-    m_primaryLayout->addWidget(m_temperature, 3, 0, 1, 2);
-    m_primaryLayout->addWidget(m_humidity, 3, 2, 1, 2);
-    m_primaryLayout->addWidget(m_lightningLabel, 4, 0, 1, 4);
-    m_primaryLayout->addWidget(m_primaryDate, 5, 0, 1, 4);
+    m_primaryLayout->addWidget(m_primaryClock, 0, 0, 1, 4);
+    m_primaryLayout->addWidget(m_temperature, 2, 0, 1, 2);
+    m_primaryLayout->addWidget(m_humidity, 2, 2, 1, 2);
+    m_primaryLayout->addWidget(m_lightningLabel, 3, 0, 1, 4);
+    m_primaryLayout->addWidget(m_primaryDate, 4, 0, 1, 4);
     
     m_nyeLayoutWidget = new QWidget();
     m_nyeLayout = new QGridLayout(m_nyeLayoutWidget);
@@ -57,22 +59,48 @@ MythFrame::MythFrame(QFrame *parent) : QFrame(parent) {
     m_albumArt = new QLabel();
     m_elapsedIndicator = new QProgressBar();
     
-    m_sonosLayout->addWidget(m_title, 0, 0, 1, 4);
-    m_sonosLayout->addWidget(m_albumArt, 1, 0, 3, 1);
-    m_sonosLayout->addWidget(m_artist, 1, 1, 1, 3);
-    m_sonosLayout->addWidget(m_album, 2, 1, 1, 3);
-    m_sonosLayout->addWidget(m_station, 3, 1, 1, 3);
-    m_sonosLayout->addWidget(m_elapsedIndicator, 4, 0, 1, 4);
+    m_sonosLayout->addWidget(m_title, 0, 0, 2, 4);
+    m_sonosLayout->addWidget(m_albumArt, 2, 0, 3, 1);
+    m_sonosLayout->addWidget(m_artist, 2, 1, 1, 3);
+    m_sonosLayout->addWidget(m_album, 3, 1, 1, 3);
+    m_sonosLayout->addWidget(m_station, 4, 1, 1, 3);
+    m_sonosLayout->addWidget(m_elapsedIndicator, 5, 0, 1, 4);
+    
+    QFont c("Roboto-Regular", 25);
+    QFont l("Roboto-Regular", 20);
+    QFont p("Roboto-Regular", 100);
+    QFont d("Roboto-Regular", 40);
+
+	m_primaryClock->setFont(p);
+	m_primaryDate->setFont(d);
+	m_temperature->setFont(c);
+	m_humidity->setFont(c);
+    m_artist->setFont(c);
+    m_album->setFont(c);
+    m_station->setFont(c);
+    m_title->setFont(c);
+    m_lightningLabel->setFont(l);
+/*
+    m_parentLayout = new QVBoxLayout();
+    m_parentLayout->addWidget(m_primaryLayoutWidget);
+    m_parentLayout->addWidget(m_sonosLayoutWidget);
+    m_parentLayout->addWidget(m_nyeLayoutWidget);
+*/
+    m_stackedLayout = new QStackedLayout(this);
+    m_stackedLayout->addWidget(m_primaryLayoutWidget);
+    m_stackedLayout->addWidget(m_sonosLayoutWidget);
+    m_stackedLayout->addWidget(m_nyeLayoutWidget);
+    m_parentLayout = new QVBoxLayout();
+    setLayout(m_parentLayout);
         
 	m_clockTimer = new QTimer(this);
 	connect(m_clockTimer, SIGNAL(timeout()), this, SLOT(updateClock()));
 	m_clockTimer->setInterval(50);
 	m_clockTimer->start();
-    
+
     m_sonos = new SonosRequest();
     connect(m_sonos, &SonosRequest::result, this, &MythFrame::sonosRequestResult);
     connect(m_sonos, &SonosRequest::error, this, &MythFrame::sonosRequestError);
-//  m_sonos->setURL("http://pimythclock.home:5005", "Family Room");
     setupSonos();
     
     m_sonosTimer = new QTimer(this);
@@ -82,13 +110,7 @@ MythFrame::MythFrame(QFrame *parent) : QFrame(parent) {
 
     setupMqttSubscriber();
     m_trackNumber = 0;
-    
-    m_parentWidget = new QHBoxLayout();
-    m_parentWidget->addWidget(m_primaryLayoutWidget);
-    m_parentWidget->addWidget(m_sonosLayoutWidget);
-    m_parentWidget->addWidget(m_nyeLayoutWidget);
-    setLayout(m_parentWidget);
-    
+        
 	QState *primary = new QState();
 	QState *metadata = new QState();
 	QState *nye = new QState();
@@ -248,9 +270,8 @@ void MythFrame::updateClock()
         m_primaryClock->clear();
     }
     else {
-        QString smallDisplay("<font style='font-size:50px; color:white; font-weight: bold;'>%1</font>");
-        QString dateDisplay("<font style='font-size:45px; color:%1; font-weight: bold;'>%2</font>");
-        QString largeDisplay("<font style='font-size:140px; color:%1; font-weight: bold;'>%2</font>");
+        QString dateDisplay("<font style='color:%1; font-weight: bold;'>%2</font>");
+        QString largeDisplay("<font style='color:%1; font-weight: bold;'>%2</font>");
         m_primaryDate->setText(dateDisplay.arg(m_clockColor).arg(d.toString("dddd MMMM d, yyyy")));
         m_primaryClock->setText(largeDisplay.arg(m_clockColor).arg(t.toString("h:mm A")));
     }
@@ -259,18 +280,6 @@ void MythFrame::updateClock()
 void MythFrame::showEvent(QShowEvent *e)
 {
 	Q_UNUSED(e)
-    QFont c("Roboto-Regular", 25);
-    QFont l("Roboto-Regular", 20);
-
-	m_primaryClock->setFont(c);
-	m_primaryDate->setFont(c);
-	m_temperature->setFont(c);
-	m_humidity->setFont(c);
-    m_artist->setFont(c);
-    m_album->setFont(c);
-    m_station->setFont(c);
-    m_title->setFont(c);
-    m_lightningLabel->setFont(l);
 }
 
 void MythFrame::hidePrimaryScreen()
@@ -280,7 +289,7 @@ void MythFrame::hidePrimaryScreen()
 
 void MythFrame::showPrimaryScreen()
 {
-    m_primaryLayoutWidget->show();
+    m_stackedLayout->setCurrentIndex(0);
 }
 
 void MythFrame::hideMetadataScreen()
@@ -290,7 +299,7 @@ void MythFrame::hideMetadataScreen()
 
 void MythFrame::showMetadataScreen()
 {
-    m_sonosLayoutWidget->show();
+    m_stackedLayout->setCurrentIndex(1);
 }
 
 void MythFrame::showNYEScreen()

@@ -79,7 +79,9 @@ private:
     QWidget *m_nyeLayoutWidget;
     QWidget *m_sonosLayoutWidget;
 
-    QHBoxLayout *m_parentWidget;
+    QStackedLayout *m_stackedLayout;
+    QVBoxLayout *m_parentLayout;
+    
     QGridLayout *m_primaryLayout;
     QGridLayout *m_nyeLayout;
     QGridLayout *m_sonosLayout;
