@@ -29,3 +29,7 @@ INSTALLS += target
 icons.path = /usr/share/mythclock
 icons.files = icons/*
 INSTALLS += icons
+
+config.path = $$HOME/.config/MythClock
+config.files = config/*
+INSTALLS += config
