@@ -27,6 +27,7 @@
 
 #include "sonosrequest.h"
 #include "qmqttsubscriber.h"
+#include "sonoslabel.h"
 
 class MythFrame : public QFrame {
     Q_OBJECT
@@ -38,23 +39,22 @@ public:
 signals:
     void startNYE();
     void stopNYE();
-    void endLightning();
     void startLightning();
+    void endLightning();
     void startSonos();
     void endSonos();
+    void startBlankScreen();
 
 public slots:
     void updateClock();
 
 protected slots:
     void showNYECountDown();
-	void hidePrimaryScreen();
 	void showPrimaryScreen();
-	void hideMetadataScreen();
 	void showMetadataScreen();
 	void showNYEScreen();
-	void hideNYEScreen();
     void setNYETimeout();
+    void showBlankScreen();
     void messageReceivedOnTopic(QString, QString);
     void connectionComplete();
     void disconnectedEvent();
@@ -74,12 +74,20 @@ private:
         Primary = 0,
         Sonos,
         NYE,
+        Blank
     } WidgetIndex;
     
+    typedef enum FONT_SIZE:int {
+        Lightning = 28,
+        Default = 36,
+        Title = 50,
+        Clock = 90,
+    } FontSize;
+
     void setupMqttSubscriber();
     void setupSonos();
     void calculateMinutes(int);
-    void calculateLabelFontSize(QLabel*, QString, int);
+    void setupBlankScreenTimers();
     
     QMqttSubscriber *m_mqttClient;
     SonosRequest *m_sonos;
@@ -87,6 +95,7 @@ private:
     QWidget *m_primaryLayoutWidget;
     QWidget *m_nyeLayoutWidget;
     QWidget *m_sonosLayoutWidget;
+    QWidget *m_blankLayoutWidget;
 
     QStackedLayout *m_stackedLayout;
     QVBoxLayout *m_parentLayout;
@@ -103,11 +112,11 @@ private:
     QLabel *m_temperature;
     QLabel *m_humidity;
     
-    QLabel *m_artist;
-    QLabel *m_album;
-    QLabel *m_station;
+    SonosLabel *m_artist;
+    SonosLabel *m_album;
+    SonosLabel *m_station;
+    SonosLabel *m_title;
     QLabel *m_albumArt;
-    QLabel *m_title;
     int m_duration;
     int m_elapsed;
     int m_trackNumber;
@@ -117,10 +126,15 @@ private:
 	QByteArray prevTime;
     QTimer *m_lightningTimer;
     QTimer *m_sonosTimer;
+    QTimer *m_startBlankScreen;
+    QTimer *m_endBlankScreen;
 
 	QString m_clockColor;
 
 	QStateMachine m_states;
+
+    QVector<QLabel*> m_labels;
+    WidgetIndex m_currentWidget;
 };
 
 #endif /* MYTHFRAME_H_ */

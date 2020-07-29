@@ -27,8 +27,6 @@ MythFrame::MythFrame(QFrame *parent) : QFrame(parent) {
 
     m_primaryLayoutWidget = new QWidget();
     m_primaryLayout = new QGridLayout(m_primaryLayoutWidget);
-    m_primaryLayout->setMargin(0);
-    m_primaryLayout->setSpacing(0);
     m_primaryClock = new QLabel();
     m_primaryClock->setAlignment(Qt::AlignCenter);
     m_primaryDate = new QLabel();
@@ -53,10 +51,14 @@ MythFrame::MythFrame(QFrame *parent) : QFrame(parent) {
     
     m_sonosLayoutWidget = new QWidget();
     m_sonosLayout = new QGridLayout(m_sonosLayoutWidget);
-    m_title = new QLabel();
-    m_artist = new QLabel();
-    m_album = new QLabel();
-    m_station = new QLabel();
+    m_title = new SonosLabel();
+    m_title->setDefaultPointSize(FontSize::Title);
+    m_artist = new SonosLabel();
+    m_artist->setDefaultPointSize(FontSize::Default);
+    m_album = new SonosLabel();
+    m_album->setDefaultPointSize(FontSize::Default);
+    m_station = new SonosLabel();
+    m_station->setDefaultPointSize(FontSize::Default);
     m_albumArt = new QLabel();
     m_elapsedIndicator = new QProgressBar();
     
@@ -71,7 +73,7 @@ MythFrame::MythFrame(QFrame *parent) : QFrame(parent) {
     QFont l("Roboto-Regular", 28);
     QFont p("Roboto-Regular", 100);
     QFont d("Roboto-Regular", 36);
-    QFont t("Roboto-Regular", 60);
+    QFont t("Roboto-Regular", 50);
 
     m_primaryClock->setFont(p);
     m_primaryDate->setFont(d);
@@ -83,10 +85,13 @@ MythFrame::MythFrame(QFrame *parent) : QFrame(parent) {
     m_title->setFont(t);
     m_lightningLabel->setFont(l);
 
+    m_blankLayoutWidget = new QWidget();
+
     m_stackedLayout = new QStackedLayout(this);
     m_stackedLayout->addWidget(m_primaryLayoutWidget);
     m_stackedLayout->addWidget(m_sonosLayoutWidget);
     m_stackedLayout->addWidget(m_nyeLayoutWidget);
+    m_stackedLayout->addWidget(m_blankLayoutWidget);
         
     m_clockTimer = new QTimer(this);
     connect(m_clockTimer, SIGNAL(timeout()), this, SLOT(updateClock()));
@@ -105,25 +110,30 @@ MythFrame::MythFrame(QFrame *parent) : QFrame(parent) {
     m_sonosTimer->setInterval(500);
     m_sonosTimer->start();
 
+    m_startBlankScreen = new QTimer(this);
+    m_endBlankScreen = new QTimer(this);
+    setupBlankScreenTimers();
+  
     setupMqttSubscriber();
     m_trackNumber = 0;
         
 	QState *primary = new QState();
 	QState *metadata = new QState();
 	QState *nye = new QState();
+    QState *blank = new QState();
 
 	nye->addTransition(this, SIGNAL(stopNYE()), primary);
 	primary->addTransition(this, SIGNAL(startSonos()), metadata);
 	primary->addTransition(this, SIGNAL(startNYE()), nye);
+    primary->addTransition(m_startBlankScreen, SIGNAL(timeout()), blank);
 	metadata->addTransition(this, SIGNAL(startNYE()), nye);
     metadata->addTransition(this, SIGNAL(endSonos()), primary);
+    blank->addTransition(m_endBlankScreen, SIGNAL(timeout()), primary);
 
-	connect(metadata, SIGNAL(exited()), this, SLOT(hideMetadataScreen()));
 	connect(metadata, SIGNAL(entered()), this, SLOT(showMetadataScreen()));
-	connect(primary, SIGNAL(exited()), this, SLOT(hidePrimaryScreen()));
 	connect(primary, SIGNAL(entered()), this, SLOT(showPrimaryScreen()));
-	connect(nye, SIGNAL(exited()), this, SLOT(hideNYEScreen()));
 	connect(nye, SIGNAL(entered()), this, SLOT(showNYEScreen()));
+    connect(blank, SIGNAL(entered()), this, SLOT(showBlankScreen()));
 
 	m_states.addState(primary);
 	m_states.addState(metadata);
@@ -133,6 +143,36 @@ MythFrame::MythFrame(QFrame *parent) : QFrame(parent) {
     setNYETimeout();
 
     m_states.start();
+    m_currentWidget = WidgetIndex::Primary;
+}
+
+MythFrame::~MythFrame() 
+{
+}
+
+void MythFrame::setupBlankScreenTimers()
+{
+    QDateTime now = QDateTime::currentDateTime();
+
+    if (now.time().hour() >= 1 && now.time().hour() < 5) {
+        m_startBlankScreen->setInterval(0);
+        m_startBlankScreen->setSingleShot(true);
+        m_startBlankScreen->start();
+    }
+    else if (now.time().hour() == 0) {
+        QTime end(1,0,0);
+        m_startBlankScreen->setInterval(now.time().msecsTo(end));
+        m_startBlankScreen->setSingleShot(true);
+        m_startBlankScreen->start();
+    }
+    else {
+        QDateTime tomorrow = QDateTime::currentDateTime();
+        tomorrow = tomorrow.addDays(1);
+        tomorrow.setTime(QTime(1,0,0));
+        m_startBlankScreen->setSingleShot(true);
+        m_startBlankScreen->setInterval(now.msecsTo(tomorrow));
+        m_startBlankScreen->start();
+    }
 }
 
 void MythFrame::sonosAlbumArt(QByteArray ba)
@@ -141,32 +181,6 @@ void MythFrame::sonosAlbumArt(QByteArray ba)
     
     art.loadFromData(ba);
     m_albumArt->setPixmap(art.scaledToWidth(200));
-}
-
-MythFrame::~MythFrame() 
-{
-}
-
-void MythFrame::calculateLabelFontSize(QLabel *lbl, QString text, int point)
-{
-    QFont f("Roboto-Regular", point);
-    QFontMetrics fm(lbl->font());
-    if (fm.width(text) > lbl->width()) {
-        int lblwidth = lbl->width();
-        int fmwidth = fm.width(text);
-        float factor = (float)lbl->width() / (float)fm.width(text);
-        if (factor < 1.0) {
-            if (factor < .6)
-                factor = .6;
-
-            f.setPointSizeF(point * (factor * .9));
-            qDebug() << "label width:" << lblwidth;
-            qDebug() << "font width:" << fmwidth;
-            qDebug() << "Calculated font scaling factor to be" << (float)(factor * .9);
-            qDebug() << "Reset font size for text\"" << text << "\" to" << f.pointSize();
-        }
-    }
-    lbl->setFont(f);
 }
 
 void MythFrame::setupSonos()
@@ -226,19 +240,16 @@ void MythFrame::sonosRequestResult(QByteArray ba)
                 QJsonObject current = parent["currentTrack"].toObject();
                 if (parent["trackNo"] != m_trackNumber) { 
                     m_artist->setText(current["artist"].toString());
-                    calculateLabelFontSize(m_artist, current["artist"].toString(), 36);
                     m_album->setText(current["album"].toString());
-                    calculateLabelFontSize(m_album, current["album"].toString(), 36);
                     m_station->setText(current["stationName"].toString());
-                    calculateLabelFontSize(m_station, current["stationName"].toString(), 36);
                     m_duration = current["duration"].toInt();
                     m_title->setText(current["title"].toString());
-                    calculateLabelFontSize(m_title, current["title"].toString(), 60);
                     m_elapsedIndicator->setMaximum(m_duration);
                     m_elapsedIndicator->setMinimum(0);
                     m_trackNumber = parent["trackNo"].toInt();
                     QUrl url = current["absoluteAlbumArtUri"].toString();
                     m_sonos->getAlbumArt(url);
+//                    calculateLabelFontSize();
                 }
                 calculateMinutes(parent["elapsedTime"].toInt());
                 m_volume = parent["volume"].toInt();
@@ -318,19 +329,22 @@ void MythFrame::updateClock()
 void MythFrame::showEvent(QShowEvent *e)
 {
 	Q_UNUSED(e)
+    qDebug() << __FUNCTION__;
 }
 
-void MythFrame::hidePrimaryScreen()
+void MythFrame::showBlankScreen()
 {
+    QTime now = QTime::currentTime();
+    QTime end = QTime(5,0,0);
+    m_endBlankScreen->setInterval(now.msecsTo(end));
+    m_endBlankScreen->setSingleShot(true);
+    m_endBlankScreen->start();
+    m_stackedLayout->setCurrentIndex(WidgetIndex::Blank);
 }
 
 void MythFrame::showPrimaryScreen()
 {
     m_stackedLayout->setCurrentIndex(WidgetIndex::Primary);
-}
-
-void MythFrame::hideMetadataScreen()
-{
     m_trackNumber = 0;
 }
 
@@ -352,10 +366,6 @@ void MythFrame::showNYEScreen()
 	}
 	else
 		emit stopNYE();
-}
-
-void MythFrame::hideNYEScreen()
-{
 }
 
 void MythFrame::connectionComplete()
