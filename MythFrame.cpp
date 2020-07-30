@@ -29,7 +29,8 @@ MythFrame::MythFrame(QFrame *parent) : QFrame(parent) {
     m_primaryLayout = new QGridLayout(m_primaryLayoutWidget);
     m_primaryClock = new QLabel();
     m_primaryClock->setAlignment(Qt::AlignCenter);
-    m_primaryDate = new QLabel();
+    m_primaryDate = new SonosLabel();
+    m_primaryDate->setDefaultPointSize(FontSize::Default);
     m_primaryDate->setAlignment(Qt::AlignCenter);
     m_lightningLabel = new QLabel();
     m_temperature = new QLabel();
@@ -334,9 +335,7 @@ void MythFrame::showEvent(QShowEvent *e)
 
 void MythFrame::showBlankScreen()
 {
-    QTime now = QTime::currentTime();
-    QTime end = QTime(5,0,0);
-    m_endBlankScreen->setInterval(now.msecsTo(end));
+    m_endBlankScreen->setInterval(ONE_HOUR * 4);
     m_endBlankScreen->setSingleShot(true);
     m_endBlankScreen->start();
     m_stackedLayout->setCurrentIndex(WidgetIndex::Blank);

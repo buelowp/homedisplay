@@ -29,6 +29,10 @@
 #include "qmqttsubscriber.h"
 #include "sonoslabel.h"
 
+#define ONE_SECOND      1000
+#define ONE_MINUTE      (ONE_SECOND * 60)
+#define ONE_HOUR        (ONE_MINUTE * 60)
+
 class MythFrame : public QFrame {
     Q_OBJECT
 	
@@ -105,7 +109,7 @@ private:
     QGridLayout *m_sonosLayout;
 
 	QLabel *m_primaryClock;
-	QLabel *m_primaryDate;
+	SonosLabel *m_primaryDate;
 	QLabel *m_lbCountdown;
 	QTimer *m_clockTimer;
     QLabel *m_lightningLabel;

@@ -37,12 +37,11 @@ SonosLabel::SonosLabel(QWidget *parent, Qt::WindowFlags f) :
     m_defaultPointSize = 12;
 }
 
-void SonosLabel::paintEvent(QPaintEvent *e)
+void SonosLabel::resizeEvent(QResizeEvent *e)
 {
-    Q_UNUSED(e)
-    
     QFont f = font();
     QFontMetrics fm(font());
+    QLabel::resizeEvent(e);
     if (fm.width(text()) > width()) {
         float factor = (float)width() / (float)fm.width(text());
         if (factor <= .6) {
@@ -54,5 +53,4 @@ void SonosLabel::paintEvent(QPaintEvent *e)
         f.setPointSize(m_defaultPointSize);
 
     setFont(f);
-    QLabel::paintEvent(e);
 }
