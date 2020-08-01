@@ -48,6 +48,7 @@ signals:
     void startSonos();
     void endSonos();
     void startBlankScreen();
+    void endBlankScreen();
 
 public slots:
     void updateClock();
@@ -58,6 +59,8 @@ protected slots:
 	void showMetadataScreen();
 	void showNYEScreen();
     void setNYETimeout();
+    void goDark();
+    void goPrimary();
     void showBlankScreen();
     void messageReceivedOnTopic(QString, QString);
     void connectionComplete();
@@ -68,9 +71,6 @@ protected slots:
     void sonosUpdate();
     void sonosAlbumArt(QByteArray);
     void sonosAlbumArtError(QNetworkReply::NetworkError);
-
-protected:
-	void showEvent(QShowEvent*);
 
 private:
     

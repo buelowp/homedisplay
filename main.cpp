@@ -26,7 +26,7 @@ int main(int argc, char **argv)
 
     app.setOverrideCursor(QCursor(Qt::BlankCursor));
     frame.setFixedSize(800, 480);
-    frame.showFullScreen();
+    frame.show();
 
     return app.exec();
 }

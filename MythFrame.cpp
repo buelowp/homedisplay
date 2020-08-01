@@ -112,7 +112,9 @@ MythFrame::MythFrame(QFrame *parent) : QFrame(parent) {
     m_sonosTimer->start();
 
     m_startBlankScreen = new QTimer(this);
+    connect(m_startBlankScreen, &QTimer::timeout, this, &MythFrame::goDark);
     m_endBlankScreen = new QTimer(this);
+    connect(m_startBlankScreen, &QTimer::timeout, this, &MythFrame::goPrimary);
     setupBlankScreenTimers();
   
     setupMqttSubscriber();
@@ -126,10 +128,10 @@ MythFrame::MythFrame(QFrame *parent) : QFrame(parent) {
 	nye->addTransition(this, SIGNAL(stopNYE()), primary);
 	primary->addTransition(this, SIGNAL(startSonos()), metadata);
 	primary->addTransition(this, SIGNAL(startNYE()), nye);
-    primary->addTransition(m_startBlankScreen, SIGNAL(timeout()), blank);
+    primary->addTransition(this, SIGNAL(startBlankScreen()), blank);
 	metadata->addTransition(this, SIGNAL(startNYE()), nye);
     metadata->addTransition(this, SIGNAL(endSonos()), primary);
-    blank->addTransition(m_endBlankScreen, SIGNAL(timeout()), primary);
+    blank->addTransition(this, SIGNAL(endBlankScreen()), primary);
 
 	connect(metadata, SIGNAL(entered()), this, SLOT(showMetadataScreen()));
 	connect(primary, SIGNAL(entered()), this, SLOT(showPrimaryScreen()));
@@ -156,6 +158,7 @@ void MythFrame::setupBlankScreenTimers()
     QDateTime now = QDateTime::currentDateTime();
 
     if (now.time().hour() >= 1 && now.time().hour() < 5) {
+        qDebug() << "Blanking now";
         m_startBlankScreen->setInterval(0);
         m_startBlankScreen->setSingleShot(true);
         m_startBlankScreen->start();
@@ -163,6 +166,7 @@ void MythFrame::setupBlankScreenTimers()
     else if (now.time().hour() == 0) {
         QTime end(1,0,0);
         m_startBlankScreen->setInterval(now.time().msecsTo(end));
+        qDebug() << "Blanking at" << end;
         m_startBlankScreen->setSingleShot(true);
         m_startBlankScreen->start();
     }
@@ -172,6 +176,7 @@ void MythFrame::setupBlankScreenTimers()
         tomorrow.setTime(QTime(1,0,0));
         m_startBlankScreen->setSingleShot(true);
         m_startBlankScreen->setInterval(now.msecsTo(tomorrow));
+        qDebug() << "Blanking at" << tomorrow;
         m_startBlankScreen->start();
     }
 }
@@ -250,7 +255,6 @@ void MythFrame::sonosRequestResult(QByteArray ba)
                     m_trackNumber = parent["trackNo"].toInt();
                     QUrl url = current["absoluteAlbumArtUri"].toString();
                     m_sonos->getAlbumArt(url);
-//                    calculateLabelFontSize();
                 }
                 calculateMinutes(parent["elapsedTime"].toInt());
                 m_volume = parent["volume"].toInt();
@@ -327,14 +331,19 @@ void MythFrame::updateClock()
     }
 }
 
-void MythFrame::showEvent(QShowEvent *e)
+void MythFrame::goDark()
 {
-	Q_UNUSED(e)
-    qDebug() << __FUNCTION__;
+    emit startBlankScreen();
+}
+
+void MythFrame::goPrimary()
+{
+    emit endBlankScreen();
 }
 
 void MythFrame::showBlankScreen()
 {
+    qDebug() << "Going dark";
     m_endBlankScreen->setInterval(ONE_HOUR * 4);
     m_endBlankScreen->setSingleShot(true);
     m_endBlankScreen->start();
@@ -343,6 +352,7 @@ void MythFrame::showBlankScreen()
 
 void MythFrame::showPrimaryScreen()
 {
+    qDebug() << "Returning to primary";
     m_stackedLayout->setCurrentIndex(WidgetIndex::Primary);
     m_trackNumber = 0;
 }

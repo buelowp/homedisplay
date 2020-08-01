@@ -62,9 +62,11 @@ void SonosRequest::getAlbumArt(QUrl url)
 
 void SonosRequest::albumArtFinished(QNetworkReply* reply)
 {
+    QDateTime now = QDateTime::currentDateTime();
+
     if (reply->error() != QNetworkReply::NoError) {
         emit albumArtError(reply->error());
-        qDebug() << __FUNCTION__ << reply->error();
+        qDebug() << __FUNCTION__ << ":" << now << ":" << reply->error();
     }
     else {
         QByteArray ba = reply->readAll();
@@ -75,9 +77,11 @@ void SonosRequest::albumArtFinished(QNetworkReply* reply)
 
 void SonosRequest::requestFinished(QNetworkReply* reply)
 {
+    QDateTime now = QDateTime::currentDateTime();
+    
     if (reply->error() != QNetworkReply::NoError) {
         emit error(reply->error());
-        qDebug() << __FUNCTION__ << reply->error();
+        qDebug() << __FUNCTION__ << ":" << now << ":" << reply->error();
     }
     else {
         QByteArray ba = reply->readAll();
