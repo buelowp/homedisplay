@@ -324,10 +324,10 @@ void MythFrame::updateClock()
         m_primaryClock->clear();
     }
     else {
-        QString dateDisplay("<font style='color:%1; font-weight: bold;'>%2</font>");
-        QString largeDisplay("<font style='color:%1; font-weight: bold;'>%2</font>");
-        m_primaryDate->setText(dateDisplay.arg(m_clockColor).arg(d.toString("dddd MMMM d, yyyy")));
-        m_primaryClock->setText(largeDisplay.arg(m_clockColor).arg(t.toString("h:mm A")));
+//        QString dateDisplay("<font style='color:%1; font-weight: bold;'>%2</font>");
+//        QString largeDisplay("<font style='color:%1; font-weight: bold;'>%2</font>");
+        m_primaryDate->setText(d.toString("dddd MMMM d, yyyy"));
+        m_primaryClock->setText(t.toString("h:mm A"));
     }
 }
 

@@ -48,6 +48,7 @@ void SonosLabel::resizeEvent(QResizeEvent *e)
             factor = .6;
         }
         f.setPointSizeF((m_defaultPointSize * factor) * .9);
+        qDebug() << __FUNCTION__ << ": Changing default pointsize" << m_defaultPointSize << "to be" << ((m_defaultPointSize * factor) * .9) << "for text" << text();
     }
     else
         f.setPointSize(m_defaultPointSize);
