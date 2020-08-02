@@ -141,6 +141,7 @@ MythFrame::MythFrame(QFrame *parent) : QFrame(parent) {
 	m_states.addState(primary);
 	m_states.addState(metadata);
 	m_states.addState(nye);
+    m_states.addState(blank);
 	m_states.setInitialState(primary);
 
     setNYETimeout();
