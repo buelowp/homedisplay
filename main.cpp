@@ -25,8 +25,9 @@ int main(int argc, char **argv)
     MythFrame frame;
 
     app.setOverrideCursor(QCursor(Qt::BlankCursor));
-    frame.setFixedSize(800, 480);
-    frame.show();
+//    frame.setFixedSize(800, 480);
+//    frame.show();
+    frame.showFullScreen();
 
     return app.exec();
 }
