@@ -18,7 +18,8 @@
 
 #include "MythFrame.h"
 
-MythFrame::MythFrame(QFrame *parent) : QFrame(parent) {
+MythFrame::MythFrame() : QMainWindow() 
+{
 	QPalette pal(QColor(0,0,0));
 	setBackgroundRole(QPalette::Window);
 	pal.setColor(QPalette::Window, Qt::black);
@@ -88,11 +89,11 @@ MythFrame::MythFrame(QFrame *parent) : QFrame(parent) {
 
     m_blankLayoutWidget = new QWidget();
 
-    m_stackedLayout = new QStackedLayout(this);
-    m_stackedLayout->addWidget(m_primaryLayoutWidget);
-    m_stackedLayout->addWidget(m_sonosLayoutWidget);
-    m_stackedLayout->addWidget(m_nyeLayoutWidget);
-    m_stackedLayout->addWidget(m_blankLayoutWidget);
+    m_stackedWidget = new QStackedWidget();
+    m_stackedWidget->addWidget(m_primaryLayoutWidget);
+    m_stackedWidget->addWidget(m_sonosLayoutWidget);
+    m_stackedWidget->addWidget(m_nyeLayoutWidget);
+    m_stackedWidget->addWidget(m_blankLayoutWidget);
         
     m_clockTimer = new QTimer(this);
     connect(m_clockTimer, SIGNAL(timeout()), this, SLOT(updateClock()));
@@ -112,9 +113,9 @@ MythFrame::MythFrame(QFrame *parent) : QFrame(parent) {
     m_sonosTimer->start();
 
     m_startBlankScreen = new QTimer(this);
-    connect(m_startBlankScreen, &QTimer::timeout, this, &MythFrame::goDark);
+//    connect(m_startBlankScreen, &QTimer::timeout, this, &MythFrame::goDark);
     m_endBlankScreen = new QTimer(this);
-    connect(m_startBlankScreen, &QTimer::timeout, this, &MythFrame::goPrimary);
+//    connect(m_startBlankScreen, &QTimer::timeout, this, &MythFrame::goPrimary);
     setupBlankScreenTimers();
   
     setupMqttSubscriber();
@@ -128,10 +129,10 @@ MythFrame::MythFrame(QFrame *parent) : QFrame(parent) {
 	nye->addTransition(this, SIGNAL(stopNYE()), primary);
 	primary->addTransition(this, SIGNAL(startSonos()), metadata);
 	primary->addTransition(this, SIGNAL(startNYE()), nye);
-    primary->addTransition(this, SIGNAL(startBlankScreen()), blank);
+    primary->addTransition(m_startBlankScreen, SIGNAL(timeout()), blank);
 	metadata->addTransition(this, SIGNAL(startNYE()), nye);
     metadata->addTransition(this, SIGNAL(endSonos()), primary);
-    blank->addTransition(this, SIGNAL(endBlankScreen()), primary);
+    blank->addTransition(m_endBlankScreen, SIGNAL(timeout()), primary);
 
 	connect(metadata, SIGNAL(entered()), this, SLOT(showMetadataScreen()));
 	connect(primary, SIGNAL(entered()), this, SLOT(showPrimaryScreen()));
@@ -148,6 +149,8 @@ MythFrame::MythFrame(QFrame *parent) : QFrame(parent) {
 
     m_states.start();
     m_currentWidget = WidgetIndex::Primary;
+    m_stackedWidget->setCurrentIndex(m_currentWidget);
+    setCentralWidget(m_stackedWidget);
 }
 
 MythFrame::~MythFrame() 
@@ -331,7 +334,7 @@ void MythFrame::updateClock()
         m_primaryClock->setText(t.toString("h:mm A"));
     }
 }
-
+/*
 void MythFrame::goDark()
 {
     emit startBlankScreen();
@@ -341,33 +344,34 @@ void MythFrame::goPrimary()
 {
     emit endBlankScreen();
 }
-
+*/
 void MythFrame::showBlankScreen()
 {
     qDebug() << "Going dark";
     m_endBlankScreen->setInterval(ONE_HOUR * 4);
     m_endBlankScreen->setSingleShot(true);
     m_endBlankScreen->start();
-    m_stackedLayout->setCurrentIndex(WidgetIndex::Blank);
+    m_stackedWidget->setCurrentIndex(WidgetIndex::Blank);
 }
 
 void MythFrame::showPrimaryScreen()
 {
-    qDebug() << "Returning to primary";
-    m_stackedLayout->setCurrentIndex(WidgetIndex::Primary);
+    qDebug() << "x:" << m_primaryLayoutWidget->x() << ", y:" << m_primaryLayoutWidget->y();
+    m_stackedWidget->setCurrentIndex(WidgetIndex::Primary);
     m_trackNumber = 0;
 }
 
 void MythFrame::showMetadataScreen()
 {
-    m_stackedLayout->setCurrentIndex(WidgetIndex::Sonos);
+    qDebug() << "x:" << m_primaryLayoutWidget->x() << ", y:" << m_primaryLayoutWidget->y();
+    m_stackedWidget->setCurrentIndex(WidgetIndex::Sonos);
 }
 
 void MythFrame::showNYEScreen()
 {
 	QTime t = QTime::currentTime();
 
-    m_stackedLayout->setCurrentIndex(WidgetIndex::NYE);
+    m_stackedWidget->setCurrentIndex(WidgetIndex::NYE);
     
 	if (t.hour() == 23) {
 		QString countdown("<font style='font-size:200px; color:white; font-weight: bold;'>%1</font>");

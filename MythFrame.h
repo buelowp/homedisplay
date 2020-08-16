@@ -33,11 +33,11 @@
 #define ONE_MINUTE      (ONE_SECOND * 60)
 #define ONE_HOUR        (ONE_MINUTE * 60)
 
-class MythFrame : public QFrame {
+class MythFrame : public QMainWindow {
     Q_OBJECT
 	
 public:
-    MythFrame(QFrame *parent = 0);
+    MythFrame();
     virtual ~MythFrame();
 
 signals:
@@ -59,8 +59,8 @@ protected slots:
 	void showMetadataScreen();
 	void showNYEScreen();
     void setNYETimeout();
-    void goDark();
-    void goPrimary();
+//    void goDark();
+//    void goPrimary();
     void showBlankScreen();
     void messageReceivedOnTopic(QString, QString);
     void connectionComplete();
@@ -101,8 +101,7 @@ private:
     QWidget *m_sonosLayoutWidget;
     QWidget *m_blankLayoutWidget;
 
-    QStackedLayout *m_stackedLayout;
-    QVBoxLayout *m_parentLayout;
+    QStackedWidget *m_stackedWidget;
     
     QGridLayout *m_primaryLayout;
     QGridLayout *m_nyeLayout;
