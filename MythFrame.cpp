@@ -20,22 +20,22 @@
 
 MythFrame::MythFrame() : QMainWindow() 
 {
-	QPalette pal(QColor(0,0,0));
-	setBackgroundRole(QPalette::Window);
-	pal.setColor(QPalette::Window, Qt::black);
-	setAutoFillBackground(true);
-	setPalette(pal);
+    QPalette pal(QColor(0,0,0));
+    setBackgroundRole(QPalette::Window);
+    pal.setColor(QPalette::Window, Qt::black);
+    setAutoFillBackground(true);
+    setPalette(pal);
 
     m_primaryLayoutWidget = new QWidget();
     m_primaryLayout = new QGridLayout(m_primaryLayoutWidget);
-    m_primaryClock = new QLabel();
+    m_primaryClock = new QLabel(m_primaryLayoutWidget);
     m_primaryClock->setAlignment(Qt::AlignCenter);
-    m_primaryDate = new SonosLabel();
+    m_primaryDate = new SonosLabel(m_primaryLayoutWidget);
     m_primaryDate->setDefaultPointSize(FontSize::Default);
     m_primaryDate->setAlignment(Qt::AlignCenter);
-    m_lightningLabel = new QLabel();
-    m_temperature = new QLabel();
-    m_humidity = new QLabel();
+    m_lightningLabel = new QLabel(m_primaryLayoutWidget);
+    m_temperature = new QLabel(m_primaryLayoutWidget);
+    m_humidity = new QLabel(m_primaryLayoutWidget);
     m_temperature->setAlignment(Qt::AlignCenter);
     m_humidity->setAlignment(Qt::AlignCenter);
     m_lightningLabel->setAlignment(Qt::AlignCenter);
@@ -47,22 +47,24 @@ MythFrame::MythFrame() : QMainWindow()
     m_primaryLayout->addWidget(m_primaryDate, 4, 0, 1, 4);
     
     m_nyeLayoutWidget = new QWidget();
+    m_nyeLayoutWidget->setFixedSize(800, 480);
     m_nyeLayout = new QGridLayout(m_nyeLayoutWidget);
-    m_lbCountdown = new QLabel();
+    m_lbCountdown = new QLabel(m_primaryLayoutWidget);
     m_nyeLayout->addWidget(m_lbCountdown, 0, 0, 0, 4);
     
     m_sonosLayoutWidget = new QWidget();
+    m_sonosLayoutWidget->setFixedSize(800, 480);
     m_sonosLayout = new QGridLayout(m_sonosLayoutWidget);
-    m_title = new SonosLabel();
+    m_title = new SonosLabel(m_sonosLayoutWidget);
     m_title->setDefaultPointSize(FontSize::Title);
-    m_artist = new SonosLabel();
+    m_artist = new SonosLabel(m_sonosLayoutWidget);
     m_artist->setDefaultPointSize(FontSize::Default);
-    m_album = new SonosLabel();
+    m_album = new SonosLabel(m_sonosLayoutWidget);
     m_album->setDefaultPointSize(FontSize::Default);
-    m_station = new SonosLabel();
+    m_station = new SonosLabel(m_sonosLayoutWidget);
     m_station->setDefaultPointSize(FontSize::Default);
-    m_albumArt = new QLabel();
-    m_elapsedIndicator = new QProgressBar();
+    m_albumArt = new QLabel(m_sonosLayoutWidget);
+    m_elapsedIndicator = new QProgressBar(m_sonosLayoutWidget);
     
     m_sonosLayout->addWidget(m_title, 0, 0, 2, 4);
     m_sonosLayout->addWidget(m_albumArt, 2, 0, 3, 1);
@@ -121,29 +123,29 @@ MythFrame::MythFrame() : QMainWindow()
     setupMqttSubscriber();
     m_trackNumber = 0;
         
-	QState *primary = new QState();
-	QState *metadata = new QState();
-	QState *nye = new QState();
+    QState *primary = new QState();
+    QState *metadata = new QState();
+    QState *nye = new QState();
     QState *blank = new QState();
 
-	nye->addTransition(this, SIGNAL(stopNYE()), primary);
-	primary->addTransition(this, SIGNAL(startSonos()), metadata);
-	primary->addTransition(this, SIGNAL(startNYE()), nye);
+    nye->addTransition(this, SIGNAL(stopNYE()), primary);
+    primary->addTransition(this, SIGNAL(startSonos()), metadata);
+    primary->addTransition(this, SIGNAL(startNYE()), nye);
     primary->addTransition(m_startBlankScreen, SIGNAL(timeout()), blank);
-	metadata->addTransition(this, SIGNAL(startNYE()), nye);
+    metadata->addTransition(this, SIGNAL(startNYE()), nye);
     metadata->addTransition(this, SIGNAL(endSonos()), primary);
     blank->addTransition(m_endBlankScreen, SIGNAL(timeout()), primary);
 
-	connect(metadata, SIGNAL(entered()), this, SLOT(showMetadataScreen()));
-	connect(primary, SIGNAL(entered()), this, SLOT(showPrimaryScreen()));
-	connect(nye, SIGNAL(entered()), this, SLOT(showNYEScreen()));
+    connect(metadata, SIGNAL(entered()), this, SLOT(showMetadataScreen()));
+    connect(primary, SIGNAL(entered()), this, SLOT(showPrimaryScreen()));
+    connect(nye, SIGNAL(entered()), this, SLOT(showNYEScreen()));
     connect(blank, SIGNAL(entered()), this, SLOT(showBlankScreen()));
 
-	m_states.addState(primary);
-	m_states.addState(metadata);
-	m_states.addState(nye);
+    m_states.addState(primary);
+    m_states.addState(metadata);
+    m_states.addState(nye);
     m_states.addState(blank);
-	m_states.setInitialState(primary);
+    m_states.setInitialState(primary);
 
     setNYETimeout();
 
@@ -315,21 +317,19 @@ void MythFrame::setNYETimeout()
 
 void MythFrame::showNYECountDown()
 {
-	emit startNYE();
+    emit startNYE();
 }
 
 void MythFrame::updateClock()
 {
-	QTime t = QTime::currentTime();
-	QDate d = QDate::currentDate();
+    QTime t = QTime::currentTime();
+    QDate d = QDate::currentDate();
 
     if (t.hour() > 1 && t.hour() < 5) {
         m_primaryDate->clear();
         m_primaryClock->clear();
     }
     else {
-//        QString dateDisplay("<font style='color:%1; font-weight: bold;'>%2</font>");
-//        QString largeDisplay("<font style='color:%1; font-weight: bold;'>%2</font>");
         m_primaryDate->setText(d.toString("dddd MMMM d, yyyy"));
         m_primaryClock->setText(t.toString("h:mm A"));
     }
@@ -363,23 +363,23 @@ void MythFrame::showPrimaryScreen()
 
 void MythFrame::showMetadataScreen()
 {
-    qDebug() << "x:" << m_primaryLayoutWidget->x() << ", y:" << m_primaryLayoutWidget->y();
+    qDebug() << "x:" << m_primaryLayoutWidget->width() << ", y:" << m_primaryLayoutWidget->height();
     m_stackedWidget->setCurrentIndex(WidgetIndex::Sonos);
 }
 
 void MythFrame::showNYEScreen()
 {
-	QTime t = QTime::currentTime();
+    QTime t = QTime::currentTime();
 
     m_stackedWidget->setCurrentIndex(WidgetIndex::NYE);
     
-	if (t.hour() == 23) {
-		QString countdown("<font style='font-size:200px; color:white; font-weight: bold;'>%1</font>");
-		m_lbCountdown->setText(countdown.arg(60 - t.second()));
-		QTimer::singleShot(1000, this, SLOT(showNYEScreen()));
-	}
-	else
-		emit stopNYE();
+    if (t.hour() == 23) {
+        QString countdown("<font style='font-size:200px; color:white; font-weight: bold;'>%1</font>");
+        m_lbCountdown->setText(countdown.arg(60 - t.second()));
+        QTimer::singleShot(1000, this, SLOT(showNYEScreen()));
+    }
+    else
+        emit stopNYE();
 }
 
 void MythFrame::connectionComplete()
