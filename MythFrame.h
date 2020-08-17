@@ -33,6 +33,10 @@
 #define ONE_MINUTE      (ONE_SECOND * 60)
 #define ONE_HOUR        (ONE_MINUTE * 60)
 
+const QString g_progressBarStyle = "QProgressBar { border: 1px solid white;"
+            "padding: 1px; border-radius: 5px; background: black; }"
+            "QProgressBar::chunk {background: white;}";
+
 class MythFrame : public QMainWindow {
     Q_OBJECT
 	
@@ -59,8 +63,6 @@ protected slots:
 	void showMetadataScreen();
 	void showNYEScreen();
     void setNYETimeout();
-//    void goDark();
-//    void goPrimary();
     void showBlankScreen();
     void messageReceivedOnTopic(QString, QString);
     void connectionComplete();

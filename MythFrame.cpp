@@ -65,6 +65,7 @@ MythFrame::MythFrame() : QMainWindow()
     m_station->setDefaultPointSize(FontSize::Default);
     m_albumArt = new QLabel(m_sonosLayoutWidget);
     m_elapsedIndicator = new QProgressBar(m_sonosLayoutWidget);
+    m_elapsedIndicator->setStyleSheet(g_progressBarStyle);
     
     m_sonosLayout->addWidget(m_title, 0, 0, 2, 4);
     m_sonosLayout->addWidget(m_albumArt, 2, 0, 3, 1);
