@@ -53,6 +53,10 @@ void SonosRequest::run()
 
 void SonosRequest::getAlbumArt(QUrl url)
 {
+    if (!url.isValid()) {
+        qDebug() << "Setting host as the URL came back without one";
+        url.setHost("http://localhost:5005");
+    }
     qDebug() << __FUNCTION__ << ":" << url;
     QNetworkRequest request;
     request.setUrl(url);
@@ -91,3 +95,7 @@ void SonosRequest::requestFinished(QNetworkReply* reply)
     reply->deleteLater();
 }
 
+void SonosRequest::storeAlbumArt(QString hash, QByteArray &contents)
+{
+
+}

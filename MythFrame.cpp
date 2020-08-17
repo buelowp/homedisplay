@@ -200,6 +200,7 @@ void MythFrame::setupSonos()
 {
     QSettings settings(QSettings::IniFormat, QSettings::UserScope, "MythClock", "MythClock");
     QString hostname = settings.value("sonosserver").toString();
+    QString port = settings.value("sonosport").toString();
     QHostInfo lookup = QHostInfo::fromName(hostname);
     QList<QHostAddress> addresses = lookup.addresses();
     
@@ -209,8 +210,8 @@ void MythFrame::setupSonos()
         qDebug() << __PRETTY_FUNCTION__ << ": setting host address to" << addresses.at(0);
     }
     else {
-        m_sonos->setURL("http://localhost:5005", settings.value("sonosroom").toString());
-        qDebug() << __PRETTY_FUNCTION__ << ": Using localhost";
+        m_sonos->setURL(QString("%1:%2").arg(hostname).arg(port), settings.value("sonosroom").toString());
+        qDebug() << __PRETTY_FUNCTION__ << ": using" << hostname << ":" << port;
     }
 }
 
@@ -239,8 +240,10 @@ void MythFrame::calculateMinutes(int elapsed)
 
 void MythFrame::sonosRequestResult(QByteArray ba)
 {
+    QSettings settings(QSettings::IniFormat, QSettings::UserScope, "MythClock", "MythClock");
     QJsonParseError *error = new QJsonParseError();
-    
+    QUrl url(QString("http://%1:%2").arg(settings.value("sonosserver").toString()).arg(settings.value("sonosport").toString()));
+
     QJsonDocument doc = QJsonDocument::fromJson(ba, error);
     if (error->error != QJsonParseError::NoError) {
         qDebug() << error->errorString();
@@ -260,7 +263,8 @@ void MythFrame::sonosRequestResult(QByteArray ba)
                     m_elapsedIndicator->setMaximum(m_duration);
                     m_elapsedIndicator->setMinimum(0);
                     m_trackNumber = parent["trackNo"].toInt();
-                    QUrl url = current["absoluteAlbumArtUri"].toString();
+                    qDebug() << current["albumArtUri"].toString();
+                    url.setPath(current["albumArtUri"].toString(), QUrl::TolerantMode);
                     m_sonos->getAlbumArt(url);
                 }
                 calculateMinutes(parent["elapsedTime"].toInt());
@@ -335,17 +339,7 @@ void MythFrame::updateClock()
         m_primaryClock->setText(t.toString("h:mm A"));
     }
 }
-/*
-void MythFrame::goDark()
-{
-    emit startBlankScreen();
-}
 
-void MythFrame::goPrimary()
-{
-    emit endBlankScreen();
-}
-*/
 void MythFrame::showBlankScreen()
 {
     qDebug() << "Going dark";
