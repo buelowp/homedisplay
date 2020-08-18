@@ -28,6 +28,7 @@
 
 #include <QtCore/QtCore>
 #include <QtWidgets/QtWidgets>
+#include <cmath>
 
 class SonosLabel : public QLabel
 {
@@ -40,14 +41,15 @@ public:
 
     void setDefaultPointSize(int p)
     {
-        m_defaultPointSize = p;
+        m_defaultPointSize = static_cast<float>(p);
     }
 
 protected:
-    void resizeEvent(QResizeEvent *e) override;
+    void paintEvent(QPaintEvent *e) override;
     
 private:
-    int m_defaultPointSize;
+    float getWidgetMaximumFontSize(QWidget *widget, QString text);
+    float m_defaultPointSize;
 };
 
 #endif // SONOSLABEL_H

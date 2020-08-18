@@ -32,6 +32,8 @@ SonosRequest::SonosRequest(QObject *parent) : QObject(parent)
     m_albumArt = new QNetworkAccessManager(this);
     connect(m_manager, &QNetworkAccessManager::finished, this, &SonosRequest::requestFinished);
     connect(m_albumArt, &QNetworkAccessManager::finished, this, &SonosRequest::albumArtFinished);
+
+    m_pendingArtworkCacheFile = new QFile();
 }
 
 void SonosRequest::setURL(QString url, QString room)
@@ -39,7 +41,7 @@ void SonosRequest::setURL(QString url, QString room)
     QString path = "/" + room + "/state";
     
     m_url = QUrl::fromUserInput(url + path);
-    qDebug() << m_url;
+    qDebug() << __PRETTY_FUNCTION__ << ":" << m_url;
 }
 
 void SonosRequest::run()
@@ -53,15 +55,24 @@ void SonosRequest::run()
 
 void SonosRequest::getAlbumArt(QUrl url)
 {
-    if (!url.isValid()) {
-        qDebug() << "Setting host as the URL came back without one";
-        url.setHost("http://localhost:5005");
+    QByteArray base64 = url.query().toUtf8().toBase64(QByteArray::Base64Encoding|QByteArray::OmitTrailingEquals);
+    QString encoded(base64);
+    m_pendingArtworkCacheFile->setFileName(g_cachePath + "/" + encoded);
+    if (m_pendingArtworkCacheFile->exists()) {
+        if (m_pendingArtworkCacheFile->open(QIODevice::ReadOnly)) {
+            qDebug() << __PRETTY_FUNCTION__ << ":" << "Reading albumart from" << m_pendingArtworkCacheFile->fileName();
+            QByteArray ba = m_pendingArtworkCacheFile->readAll();
+            emit albumArt(ba);
+            m_pendingArtworkCacheFile->close();
+        }
     }
-    qDebug() << __FUNCTION__ << ":" << url;
-    QNetworkRequest request;
-    request.setUrl(url);
-    request.setRawHeader("User-Agent", "SonosRequest 1.0");
-    m_albumArt->get(request);
+    else {
+        qDebug() << __PRETTY_FUNCTION__ << ":" << "Requesting albumart from the network";
+        QNetworkRequest request;
+        request.setUrl(url);
+        request.setRawHeader("User-Agent", "SonosRequest 1.0");
+        m_albumArt->get(request);
+    }
 }
 
 void SonosRequest::albumArtFinished(QNetworkReply* reply)
@@ -70,10 +81,11 @@ void SonosRequest::albumArtFinished(QNetworkReply* reply)
 
     if (reply->error() != QNetworkReply::NoError) {
         emit albumArtError(reply->error());
-        qDebug() << __FUNCTION__ << ":" << now << ":" << reply->error();
+        qDebug() << __PRETTY_FUNCTION__ << ":" << now << ":" << reply->error();
     }
     else {
         QByteArray ba = reply->readAll();
+        storeAlbumArt(reply->url(), ba);
         emit (albumArt(ba));
     }
     reply->deleteLater();
@@ -85,7 +97,7 @@ void SonosRequest::requestFinished(QNetworkReply* reply)
     
     if (reply->error() != QNetworkReply::NoError) {
         emit error(reply->error());
-        qDebug() << __FUNCTION__ << ":" << now << ":" << reply->error();
+        qDebug() << __PRETTY_FUNCTION__ << ":" << now << ":" << reply->error();
     }
     else {
         QByteArray ba = reply->readAll();
@@ -95,7 +107,14 @@ void SonosRequest::requestFinished(QNetworkReply* reply)
     reply->deleteLater();
 }
 
-void SonosRequest::storeAlbumArt(QString hash, QByteArray &contents)
+void SonosRequest::storeAlbumArt(QUrl url, QByteArray &content)
 {
-
+    qDebug() << __PRETTY_FUNCTION__ << ":" << "Storing art to cache file" << m_pendingArtworkCacheFile->fileName();
+    if (m_pendingArtworkCacheFile->open(QIODevice::WriteOnly)) {
+        m_pendingArtworkCacheFile->write(content);
+        m_pendingArtworkCacheFile->close();
+    }
+    else {
+        qDebug() << __PRETTY_FUNCTION__ << ":" << "Could not open" << m_pendingArtworkCacheFile->fileName();
+    }
 }

@@ -25,8 +25,9 @@
 
 #include "sonoslabel.h"
 
-SonosLabel::SonosLabel(const QString &text, QWidget *parent, Qt::WindowFlags f) : 
-    QLabel(text, parent, f)
+#define FONT_PRECISION (0.5)
+
+SonosLabel::SonosLabel(const QString &text, QWidget *parent, Qt::WindowFlags f) : QLabel(text, parent, f)
 {
     m_defaultPointSize = 12;
 }
@@ -37,21 +38,82 @@ SonosLabel::SonosLabel(QWidget *parent, Qt::WindowFlags f) :
     m_defaultPointSize = 12;
 }
 
-void SonosLabel::resizeEvent(QResizeEvent *e)
+void SonosLabel::paintEvent(QPaintEvent *e)
 {
-    QFont f = font();
-    QFontMetrics fm(font());
-    QLabel::resizeEvent(e);
-    if (fm.width(text()) > width()) {
-        float factor = (float)width() / (float)fm.width(text());
-        if (factor <= .6) {
-            factor = .6;
-        }
-        f.setPointSizeF((m_defaultPointSize * factor) * .9);
-        qDebug() << __FUNCTION__ << ": Changing default pointsize" << m_defaultPointSize << "to be" << ((m_defaultPointSize * factor) * .9) << "for text" << text();
+    QFont newFont = font();
+    float fontSize = getWidgetMaximumFontSize(this, this->text());
+    if (fontSize < m_defaultPointSize) {
+        newFont.setPointSizeF(fontSize);
+        setFont(newFont);
     }
-    else
-        f.setPointSize(m_defaultPointSize);
+    QLabel::paintEvent(e);
+}
 
-    setFont(f);
+float SonosLabel::getWidgetMaximumFontSize(QWidget *widget, QString text)
+{
+    QFont font = widget->font();
+    const QRect widgetRect = widget->contentsRect();
+    const float widgetWidth = widgetRect.width();
+    const float widgetHeight = widgetRect.height();
+
+    QRectF newFontSizeRect;
+    float currentSize = font.pointSizeF();
+
+    float step = currentSize/2.0;
+
+    /* If too small, increase step */
+    if (step<=FONT_PRECISION){
+        step = FONT_PRECISION*4.0;
+    }
+
+    float lastTestedSize = currentSize;
+
+    float currentHeight = 0;
+    float currentWidth = 0;
+    if (text==""){
+        return currentSize;
+    }
+
+    /* Only stop when step is small enough and new size is smaller than QWidget */
+    while(step>FONT_PRECISION || (currentHeight > widgetHeight) || (currentWidth > widgetWidth)){
+        /* Keep last tested value */
+        lastTestedSize = currentSize;
+
+        /* Test label with its font */
+        font.setPointSizeF(currentSize);
+        /* Use font metrics to test */
+        QFontMetricsF fm(font);
+
+        /* Check if widget is QLabel */
+        QLabel *label = qobject_cast<QLabel*>(widget);
+        if (label) {
+            newFontSizeRect = fm.boundingRect(widgetRect, (label->wordWrap()?Qt::TextWordWrap:0) | label->alignment(), text);
+        }
+        else{
+            newFontSizeRect = fm.boundingRect(widgetRect,  0, text);
+        }
+
+        currentHeight = newFontSizeRect.height();
+        currentWidth = newFontSizeRect.width();
+
+        /* If new font size is too big, decrease it */
+        if ((currentHeight > widgetHeight) || (currentWidth > widgetWidth)){
+            //qDebug() << "-- contentsRect()" << label->contentsRect() << "rect"<< label->rect() << " newFontSizeRect" << newFontSizeRect << "Tight" << text << currentSize;
+            currentSize -=step;
+            /* if step is small enough, keep it constant, so it converge to biggest font size */
+            if (step>FONT_PRECISION){
+                step/=2.0;
+            }
+            /* Do not allow negative size */
+            if (currentSize<=0){
+                break;
+            }
+        }
+        /* If new font size is smaller than maximum possible size, increase it */
+        else{
+            //qDebug() << "++ contentsRect()" << label->contentsRect() << "rect"<< label->rect() << " newFontSizeRect" << newFontSizeRect << "Tight" << text << currentSize;
+            currentSize +=step;
+        }
+    }
+    return lastTestedSize;
 }

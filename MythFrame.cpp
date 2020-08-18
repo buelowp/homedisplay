@@ -29,13 +29,18 @@ MythFrame::MythFrame() : QMainWindow()
     m_primaryLayoutWidget = new QWidget();
     m_primaryLayout = new QGridLayout(m_primaryLayoutWidget);
     m_primaryClock = new QLabel(m_primaryLayoutWidget);
+    m_primaryClock->setScaledContents(true);
     m_primaryClock->setAlignment(Qt::AlignCenter);
     m_primaryDate = new SonosLabel(m_primaryLayoutWidget);
-    m_primaryDate->setDefaultPointSize(FontSize::Default);
     m_primaryDate->setAlignment(Qt::AlignCenter);
+    m_primaryDate->setScaledContents(true);
+    m_primaryDate->setDefaultPointSize(FontSize::Default);
     m_lightningLabel = new QLabel(m_primaryLayoutWidget);
+    m_lightningLabel->setScaledContents(true);
     m_temperature = new QLabel(m_primaryLayoutWidget);
+    m_temperature->setScaledContents(true);
     m_humidity = new QLabel(m_primaryLayoutWidget);
+    m_humidity->setScaledContents(true);
     m_temperature->setAlignment(Qt::AlignCenter);
     m_humidity->setAlignment(Qt::AlignCenter);
     m_lightningLabel->setAlignment(Qt::AlignCenter);
@@ -50,6 +55,7 @@ MythFrame::MythFrame() : QMainWindow()
     m_nyeLayoutWidget->setFixedSize(800, 480);
     m_nyeLayout = new QGridLayout(m_nyeLayoutWidget);
     m_lbCountdown = new QLabel(m_primaryLayoutWidget);
+    m_lbCountdown->setScaledContents(true);
     m_nyeLayout->addWidget(m_lbCountdown, 0, 0, 0, 4);
     
     m_sonosLayoutWidget = new QWidget();
@@ -57,13 +63,18 @@ MythFrame::MythFrame() : QMainWindow()
     m_sonosLayout = new QGridLayout(m_sonosLayoutWidget);
     m_title = new SonosLabel(m_sonosLayoutWidget);
     m_title->setDefaultPointSize(FontSize::Title);
+    m_title->setScaledContents(true);
     m_artist = new SonosLabel(m_sonosLayoutWidget);
+    m_artist->setScaledContents(true);
     m_artist->setDefaultPointSize(FontSize::Default);
     m_album = new SonosLabel(m_sonosLayoutWidget);
+    m_album->setScaledContents(true);
     m_album->setDefaultPointSize(FontSize::Default);
     m_station = new SonosLabel(m_sonosLayoutWidget);
+    m_station->setScaledContents(true);
     m_station->setDefaultPointSize(FontSize::Default);
     m_albumArt = new QLabel(m_sonosLayoutWidget);
+    m_albumArt->setFixedSize(200, 200);
     m_elapsedIndicator = new QProgressBar(m_sonosLayoutWidget);
     m_elapsedIndicator->setStyleSheet(g_progressBarStyle);
     
@@ -116,9 +127,7 @@ MythFrame::MythFrame() : QMainWindow()
     m_sonosTimer->start();
 
     m_startBlankScreen = new QTimer(this);
-//    connect(m_startBlankScreen, &QTimer::timeout, this, &MythFrame::goDark);
     m_endBlankScreen = new QTimer(this);
-//    connect(m_startBlankScreen, &QTimer::timeout, this, &MythFrame::goPrimary);
     setupBlankScreenTimers();
   
     setupMqttSubscriber();
@@ -165,7 +174,7 @@ void MythFrame::setupBlankScreenTimers()
     QDateTime now = QDateTime::currentDateTime();
 
     if (now.time().hour() >= 1 && now.time().hour() < 5) {
-        qDebug() << "Blanking now";
+        qDebug() << __PRETTY_FUNCTION__ << ":" << "Blanking now";
         m_startBlankScreen->setInterval(0);
         m_startBlankScreen->setSingleShot(true);
         m_startBlankScreen->start();
@@ -173,7 +182,7 @@ void MythFrame::setupBlankScreenTimers()
     else if (now.time().hour() == 0) {
         QTime end(1,0,0);
         m_startBlankScreen->setInterval(now.time().msecsTo(end));
-        qDebug() << "Blanking at" << end;
+        qDebug() << __PRETTY_FUNCTION__ << ":" << "Blanking at" << end;
         m_startBlankScreen->setSingleShot(true);
         m_startBlankScreen->start();
     }
@@ -183,7 +192,7 @@ void MythFrame::setupBlankScreenTimers()
         tomorrow.setTime(QTime(1,0,0));
         m_startBlankScreen->setSingleShot(true);
         m_startBlankScreen->setInterval(now.msecsTo(tomorrow));
-        qDebug() << "Blanking at" << tomorrow;
+        qDebug() << __PRETTY_FUNCTION__ << ":" << "Blanking at" << tomorrow;
         m_startBlankScreen->start();
     }
 }
@@ -223,12 +232,12 @@ void MythFrame::sonosUpdate()
 
 void MythFrame::sonosRequestError(QNetworkReply::NetworkError error)
 {
-    qDebug() << __FUNCTION__ << error;
+    qDebug() << __PRETTY_FUNCTION__ << error;
 }
 
 void MythFrame::sonosAlbumArtError(QNetworkReply::NetworkError error)
 {
-    qDebug() << __FUNCTION__ << error;
+    qDebug() << __PRETTY_FUNCTION__ << error;
 }
 
 void MythFrame::calculateMinutes(int elapsed)
@@ -242,11 +251,10 @@ void MythFrame::sonosRequestResult(QByteArray ba)
 {
     QSettings settings(QSettings::IniFormat, QSettings::UserScope, "MythClock", "MythClock");
     QJsonParseError *error = new QJsonParseError();
-    QUrl url(QString("http://%1:%2").arg(settings.value("sonosserver").toString()).arg(settings.value("sonosport").toString()));
 
     QJsonDocument doc = QJsonDocument::fromJson(ba, error);
     if (error->error != QJsonParseError::NoError) {
-        qDebug() << error->errorString();
+        qDebug() << __PRETTY_FUNCTION__ << ":" << error->errorString();
     }
     else {
         if (doc.isObject()) {
@@ -254,22 +262,21 @@ void MythFrame::sonosRequestResult(QByteArray ba)
             QString playback = parent["playbackState"].toString();
             if (playback == "PLAYING") {
                 QJsonObject current = parent["currentTrack"].toObject();
-                if (parent["trackNo"] != m_trackNumber) { 
+                if (parent["trackNo"] != m_trackNumber) {
                     m_artist->setText(current["artist"].toString());
                     m_album->setText(current["album"].toString());
                     m_station->setText(current["stationName"].toString());
-                    m_duration = current["duration"].toInt();
                     m_title->setText(current["title"].toString());
+                    m_duration = current["duration"].toInt();
                     m_elapsedIndicator->setMaximum(m_duration);
                     m_elapsedIndicator->setMinimum(0);
                     m_trackNumber = parent["trackNo"].toInt();
-                    qDebug() << current["albumArtUri"].toString();
-                    url.setPath(current["albumArtUri"].toString(), QUrl::TolerantMode);
+                    QUrl url(current["absoluteAlbumArtUri"].toString(), QUrl::TolerantMode);
                     m_sonos->getAlbumArt(url);
+                    emit startSonos();
                 }
                 calculateMinutes(parent["elapsedTime"].toInt());
                 m_volume = parent["volume"].toInt();
-                emit startSonos();
             }
             else {
                 emit endSonos();
@@ -342,7 +349,7 @@ void MythFrame::updateClock()
 
 void MythFrame::showBlankScreen()
 {
-    qDebug() << "Going dark";
+    qDebug() << __PRETTY_FUNCTION__ << ":" << "Going dark";
     m_endBlankScreen->setInterval(ONE_HOUR * 4);
     m_endBlankScreen->setSingleShot(true);
     m_endBlankScreen->start();
@@ -351,14 +358,12 @@ void MythFrame::showBlankScreen()
 
 void MythFrame::showPrimaryScreen()
 {
-    qDebug() << "x:" << m_primaryLayoutWidget->x() << ", y:" << m_primaryLayoutWidget->y();
     m_stackedWidget->setCurrentIndex(WidgetIndex::Primary);
-    m_trackNumber = 0;
+    m_trackNumber = -1;
 }
 
 void MythFrame::showMetadataScreen()
 {
-    qDebug() << "x:" << m_primaryLayoutWidget->width() << ", y:" << m_primaryLayoutWidget->height();
     m_stackedWidget->setCurrentIndex(WidgetIndex::Sonos);
 }
 
@@ -434,4 +439,3 @@ void MythFrame::messageReceivedOnTopic(QString t, QString p)
         m_lightningTimer->start();
     }
 }    
-

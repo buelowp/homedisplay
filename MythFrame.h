@@ -122,6 +122,7 @@ private:
     SonosLabel *m_station;
     SonosLabel *m_title;
     QLabel *m_albumArt;
+
     int m_duration;
     int m_elapsed;
     int m_trackNumber;
