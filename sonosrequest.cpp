@@ -55,7 +55,12 @@ void SonosRequest::run()
 
 void SonosRequest::getAlbumArt(QUrl url)
 {
-    QByteArray base64 = url.query().toUtf8().toBase64(QByteArray::Base64Encoding|QByteArray::OmitTrailingEquals);
+    QByteArray base64;
+    if (url.query().size() > 0)
+        base64 = url.query().toUtf8().toBase64(QByteArray::Base64Encoding|QByteArray::OmitTrailingEquals);
+    else
+        base64 = url.path().toUtf8().toBase64(QByteArray::Base64Encoding|QByteArray::OmitTrailingEquals);
+
     QString encoded(base64);
     m_pendingArtworkCacheFile->setFileName(g_cachePath + "/" + encoded);
     if (m_pendingArtworkCacheFile->exists()) {
@@ -65,6 +70,8 @@ void SonosRequest::getAlbumArt(QUrl url)
             emit albumArt(ba);
             m_pendingArtworkCacheFile->close();
         }
+        else
+            qDebug() << __PRETTY_FUNCTION__ << ":" << m_pendingArtworkCacheFile->fileName() << "could not be opened";
     }
     else {
         qDebug() << __PRETTY_FUNCTION__ << ":" << "Requesting albumart from the network";
