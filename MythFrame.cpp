@@ -263,15 +263,19 @@ void MythFrame::sonosRequestResult(QByteArray ba)
             if (playback == "PLAYING") {
                 QJsonObject current = parent["currentTrack"].toObject();
                 if (parent["trackNo"] != m_trackNumber) {
+                    m_artist->reset();
                     m_artist->setText(current["artist"].toString());
+                    m_album->reset();
                     m_album->setText(current["album"].toString());
+                    m_station->reset();
                     m_station->setText(current["stationName"].toString());
                     m_title->setText(current["title"].toString());
+                    m_title->reset();
                     m_duration = current["duration"].toInt();
                     m_elapsedIndicator->setMaximum(m_duration);
                     m_elapsedIndicator->setMinimum(0);
                     m_trackNumber = parent["trackNo"].toInt();
-                    QUrl url(current["absoluteAlbumArtUri"].toString(), QUrl::TolerantMode);
+                    QUrl url(settings.value("sonosaddress").toString() + current["albumArtUri"].toString());
                     m_sonos->getAlbumArt(url);
                     emit startSonos();
                 }

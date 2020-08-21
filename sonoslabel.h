@@ -44,6 +44,12 @@ public:
         m_defaultPointSize = static_cast<float>(p);
     }
 
+    void reset() {
+        QFont f = font();
+        f.setPointSizeF(m_defaultPointSize);
+        setFont(f);
+    }
+    
 protected:
     void paintEvent(QPaintEvent *e) override;
     

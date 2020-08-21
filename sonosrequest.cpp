@@ -55,11 +55,16 @@ void SonosRequest::run()
 
 void SonosRequest::getAlbumArt(QUrl url)
 {
+    qDebug() << __PRETTY_FUNCTION__ << ":" << url;
     QByteArray base64;
-    if (url.query().size() > 0)
+    if (url.query().size() > 0) {
         base64 = url.query().toUtf8().toBase64(QByteArray::Base64Encoding|QByteArray::OmitTrailingEquals);
-    else
+        qDebug() << __PRETTY_FUNCTION__ << ": query URL";
+    }
+    else {
         base64 = url.path().toUtf8().toBase64(QByteArray::Base64Encoding|QByteArray::OmitTrailingEquals);
+        qDebug() << __PRETTY_FUNCTION__ << ": normal URL";
+    }
 
     QString encoded(base64);
     m_pendingArtworkCacheFile->setFileName(g_cachePath + "/" + encoded);

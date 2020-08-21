@@ -141,6 +141,8 @@ private:
 
     QVector<QLabel*> m_labels;
     WidgetIndex m_currentWidget;
+
+    bool m_retryAlbumArt;
 };
 
 #endif /* MYTHFRAME_H_ */
