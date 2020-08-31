@@ -267,8 +267,6 @@ void MythFrame::sonosRequestResult(QByteArray ba)
                     m_artist->setText(current["artist"].toString());
                     m_album->reset();
                     m_album->setText(current["album"].toString());
-                    m_station->reset();
-                    m_station->setText(current["stationName"].toString());
                     m_title->setText(current["title"].toString());
                     m_title->reset();
                     m_duration = current["duration"].toInt();
@@ -348,6 +346,7 @@ void MythFrame::updateClock()
     else {
         m_primaryDate->setText(d.toString("dddd MMMM d, yyyy"));
         m_primaryClock->setText(t.toString("h:mm A"));
+        m_station->setText(t.toString("h:mm A"));
     }
 }
 
