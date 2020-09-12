@@ -126,6 +126,9 @@ MythFrame::MythFrame() : QMainWindow()
     m_sonosTimer->setInterval(500);
     m_sonosTimer->start();
 
+    m_cleanupCacheTimer = new QTimer(this);
+    connect(m_cleanupCacheTimer, &QTimer::timeout, this, &MythFrame::removeOldCacheFiles);
+
     m_startBlankScreen = new QTimer(this);
     m_endBlankScreen = new QTimer(this);
     setupBlankScreenTimers();
@@ -147,6 +150,7 @@ MythFrame::MythFrame() : QMainWindow()
     blank->addTransition(m_endBlankScreen, SIGNAL(timeout()), primary);
 
     connect(metadata, SIGNAL(entered()), this, SLOT(showMetadataScreen()));
+    connect(metadata, SIGNAL(exited()), this, SLOT(endMetadataScreen()));
     connect(primary, SIGNAL(entered()), this, SLOT(showPrimaryScreen()));
     connect(nye, SIGNAL(entered()), this, SLOT(showNYEScreen()));
     connect(blank, SIGNAL(entered()), this, SLOT(showBlankScreen()));
@@ -195,6 +199,29 @@ void MythFrame::setupBlankScreenTimers()
         qDebug() << __PRETTY_FUNCTION__ << ":" << "Blanking at" << tomorrow;
         m_startBlankScreen->start();
     }
+}
+
+void MythFrame::removeOldCacheFiles()
+{
+    qDebug() << __PRETTY_FUNCTION__ << ":" << __LINE__ << ": Checking to see if we can expire any cache entries";
+    QDir dirp(g_cachePath);
+
+    if (dirp.exists()) {
+        dirp.setSorting(QDir::Time|QDir::Reversed);
+        QStringList fil = dirp.entryList();
+        qDebug() << __PRETTY_FUNCTION__ << ":" << __LINE__ << "Expiring" << (fil.size() - 1000) << "files";
+        for (int i = 0; i < (fil.size() - 1000); i++) {
+            QString fi = fil.takeFirst();
+            dirp.remove(fi);
+        }
+    }
+}
+
+void MythFrame::endMetadataScreen()
+{
+    m_cleanupCacheTimer->setInterval(15000);
+    m_cleanupCacheTimer->setSingleShot(true);
+    m_cleanupCacheTimer->start();
 }
 
 void MythFrame::sonosAlbumArt(QByteArray ba)
@@ -368,6 +395,7 @@ void MythFrame::showPrimaryScreen()
 void MythFrame::showMetadataScreen()
 {
     m_stackedWidget->setCurrentIndex(WidgetIndex::Sonos);
+    m_cleanupCacheTimer->stop();
 }
 
 void MythFrame::showNYEScreen()

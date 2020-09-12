@@ -73,6 +73,7 @@ protected slots:
     void sonosUpdate();
     void sonosAlbumArt(QByteArray);
     void sonosAlbumArtError(QNetworkReply::NetworkError);
+    void endMetadataScreen();
 
 private:
     
@@ -94,6 +95,7 @@ private:
     void setupSonos();
     void calculateMinutes(int);
     void setupBlankScreenTimers();
+    void removeOldCacheFiles();
     
     QMqttSubscriber *m_mqttClient;
     SonosRequest *m_sonos;
@@ -134,6 +136,7 @@ private:
     QTimer *m_sonosTimer;
     QTimer *m_startBlankScreen;
     QTimer *m_endBlankScreen;
+    QTimer *m_cleanupCacheTimer;
 
 	QString m_clockColor;
 

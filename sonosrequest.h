@@ -54,13 +54,11 @@ signals:
     void albumArtError(QNetworkReply::NetworkError);
     
 private:
-    void storeAlbumArt(QUrl, QByteArray&);
     void getAlbumArt(QString);
 
     QNetworkAccessManager *m_manager;
     QNetworkAccessManager *m_albumArt;
     QUrl m_url;
-    QFile *m_pendingArtworkCacheFile;
     bool m_running;
 };
 
