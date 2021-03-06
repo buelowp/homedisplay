@@ -10,11 +10,13 @@ MOC_DIR = .moc
 SOURCES = MythFrame.cpp \
 	main.cpp \
 	qmqttsubscriber.cpp \
-	sonosrequest.cpp
+	sonosrequest.cpp \
+        sonoslabel.cpp
 		
 HEADERS = MythFrame.h \
 	qmqttsubscriber.h \
-	sonosrequest.h
+	sonosrequest.h \
+        sonoslabel.h
 
 ICONS = icons/5_1.jpg \
 	icons/7_1.jpg \

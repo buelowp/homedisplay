@@ -434,6 +434,7 @@ void MythFrame::messageReceivedOnTopic(QString t, QString p)
     QJsonDocument doc = QJsonDocument::fromJson(p.toLocal8Bit());
     QColor color;
 
+    qDebug() << __PRETTY_FUNCTION__ << ": Got topic" << t;
     if (t == "weather/conditions") {
         if (doc.isObject()) {
             QJsonObject parent = doc.object();

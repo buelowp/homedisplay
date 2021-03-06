@@ -41,6 +41,8 @@ public:
         connect(this, &QMqttSubscriber::disconnected, this, &QMqttSubscriber::onDisconnected);
         connect(this, &QMqttSubscriber::received, this, &QMqttSubscriber::onReceived);
         connect(this, &QMqttSubscriber::error, this, &QMqttSubscriber::onError);
+        setAutoReconnect(true);
+	setAutoReconnectInterval(5000);
     }
     virtual ~QMqttSubscriber() {}
     
