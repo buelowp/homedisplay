@@ -67,7 +67,6 @@ protected slots:
     void messageReceivedOnTopic(QString, QString);
     void connectionComplete();
     void disconnectedEvent();
-    void lightningTimeout();
     void sonosRequestResult(QByteArray);
     void sonosRequestError(QNetworkReply::NetworkError);
     void sonosUpdate();
@@ -115,7 +114,8 @@ private:
 	SonosLabel *m_primaryDate;
 	QLabel *m_lbCountdown;
 	QTimer *m_clockTimer;
-    QLabel *m_lightningLabel;
+    QLabel *m_pooltemp;
+    QLabel *m_battery;
     QLabel *m_temperature;
     QLabel *m_humidity;
     

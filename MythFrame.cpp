@@ -35,20 +35,24 @@ MythFrame::MythFrame() : QMainWindow()
     m_primaryDate->setAlignment(Qt::AlignCenter);
     m_primaryDate->setScaledContents(true);
     m_primaryDate->setDefaultPointSize(FontSize::Default);
-    m_lightningLabel = new QLabel(m_primaryLayoutWidget);
-    m_lightningLabel->setScaledContents(true);
+    m_pooltemp = new QLabel(m_primaryLayoutWidget);
+    m_pooltemp->setScaledContents(true);
+    m_battery = new QLabel(m_primaryLayoutWidget);
+    m_battery->setScaledContents(true);
     m_temperature = new QLabel(m_primaryLayoutWidget);
     m_temperature->setScaledContents(true);
     m_humidity = new QLabel(m_primaryLayoutWidget);
     m_humidity->setScaledContents(true);
     m_temperature->setAlignment(Qt::AlignCenter);
     m_humidity->setAlignment(Qt::AlignCenter);
-    m_lightningLabel->setAlignment(Qt::AlignCenter);
+    m_pooltemp->setAlignment(Qt::AlignCenter);
+    m_battery->setAlignment(Qt::AlignCenter);
 
     m_primaryLayout->addWidget(m_primaryClock, 0, 0, 1, 4);
     m_primaryLayout->addWidget(m_temperature, 2, 0, 1, 2);
     m_primaryLayout->addWidget(m_humidity, 2, 2, 1, 2);
-    m_primaryLayout->addWidget(m_lightningLabel, 3, 0, 1, 4);
+    m_primaryLayout->addWidget(m_pooltemp, 3, 0, 1, 2);
+    m_primaryLayout->addWidget(m_battery, 3, 2, 1, 2);
     m_primaryLayout->addWidget(m_primaryDate, 4, 0, 1, 4);
     
     m_nyeLayoutWidget = new QWidget();
@@ -99,7 +103,8 @@ MythFrame::MythFrame() : QMainWindow()
     m_album->setFont(c);
     m_station->setFont(c);
     m_title->setFont(t);
-    m_lightningLabel->setFont(l);
+    m_pooltemp->setFont(l);
+    m_battery->setFont(l);
 
     m_blankLayoutWidget = new QWidget();
 
@@ -119,12 +124,12 @@ MythFrame::MythFrame() : QMainWindow()
     connect(m_sonos, &SonosRequest::error, this, &MythFrame::sonosRequestError);
     connect(m_sonos, &SonosRequest::albumArt, this, &MythFrame::sonosAlbumArt);
     connect(m_sonos, &SonosRequest::albumArtError, this, &MythFrame::sonosAlbumArtError);
-    setupSonos();
+//    setupSonos();
     
     m_sonosTimer = new QTimer(this);
     connect(m_sonosTimer, &QTimer::timeout, this, &MythFrame::sonosUpdate);
     m_sonosTimer->setInterval(500);
-    m_sonosTimer->start();
+//    m_sonosTimer->start();
 
     m_cleanupCacheTimer = new QTimer(this);
     connect(m_cleanupCacheTimer, &QTimer::timeout, this, &MythFrame::removeOldCacheFiles);
@@ -333,8 +338,6 @@ void MythFrame::setupMqttSubscriber()
     connect(m_mqttClient, SIGNAL(disconnectedEvent()), this, SLOT(disconnectedEvent()));
     connect(m_mqttClient, SIGNAL(messageReceivedOnTopic(QString, QString)), this, SLOT(messageReceivedOnTopic(QString, QString)));
     m_mqttClient->connectToHost();
-    m_lightningTimer = new QTimer();
-    connect(m_lightningTimer, SIGNAL(timeout()), this, SLOT(lightningTimeout()));
 }
 
 void MythFrame::setNYETimeout()
@@ -424,50 +427,30 @@ void MythFrame::disconnectedEvent()
     m_mqttClient->connectToHost();
 }
 
-void MythFrame::lightningTimeout()
-{
-    m_lightningLabel->clear();
-}
-
 void MythFrame::messageReceivedOnTopic(QString t, QString p)
 {
     QJsonDocument doc = QJsonDocument::fromJson(p.toLocal8Bit());
-    QColor color;
 
     qDebug() << __PRETTY_FUNCTION__ << ": Got topic" << t;
     if (t == "weather/conditions") {
         if (doc.isObject()) {
             QJsonObject parent = doc.object();
-            QJsonObject values = parent["environment"].toObject();
-            double t = values["farenheit"].toDouble();
-            double h = values["humidity"].toDouble();
+            QJsonObject exterior = parent["exterior"].toObject();
+            QJsonObject pool = parent["pool"].toObject();
+            QJsonObject battery = parent["battery"].toObject();
+            double t = exterior["air"].toDouble();
+            double h = exterior["humidity"].toDouble();
+            double p = pool["temp"].toDouble();
+            double s = battery["voltage"].toDouble();
             
             QString temp = QString("%1%2").arg(t, 0, 'f', 1).arg(QChar(176));
             QString humidity = QString("%1%").arg(h, 0, 'f', 1);
+            QString pooltemp = QString("%1%2").arg(p, 0, 'f', 1).arg(QChar(176));
+            QString soc = QString("%1 V").arg(s, 0, 'f', 1);
             m_temperature->setText(temp);
             m_humidity->setText(humidity);
+            m_pooltemp->setText(pooltemp);
+            m_battery->setText(soc);
         }
-    }
-    else if (t == "weather/event/lightning") {
-        QJsonObject object = doc.object();
-        QJsonObject lightning = object["lightning"].toObject();
-            
-        double d = lightning["miles"].toDouble();
-
-        if (d > 15) {
-            color = Qt::green;
-        }
-        else if (d > 5) {
-            color = Qt::yellow;
-        }
-        else {
-            color = Qt::red;
-        }
-
-        m_lightningLabel->setTextFormat(Qt::RichText);
-        m_lightningLabel->setText(QString("Lightning Detected <font color=\"%1\">%2</font> miles away").arg(color.name()).arg(d, 0, 'f', 1));
-        m_lightningTimer->stop();
-        m_lightningTimer->setInterval(1000 * 30);
-        m_lightningTimer->start();
     }
 }    
