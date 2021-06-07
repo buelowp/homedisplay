@@ -28,6 +28,7 @@
 #include "sonosrequest.h"
 #include "qmqttsubscriber.h"
 #include "sonoslabel.h"
+#include "resizeEventFilter.h"
 
 #define ONE_SECOND      1000
 #define ONE_MINUTE      (ONE_SECOND * 60)
@@ -73,6 +74,7 @@ protected slots:
     void sonosAlbumArt(QByteArray);
     void sonosAlbumArtError(QNetworkReply::NetworkError);
     void endMetadataScreen();
+    void showEvent(QShowEvent *e);
 
 private:
     
@@ -146,6 +148,7 @@ private:
     WidgetIndex m_currentWidget;
 
     bool m_retryAlbumArt;
+    ResizeEventFilter *m_eventFilter;
 };
 
 #endif /* MYTHFRAME_H_ */

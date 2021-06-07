@@ -27,6 +27,7 @@ MythFrame::MythFrame() : QMainWindow()
     setPalette(pal);
 
     m_primaryLayoutWidget = new QWidget();
+    m_primaryLayoutWidget->setSizePolicy(QSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed));
     m_primaryLayout = new QGridLayout(m_primaryLayoutWidget);
     m_primaryClock = new QLabel(m_primaryLayoutWidget);
     m_primaryClock->setScaledContents(true);
@@ -63,7 +64,8 @@ MythFrame::MythFrame() : QMainWindow()
     m_nyeLayout->addWidget(m_lbCountdown, 0, 0, 0, 4);
     
     m_sonosLayoutWidget = new QWidget();
-    m_sonosLayoutWidget->setFixedSize(800, 480);
+    m_sonosLayoutWidget->setSizePolicy(QSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed));
+//    m_sonosLayoutWidget->setFixedSize(width(), height());
     m_sonosLayout = new QGridLayout(m_sonosLayoutWidget);
     m_title = new SonosLabel(m_sonosLayoutWidget);
     m_title->setDefaultPointSize(FontSize::Title);
@@ -106,9 +108,9 @@ MythFrame::MythFrame() : QMainWindow()
     m_pooltemp->setFont(l);
     m_battery->setFont(l);
 
-    m_blankLayoutWidget = new QWidget();
+    m_blankLayoutWidget = new QWidget(this);
 
-    m_stackedWidget = new QStackedWidget();
+    m_stackedWidget = new QStackedWidget(this);
     m_stackedWidget->addWidget(m_primaryLayoutWidget);
     m_stackedWidget->addWidget(m_sonosLayoutWidget);
     m_stackedWidget->addWidget(m_nyeLayoutWidget);
@@ -124,12 +126,12 @@ MythFrame::MythFrame() : QMainWindow()
     connect(m_sonos, &SonosRequest::error, this, &MythFrame::sonosRequestError);
     connect(m_sonos, &SonosRequest::albumArt, this, &MythFrame::sonosAlbumArt);
     connect(m_sonos, &SonosRequest::albumArtError, this, &MythFrame::sonosAlbumArtError);
-//    setupSonos();
+    setupSonos();
     
     m_sonosTimer = new QTimer(this);
     connect(m_sonosTimer, &QTimer::timeout, this, &MythFrame::sonosUpdate);
     m_sonosTimer->setInterval(500);
-//    m_sonosTimer->start();
+    m_sonosTimer->start();
 
     m_cleanupCacheTimer = new QTimer(this);
     connect(m_cleanupCacheTimer, &QTimer::timeout, this, &MythFrame::removeOldCacheFiles);
@@ -172,10 +174,22 @@ MythFrame::MythFrame() : QMainWindow()
     m_currentWidget = WidgetIndex::Primary;
     m_stackedWidget->setCurrentIndex(m_currentWidget);
     setCentralWidget(m_stackedWidget);
+
+    m_eventFilter = new ResizeEventFilter();
+    m_primaryLayoutWidget->setObjectName("primary");
+    m_sonosLayoutWidget->setObjectName("sonos");
+    m_primaryLayoutWidget->installEventFilter(m_eventFilter);
+    m_sonosLayoutWidget->installEventFilter(m_eventFilter);
 }
 
 MythFrame::~MythFrame() 
 {
+}
+
+void MythFrame::showEvent(QShowEvent *e)
+{
+    qDebug() << __PRETTY_FUNCTION__ << ": width" << m_stackedWidget->width() << ", height" << m_stackedWidget->height();
+    qDebug() << __PRETTY_FUNCTION__ << ": width" << m_primaryLayoutWidget->width() << ", height" << m_primaryLayoutWidget->height();
 }
 
 void MythFrame::setupBlankScreenTimers()
@@ -305,7 +319,10 @@ void MythFrame::sonosRequestResult(QByteArray ba)
                     m_elapsedIndicator->setMaximum(m_duration);
                     m_elapsedIndicator->setMinimum(0);
                     m_trackNumber = parent["trackNo"].toInt();
-                    QUrl url(settings.value("sonosaddress").toString() + current["albumArtUri"].toString());
+                    QUrl url(current["albumArtUri"].toString());
+		    url.setPort(1400);
+		if (!url.isValid())
+			qDebug() << __PRETTY_FUNCTION__ << ":" << url.errorString();
                     m_sonos->getAlbumArt(url);
                     emit startSonos();
                 }
@@ -392,12 +409,16 @@ void MythFrame::showBlankScreen()
 void MythFrame::showPrimaryScreen()
 {
     m_stackedWidget->setCurrentIndex(WidgetIndex::Primary);
+    qDebug() << __PRETTY_FUNCTION__ << ": width" << m_primaryLayoutWidget->width() << ", height" << m_primaryLayoutWidget->height();
     m_trackNumber = -1;
 }
 
 void MythFrame::showMetadataScreen()
 {
     m_stackedWidget->setCurrentIndex(WidgetIndex::Sonos);
+    qDebug() << __PRETTY_FUNCTION__ << ": width" << m_sonosLayoutWidget->width() << ", height" << m_sonosLayoutWidget->height();
+    m_sonosLayoutWidget->showMaximized();
+    qDebug() << __PRETTY_FUNCTION__ << ": width" << m_sonosLayoutWidget->width() << ", height" << m_sonosLayoutWidget->height();
     m_cleanupCacheTimer->stop();
 }
 
