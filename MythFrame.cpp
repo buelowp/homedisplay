@@ -26,8 +26,10 @@ MythFrame::MythFrame() : QMainWindow()
     setAutoFillBackground(true);
     setPalette(pal);
 
+    QNetworkConfiguration *m_network = new QNetworkConfiguration();
+    qDebug() << __PRETTY_FUNCTION__ << ": Network state is" << m_network->state();
+
     m_primaryLayoutWidget = new QWidget();
-    m_primaryLayoutWidget->setSizePolicy(QSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed));
     m_primaryLayout = new QGridLayout(m_primaryLayoutWidget);
     m_primaryClock = new QLabel(m_primaryLayoutWidget);
     m_primaryClock->setScaledContents(true);
@@ -64,8 +66,6 @@ MythFrame::MythFrame() : QMainWindow()
     m_nyeLayout->addWidget(m_lbCountdown, 0, 0, 0, 4);
     
     m_sonosLayoutWidget = new QWidget();
-    m_sonosLayoutWidget->setSizePolicy(QSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed));
-//    m_sonosLayoutWidget->setFixedSize(width(), height());
     m_sonosLayout = new QGridLayout(m_sonosLayoutWidget);
     m_title = new SonosLabel(m_sonosLayoutWidget);
     m_title->setDefaultPointSize(FontSize::Title);
@@ -80,7 +80,7 @@ MythFrame::MythFrame() : QMainWindow()
     m_station->setScaledContents(true);
     m_station->setDefaultPointSize(FontSize::Default);
     m_albumArt = new QLabel(m_sonosLayoutWidget);
-    m_albumArt->setFixedSize(200, 200);
+    m_albumArt->setFixedSize(240, 240);
     m_elapsedIndicator = new QProgressBar(m_sonosLayoutWidget);
     m_elapsedIndicator->setStyleSheet(g_progressBarStyle);
     
@@ -175,11 +175,13 @@ MythFrame::MythFrame() : QMainWindow()
     m_stackedWidget->setCurrentIndex(m_currentWidget);
     setCentralWidget(m_stackedWidget);
 
+/*
     m_eventFilter = new ResizeEventFilter();
     m_primaryLayoutWidget->setObjectName("primary");
     m_sonosLayoutWidget->setObjectName("sonos");
     m_primaryLayoutWidget->installEventFilter(m_eventFilter);
     m_sonosLayoutWidget->installEventFilter(m_eventFilter);
+*/
 }
 
 MythFrame::~MythFrame() 
@@ -188,8 +190,6 @@ MythFrame::~MythFrame()
 
 void MythFrame::showEvent(QShowEvent *e)
 {
-    qDebug() << __PRETTY_FUNCTION__ << ": width" << m_stackedWidget->width() << ", height" << m_stackedWidget->height();
-    qDebug() << __PRETTY_FUNCTION__ << ": width" << m_primaryLayoutWidget->width() << ", height" << m_primaryLayoutWidget->height();
 }
 
 void MythFrame::setupBlankScreenTimers()
@@ -238,9 +238,11 @@ void MythFrame::removeOldCacheFiles()
 
 void MythFrame::endMetadataScreen()
 {
+/*
     m_cleanupCacheTimer->setInterval(15000);
     m_cleanupCacheTimer->setSingleShot(true);
     m_cleanupCacheTimer->start();
+*/
 }
 
 void MythFrame::sonosAlbumArt(QByteArray ba)
@@ -248,7 +250,7 @@ void MythFrame::sonosAlbumArt(QByteArray ba)
     QPixmap art;
     
     art.loadFromData(ba);
-    m_albumArt->setPixmap(art.scaledToWidth(200));
+    m_albumArt->setPixmap(art.scaledToWidth(240));
 }
 
 void MythFrame::setupSonos()
@@ -278,6 +280,9 @@ void MythFrame::sonosUpdate()
 
 void MythFrame::sonosRequestError(QNetworkReply::NetworkError error)
 {
+    m_sonosTimer->stop();
+    m_sonosTimer->setInterval(5000);
+    m_sonosTimer->start();
     qDebug() << __PRETTY_FUNCTION__ << error;
 }
 
@@ -298,6 +303,11 @@ void MythFrame::sonosRequestResult(QByteArray ba)
     QSettings settings(QSettings::IniFormat, QSettings::UserScope, "MythClock", "MythClock");
     QJsonParseError *error = new QJsonParseError();
 
+    if (m_sonosTimer->interval() != 500) {
+        m_sonosTimer->stop();
+        m_sonosTimer->setInterval(500);
+        m_sonosTimer->start();
+    }
     QJsonDocument doc = QJsonDocument::fromJson(ba, error);
     if (error->error != QJsonParseError::NoError) {
         qDebug() << __PRETTY_FUNCTION__ << ":" << error->errorString();
@@ -320,8 +330,10 @@ void MythFrame::sonosRequestResult(QByteArray ba)
                     m_elapsedIndicator->setMinimum(0);
                     m_trackNumber = parent["trackNo"].toInt();
                     QUrl url(current["albumArtUri"].toString());
-		    url.setPort(1400);
-		if (!url.isValid())
+                    if (url.host().contains("192"))
+		        url.setPort(1400);
+
+                    if (!url.isValid())
 			qDebug() << __PRETTY_FUNCTION__ << ":" << url.errorString();
                     m_sonos->getAlbumArt(url);
                     emit startSonos();
@@ -409,17 +421,12 @@ void MythFrame::showBlankScreen()
 void MythFrame::showPrimaryScreen()
 {
     m_stackedWidget->setCurrentIndex(WidgetIndex::Primary);
-    qDebug() << __PRETTY_FUNCTION__ << ": width" << m_primaryLayoutWidget->width() << ", height" << m_primaryLayoutWidget->height();
     m_trackNumber = -1;
 }
 
 void MythFrame::showMetadataScreen()
 {
     m_stackedWidget->setCurrentIndex(WidgetIndex::Sonos);
-    qDebug() << __PRETTY_FUNCTION__ << ": width" << m_sonosLayoutWidget->width() << ", height" << m_sonosLayoutWidget->height();
-    m_sonosLayoutWidget->showMaximized();
-    qDebug() << __PRETTY_FUNCTION__ << ": width" << m_sonosLayoutWidget->width() << ", height" << m_sonosLayoutWidget->height();
-    m_cleanupCacheTimer->stop();
 }
 
 void MythFrame::showNYEScreen()

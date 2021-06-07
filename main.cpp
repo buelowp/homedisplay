@@ -22,18 +22,18 @@
 
 int main(int argc, char **argv)
 {
+    qputenv("QT_LOGGING_TO_CONSOLE", QByteArray("2"));
+    // It takes the network a little while to get settled
+    // so lets give it some time to figure life out
+    QThread::sleep(30);
+
     QApplication app (argc, argv);
     MythFrame frame;
 
-    QDir cache(g_cachePath);
-    if (!cache.exists()) {
-        cache.mkpath(g_cachePath);
-    }
     app.setOverrideCursor(QCursor(Qt::BlankCursor));
-//    frame.setFixedSize(800, 480);
-//    frame.show();
-    frame.showFullScreen();
-    qDebug() << __PRETTY_FUNCTION__ << ": width" << frame.width() << ", height" << frame.height();
+    frame.setGeometry(0, 0, 1024, 600);
+    frame.setWindowFlags(Qt::Widget | Qt::FramelessWindowHint);
+    frame.show();
 
     return app.exec();
 }

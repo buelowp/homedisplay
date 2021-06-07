@@ -149,6 +149,7 @@ private:
 
     bool m_retryAlbumArt;
     ResizeEventFilter *m_eventFilter;
+    QNetworkSession *m_session;
 };
 
 #endif /* MYTHFRAME_H_ */
