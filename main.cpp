@@ -25,9 +25,9 @@ int main(int argc, char **argv)
     qputenv("QT_LOGGING_TO_CONSOLE", QByteArray("2"));
     // It takes the network a little while to get settled
     // so lets give it some time to figure life out
-    QThread::sleep(30);
 
     QApplication app (argc, argv);
+    QThread::sleep(30);
     MythFrame frame;
 
     app.setOverrideCursor(QCursor(Qt::BlankCursor));

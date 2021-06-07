@@ -471,10 +471,10 @@ void MythFrame::messageReceivedOnTopic(QString t, QString p)
             double p = pool["temp"].toDouble();
             double s = battery["voltage"].toDouble();
             
-            QString temp = QString("%1%2").arg(t, 0, 'f', 1).arg(QChar(176));
-            QString humidity = QString("%1%").arg(h, 0, 'f', 1);
-            QString pooltemp = QString("%1%2").arg(p, 0, 'f', 1).arg(QChar(176));
-            QString soc = QString("%1 V").arg(s, 0, 'f', 1);
+            QString temp = QString("Air: %1%2").arg(t, 0, 'f', 1).arg(QChar(176));
+            QString humidity = QString("Humidity: %1%").arg(h, 0, 'f', 1);
+            QString pooltemp = QString("Pool: %1%2").arg(p, 0, 'f', 1).arg(QChar(176));
+            QString soc = QString("Battery: %1 V").arg(s, 0, 'f', 1);
             m_temperature->setText(temp);
             m_humidity->setText(humidity);
             m_pooltemp->setText(pooltemp);
