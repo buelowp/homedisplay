@@ -278,6 +278,8 @@ void MythFrame::sonosRequestResult(QByteArray ba)
 {
     QSettings settings(QSettings::IniFormat, QSettings::UserScope, "MythClock", "MythClock");
     QJsonParseError *error = new QJsonParseError();
+    static QString lastState;
+    static QString lastTitle;
 
     QJsonDocument doc = QJsonDocument::fromJson(ba, error);
     if (error->error != QJsonParseError::NoError) {
@@ -287,25 +289,42 @@ void MythFrame::sonosRequestResult(QByteArray ba)
         if (doc.isObject()) {
             QJsonObject parent = doc.object();
             QString playback = parent["playbackState"].toString();
+            QJsonObject current = parent["currentTrack"].toObject();
             if (playback == "PLAYING") {
-                QJsonObject current = parent["currentTrack"].toObject();
-                if (parent["trackNo"] != m_trackNumber) {
-                    m_artist->reset();
-                    m_artist->setText(current["artist"].toString());
-                    m_album->reset();
-                    m_album->setText(current["album"].toString());
-                    m_title->setText(current["title"].toString());
-                    m_title->reset();
-                    m_duration = current["duration"].toInt();
-                    m_elapsedIndicator->setMaximum(m_duration);
-                    m_elapsedIndicator->setMinimum(0);
-                    m_trackNumber = parent["trackNo"].toInt();
-                    QUrl url(settings.value("sonosaddress").toString() + current["albumArtUri"].toString());
-                    m_sonos->getAlbumArt(url);
+                if (current["type"].toString() == "radio") {
+                    if (lastTitle != current["title"].toString()) {
+                        m_artist->setText(current["artist"].toString());
+                        m_album->setText(current["album"].toString());
+      	                m_title->setText(current["title"].toString());
+                        QUrl url(settings.value("sonosaddress").toString() + current["albumArtUri"].toString());
+                        m_sonos->getAlbumArt(url);
+                        m_elapsedIndicator->setVisible(false);
+                        lastTitle = current["title"].toString();
+                    }
+                }
+                else {
+                    if (parent["trackNo"] != m_trackNumber) {
+                         m_artist->reset();
+                         m_artist->setText(current["artist"].toString());
+                         m_album->reset();
+                         m_album->setText(current["album"].toString());
+                         m_title->setText(current["title"].toString());
+                         m_title->reset();
+                         m_duration = current["duration"].toInt();
+                         m_elapsedIndicator->setMaximum(m_duration);
+                         m_elapsedIndicator->setMinimum(0);
+                         m_trackNumber = parent["trackNo"].toInt();
+                         QUrl url(settings.value("sonosaddress").toString() + current["albumArtUri"].toString());
+                         m_sonos->getAlbumArt(url);
+                    }
+                    m_elapsedIndicator->setVisible(true);
+                    calculateMinutes(parent["elapsedTime"].toInt());
+                    m_volume = parent["volume"].toInt();
+                }
+                if (lastState != playback) {
+                    lastState = playback;
                     emit startSonos();
                 }
-                calculateMinutes(parent["elapsedTime"].toInt());
-                m_volume = parent["volume"].toInt();
             }
             else {
                 emit endSonos();
