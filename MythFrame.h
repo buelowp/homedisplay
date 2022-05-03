@@ -95,7 +95,6 @@ private:
     void setupSonos();
     void calculateMinutes(int);
     void setupBlankScreenTimers();
-    void removeOldCacheFiles();
     
     QMqttSubscriber *m_mqttClient;
     SonosRequest *m_sonos;
@@ -116,6 +115,7 @@ private:
 	QLabel *m_lbCountdown;
 	QTimer *m_clockTimer;
     QLabel *m_lightningLabel;
+    QLabel *m_rainLabel;
     QLabel *m_temperature;
     QLabel *m_humidity;
     
@@ -136,7 +136,6 @@ private:
     QTimer *m_sonosTimer;
     QTimer *m_startBlankScreen;
     QTimer *m_endBlankScreen;
-    QTimer *m_cleanupCacheTimer;
 
 	QString m_clockColor;
 

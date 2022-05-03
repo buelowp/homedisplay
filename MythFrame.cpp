@@ -44,11 +44,15 @@ MythFrame::MythFrame() : QMainWindow()
     m_temperature->setAlignment(Qt::AlignCenter);
     m_humidity->setAlignment(Qt::AlignCenter);
     m_lightningLabel->setAlignment(Qt::AlignCenter);
+    m_rainLabel = new QLabel(m_primaryLayoutWidget);
+    m_rainLabel->setAlignment(Qt::AlignCenter);
+    m_rainLabel->setScaledContents(true);
 
     m_primaryLayout->addWidget(m_primaryClock, 0, 0, 1, 4);
     m_primaryLayout->addWidget(m_temperature, 2, 0, 1, 2);
     m_primaryLayout->addWidget(m_humidity, 2, 2, 1, 2);
-    m_primaryLayout->addWidget(m_lightningLabel, 3, 0, 1, 4);
+    m_primaryLayout->addWidget(m_rainLabel, 3, 0, 1, 2);
+    m_primaryLayout->addWidget(m_lightningLabel, 3, 2, 1, 2);
     m_primaryLayout->addWidget(m_primaryDate, 4, 0, 1, 4);
     
     m_nyeLayoutWidget = new QWidget();
@@ -100,6 +104,7 @@ MythFrame::MythFrame() : QMainWindow()
     m_station->setFont(c);
     m_title->setFont(t);
     m_lightningLabel->setFont(l);
+    m_rainLabel->setFont(l);
 
     m_blankLayoutWidget = new QWidget();
 
@@ -125,9 +130,6 @@ MythFrame::MythFrame() : QMainWindow()
     connect(m_sonosTimer, &QTimer::timeout, this, &MythFrame::sonosUpdate);
     m_sonosTimer->setInterval(500);
     m_sonosTimer->start();
-
-    m_cleanupCacheTimer = new QTimer(this);
-    connect(m_cleanupCacheTimer, &QTimer::timeout, this, &MythFrame::removeOldCacheFiles);
 
     m_startBlankScreen = new QTimer(this);
     m_endBlankScreen = new QTimer(this);
@@ -201,27 +203,8 @@ void MythFrame::setupBlankScreenTimers()
     }
 }
 
-void MythFrame::removeOldCacheFiles()
-{
-    qDebug() << __PRETTY_FUNCTION__ << ":" << __LINE__ << ": Checking to see if we can expire any cache entries";
-    QDir dirp(g_cachePath);
-
-    if (dirp.exists()) {
-        dirp.setSorting(QDir::Time|QDir::Reversed);
-        QStringList fil = dirp.entryList();
-        qDebug() << __PRETTY_FUNCTION__ << ":" << __LINE__ << "Expiring" << (fil.size() - 1000) << "files";
-        for (int i = 0; i < (fil.size() - 1000); i++) {
-            QString fi = fil.takeFirst();
-            dirp.remove(fi);
-        }
-    }
-}
-
 void MythFrame::endMetadataScreen()
 {
-    m_cleanupCacheTimer->setInterval(15000);
-    m_cleanupCacheTimer->setSingleShot(true);
-    m_cleanupCacheTimer->start();
 }
 
 void MythFrame::sonosAlbumArt(QByteArray ba)
@@ -414,7 +397,6 @@ void MythFrame::showPrimaryScreen()
 void MythFrame::showMetadataScreen()
 {
     m_stackedWidget->setCurrentIndex(WidgetIndex::Sonos);
-    m_cleanupCacheTimer->stop();
 }
 
 void MythFrame::showNYEScreen()
@@ -451,12 +433,10 @@ void MythFrame::lightningTimeout()
 void MythFrame::messageReceivedOnTopic(QString t, QString p)
 {
     QJsonDocument doc = QJsonDocument::fromJson(p.toLocal8Bit());
-    QColor color;
-
-    qDebug() << __PRETTY_FUNCTION__ << ": Got topic" << t;
+    QJsonObject parent = doc.object();
+    
     if (t == "weather/conditions") {
         if (doc.isObject()) {
-            QJsonObject parent = doc.object();
             QJsonObject values = parent["environment"].toObject();
             double t = values["farenheit"].toDouble();
             double h = values["humidity"].toDouble();
@@ -467,26 +447,21 @@ void MythFrame::messageReceivedOnTopic(QString t, QString p)
             m_humidity->setText(humidity);
         }
     }
-    else if (t == "weather/event/lightning") {
+    else if (t == "weather/rainfall") {
+        if (parent.contains("today")) {
+            m_rainLabel->setText(QString("%1 in").arg(parent["today"].toDouble(), 0, 'f', 2));
+        }
+    }
+    else if (t == "weather/lightning") {
         QJsonObject object = doc.object();
-        QJsonObject lightning = object["lightning"].toObject();
+        if (object.contains("distance")) {
+            int d = object["distance"].toInt();
+            d = d * .62;
             
-        double d = lightning["miles"].toDouble();
-
-        if (d > 15) {
-            color = Qt::green;
+            m_lightningLabel->setText(QString("%1 miles").arg(d));
+            m_lightningTimer->stop();
+            m_lightningTimer->setInterval(1000 * 300);
+            m_lightningTimer->start();
         }
-        else if (d > 5) {
-            color = Qt::yellow;
-        }
-        else {
-            color = Qt::red;
-        }
-
-        m_lightningLabel->setTextFormat(Qt::RichText);
-        m_lightningLabel->setText(QString("Lightning Detected <font color=\"%1\">%2</font> miles away").arg(color.name()).arg(d, 0, 'f', 1));
-        m_lightningTimer->stop();
-        m_lightningTimer->setInterval(1000 * 30);
-        m_lightningTimer->start();
     }
 }    
