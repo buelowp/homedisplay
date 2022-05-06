@@ -27,7 +27,6 @@
 
 #include "sonosrequest.h"
 #include "qmqttsubscriber.h"
-#include "sonoslabel.h"
 
 #define ONE_SECOND      1000
 #define ONE_MINUTE      (ONE_SECOND * 60)
@@ -37,12 +36,12 @@ const QString g_progressBarStyle = "QProgressBar { border: 1px solid white;"
             "padding: 1px; border-radius: 5px; background: black; }"
             "QProgressBar::chunk {background: white;}";
 
-class MythFrame : public QMainWindow {
+class PrimaryDisplay : public QMainWindow {
     Q_OBJECT
 	
 public:
-    MythFrame();
-    virtual ~MythFrame();
+    PrimaryDisplay();
+    virtual ~PrimaryDisplay();
 
 signals:
     void startNYE();
@@ -111,7 +110,7 @@ private:
     QGridLayout *m_sonosLayout;
 
 	QLabel *m_primaryClock;
-	SonosLabel *m_primaryDate;
+	QLabel *m_primaryDate;
 	QLabel *m_lbCountdown;
 	QTimer *m_clockTimer;
     QLabel *m_lightningLabel;
@@ -119,10 +118,10 @@ private:
     QLabel *m_temperature;
     QLabel *m_humidity;
     
-    SonosLabel *m_artist;
-    SonosLabel *m_album;
-    SonosLabel *m_station;
-    SonosLabel *m_title;
+    QLabel *m_artist;
+    QLabel *m_album;
+    QLabel *m_station;
+    QLabel *m_title;
     QLabel *m_albumArt;
 
     int m_duration;

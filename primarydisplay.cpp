@@ -16,9 +16,9 @@
 
 */
 
-#include "MythFrame.h"
+#include "primarydisplay.h"
 
-MythFrame::MythFrame() : QMainWindow() 
+PrimaryDisplay::PrimaryDisplay() : QMainWindow() 
 {
     QPalette pal(QColor(0,0,0));
     setBackgroundRole(QPalette::Window);
@@ -31,10 +31,9 @@ MythFrame::MythFrame() : QMainWindow()
     m_primaryClock = new QLabel(m_primaryLayoutWidget);
     m_primaryClock->setScaledContents(true);
     m_primaryClock->setAlignment(Qt::AlignCenter);
-    m_primaryDate = new SonosLabel(m_primaryLayoutWidget);
+    m_primaryDate = new QLabel(m_primaryLayoutWidget);
     m_primaryDate->setAlignment(Qt::AlignCenter);
     m_primaryDate->setScaledContents(true);
-    m_primaryDate->setDefaultPointSize(FontSize::Default);
     m_lightningLabel = new QLabel(m_primaryLayoutWidget);
     m_lightningLabel->setScaledContents(true);
     m_temperature = new QLabel(m_primaryLayoutWidget);
@@ -65,18 +64,14 @@ MythFrame::MythFrame() : QMainWindow()
     m_sonosLayoutWidget = new QWidget();
     m_sonosLayoutWidget->setFixedSize(800, 480);
     m_sonosLayout = new QGridLayout(m_sonosLayoutWidget);
-    m_title = new SonosLabel(m_sonosLayoutWidget);
-    m_title->setDefaultPointSize(FontSize::Title);
+    m_title = new QLabel(m_sonosLayoutWidget);
     m_title->setScaledContents(true);
-    m_artist = new SonosLabel(m_sonosLayoutWidget);
+    m_artist = new QLabel(m_sonosLayoutWidget);
     m_artist->setScaledContents(true);
-    m_artist->setDefaultPointSize(FontSize::Default);
-    m_album = new SonosLabel(m_sonosLayoutWidget);
+    m_album = new QLabel(m_sonosLayoutWidget);
     m_album->setScaledContents(true);
-    m_album->setDefaultPointSize(FontSize::Default);
-    m_station = new SonosLabel(m_sonosLayoutWidget);
+    m_station = new QLabel(m_sonosLayoutWidget);
     m_station->setScaledContents(true);
-    m_station->setDefaultPointSize(FontSize::Default);
     m_albumArt = new QLabel(m_sonosLayoutWidget);
     m_albumArt->setFixedSize(200, 200);
     m_elapsedIndicator = new QProgressBar(m_sonosLayoutWidget);
@@ -92,7 +87,7 @@ MythFrame::MythFrame() : QMainWindow()
     QFont c("Roboto-Regular", 36);
     QFont l("Roboto-Regular", 28);
     QFont p("Roboto-Regular", 100);
-    QFont d("Roboto-Regular", 36);
+    QFont d("Roboto-Regular", 32);
     QFont t("Roboto-Regular", 50);
 
     m_primaryClock->setFont(p);
@@ -120,14 +115,14 @@ MythFrame::MythFrame() : QMainWindow()
     m_clockTimer->start();
 
     m_sonos = new SonosRequest();
-    connect(m_sonos, &SonosRequest::result, this, &MythFrame::sonosRequestResult);
-    connect(m_sonos, &SonosRequest::error, this, &MythFrame::sonosRequestError);
-    connect(m_sonos, &SonosRequest::albumArt, this, &MythFrame::sonosAlbumArt);
-    connect(m_sonos, &SonosRequest::albumArtError, this, &MythFrame::sonosAlbumArtError);
+    connect(m_sonos, &SonosRequest::result, this, &PrimaryDisplay::sonosRequestResult);
+    connect(m_sonos, &SonosRequest::error, this, &PrimaryDisplay::sonosRequestError);
+    connect(m_sonos, &SonosRequest::albumArt, this, &PrimaryDisplay::sonosAlbumArt);
+    connect(m_sonos, &SonosRequest::albumArtError, this, &PrimaryDisplay::sonosAlbumArtError);
     setupSonos();
     
     m_sonosTimer = new QTimer(this);
-    connect(m_sonosTimer, &QTimer::timeout, this, &MythFrame::sonosUpdate);
+    connect(m_sonosTimer, &QTimer::timeout, this, &PrimaryDisplay::sonosUpdate);
     m_sonosTimer->setInterval(500);
     m_sonosTimer->start();
 
@@ -171,11 +166,11 @@ MythFrame::MythFrame() : QMainWindow()
     setCentralWidget(m_stackedWidget);
 }
 
-MythFrame::~MythFrame() 
+PrimaryDisplay::~PrimaryDisplay() 
 {
 }
 
-void MythFrame::setupBlankScreenTimers()
+void PrimaryDisplay::setupBlankScreenTimers()
 {
     QDateTime now = QDateTime::currentDateTime();
 
@@ -203,11 +198,11 @@ void MythFrame::setupBlankScreenTimers()
     }
 }
 
-void MythFrame::endMetadataScreen()
+void PrimaryDisplay::endMetadataScreen()
 {
 }
 
-void MythFrame::sonosAlbumArt(QByteArray ba)
+void PrimaryDisplay::sonosAlbumArt(QByteArray ba)
 {
     QPixmap art;
     
@@ -215,7 +210,7 @@ void MythFrame::sonosAlbumArt(QByteArray ba)
     m_albumArt->setPixmap(art.scaledToWidth(200));
 }
 
-void MythFrame::setupSonos()
+void PrimaryDisplay::setupSonos()
 {
     QSettings settings(QSettings::IniFormat, QSettings::UserScope, "MythClock", "MythClock");
     QString hostname = settings.value("sonosserver").toString();
@@ -234,30 +229,30 @@ void MythFrame::setupSonos()
     }
 }
 
-void MythFrame::sonosUpdate()
+void PrimaryDisplay::sonosUpdate()
 {
     if (!m_sonos->inProgress())
         m_sonos->run();
 }
 
-void MythFrame::sonosRequestError(QNetworkReply::NetworkError error)
+void PrimaryDisplay::sonosRequestError(QNetworkReply::NetworkError error)
 {
     qDebug() << __PRETTY_FUNCTION__ << error;
 }
 
-void MythFrame::sonosAlbumArtError(QNetworkReply::NetworkError error)
+void PrimaryDisplay::sonosAlbumArtError(QNetworkReply::NetworkError error)
 {
     qDebug() << __PRETTY_FUNCTION__ << error;
 }
 
-void MythFrame::calculateMinutes(int elapsed)
+void PrimaryDisplay::calculateMinutes(int elapsed)
 {
     QString display = QString("%1:%2").arg(elapsed/60, 2, 10, QChar('0')).arg(elapsed%60, 2, 10, QChar('0'));
     m_elapsedIndicator->setFormat(display);
     m_elapsedIndicator->setValue(elapsed);
 }
 
-void MythFrame::sonosRequestResult(QByteArray ba)
+void PrimaryDisplay::sonosRequestResult(QByteArray ba)
 {
     QSettings settings(QSettings::IniFormat, QSettings::UserScope, "MythClock", "MythClock");
     QJsonParseError *error = new QJsonParseError();
@@ -287,12 +282,9 @@ void MythFrame::sonosRequestResult(QByteArray ba)
                 }
                 else {
                     if (parent["trackNo"] != m_trackNumber) {
-                         m_artist->reset();
                          m_artist->setText(current["artist"].toString());
-                         m_album->reset();
                          m_album->setText(current["album"].toString());
                          m_title->setText(current["title"].toString());
-                         m_title->reset();
                          m_duration = current["duration"].toInt();
                          m_elapsedIndicator->setMaximum(m_duration);
                          m_elapsedIndicator->setMinimum(0);
@@ -316,7 +308,7 @@ void MythFrame::sonosRequestResult(QByteArray ba)
     }
 }
 
-void MythFrame::setupMqttSubscriber()
+void PrimaryDisplay::setupMqttSubscriber()
 {
     QSettings settings(QSettings::IniFormat, QSettings::UserScope, "MythClock", "MythClock");
     QString hostname = settings.value("mqttserver").toString();
@@ -339,7 +331,7 @@ void MythFrame::setupMqttSubscriber()
     connect(m_lightningTimer, SIGNAL(timeout()), this, SLOT(lightningTimeout()));
 }
 
-void MythFrame::setNYETimeout()
+void PrimaryDisplay::setNYETimeout()
 {
     QDateTime dt = QDateTime::currentDateTime();
     QTime t(23, 59, 0);
@@ -358,12 +350,12 @@ void MythFrame::setNYETimeout()
     }
 }
 
-void MythFrame::showNYECountDown()
+void PrimaryDisplay::showNYECountDown()
 {
     emit startNYE();
 }
 
-void MythFrame::updateClock()
+void PrimaryDisplay::updateClock()
 {
     QTime t = QTime::currentTime();
     QDate d = QDate::currentDate();
@@ -379,7 +371,7 @@ void MythFrame::updateClock()
     }
 }
 
-void MythFrame::showBlankScreen()
+void PrimaryDisplay::showBlankScreen()
 {
     qDebug() << __PRETTY_FUNCTION__ << ":" << "Going dark";
     m_endBlankScreen->setInterval(ONE_HOUR * 4);
@@ -388,18 +380,18 @@ void MythFrame::showBlankScreen()
     m_stackedWidget->setCurrentIndex(WidgetIndex::Blank);
 }
 
-void MythFrame::showPrimaryScreen()
+void PrimaryDisplay::showPrimaryScreen()
 {
     m_stackedWidget->setCurrentIndex(WidgetIndex::Primary);
     m_trackNumber = -1;
 }
 
-void MythFrame::showMetadataScreen()
+void PrimaryDisplay::showMetadataScreen()
 {
     m_stackedWidget->setCurrentIndex(WidgetIndex::Sonos);
 }
 
-void MythFrame::showNYEScreen()
+void PrimaryDisplay::showNYEScreen()
 {
     QTime t = QTime::currentTime();
 
@@ -414,23 +406,23 @@ void MythFrame::showNYEScreen()
         emit stopNYE();
 }
 
-void MythFrame::connectionComplete()
+void PrimaryDisplay::connectionComplete()
 {
     m_mqttClient->subscribe("weather/#");
 }
 
-void MythFrame::disconnectedEvent()
+void PrimaryDisplay::disconnectedEvent()
 {
     qDebug() << __PRETTY_FUNCTION__ << ": MQTT connection lost";
     m_mqttClient->connectToHost();
 }
 
-void MythFrame::lightningTimeout()
+void PrimaryDisplay::lightningTimeout()
 {
     m_lightningLabel->clear();
 }
 
-void MythFrame::messageReceivedOnTopic(QString t, QString p)
+void PrimaryDisplay::messageReceivedOnTopic(QString t, QString p)
 {
     QJsonDocument doc = QJsonDocument::fromJson(p.toLocal8Bit());
     QJsonObject parent = doc.object();

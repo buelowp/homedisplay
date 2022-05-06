@@ -17,22 +17,22 @@
 */
 
 #include <QApplication>
-#include "MythFrame.h"
+#include "primarydisplay.h"
 #include "sonosrequest.h"
 
 int main(int argc, char **argv)
 {
     QApplication app (argc, argv);
-    MythFrame frame;
+    PrimaryDisplay frame;
 
     QDir cache(g_cachePath);
     if (!cache.exists()) {
         cache.mkpath(g_cachePath);
     }
     app.setOverrideCursor(QCursor(Qt::BlankCursor));
-//    frame.setFixedSize(800, 480);
-//    frame.show();
-    frame.showFullScreen();
+    frame.setFixedSize(800, 480);
+    frame.show();
+//    frame.showFullScreen();
 
     return app.exec();
 }
