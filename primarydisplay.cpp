@@ -101,6 +101,8 @@ PrimaryDisplay::PrimaryDisplay() : QMainWindow()
     m_lightningLabel->setFont(l);
     m_rainLabel->setFont(l);
 
+    m_weatherWidget = new WeatherDisplay();
+    
     m_blankLayoutWidget = new QWidget();
 
     m_stackedWidget = new QStackedWidget();
@@ -108,6 +110,7 @@ PrimaryDisplay::PrimaryDisplay() : QMainWindow()
     m_stackedWidget->addWidget(m_sonosLayoutWidget);
     m_stackedWidget->addWidget(m_nyeLayoutWidget);
     m_stackedWidget->addWidget(m_blankLayoutWidget);
+    m_stackedWidget->addWidget(m_weatherWidget);
         
     m_clockTimer = new QTimer(this);
     connect(m_clockTimer, SIGNAL(timeout()), this, SLOT(updateClock()));
@@ -137,25 +140,31 @@ PrimaryDisplay::PrimaryDisplay() : QMainWindow()
     QState *metadata = new QState();
     QState *nye = new QState();
     QState *blank = new QState();
+    QState *weather = new QState();
 
     nye->addTransition(this, SIGNAL(stopNYE()), primary);
     primary->addTransition(this, SIGNAL(startSonos()), metadata);
     primary->addTransition(this, SIGNAL(startNYE()), nye);
     primary->addTransition(m_startBlankScreen, SIGNAL(timeout()), blank);
+    primary->addTransition(this, SIGNAL(startWeather()), weather);
     metadata->addTransition(this, SIGNAL(startNYE()), nye);
     metadata->addTransition(this, SIGNAL(endSonos()), primary);
     blank->addTransition(m_endBlankScreen, SIGNAL(timeout()), primary);
+    weather->addTransition(this, SIGNAL(stopWeather()), primary);
+    
 
     connect(metadata, SIGNAL(entered()), this, SLOT(showMetadataScreen()));
     connect(metadata, SIGNAL(exited()), this, SLOT(endMetadataScreen()));
     connect(primary, SIGNAL(entered()), this, SLOT(showPrimaryScreen()));
     connect(nye, SIGNAL(entered()), this, SLOT(showNYEScreen()));
     connect(blank, SIGNAL(entered()), this, SLOT(showBlankScreen()));
+    connect(weather, SIGNAL(entered()), this, SLOT(showWeatherScreen()));
 
     m_states.addState(primary);
     m_states.addState(metadata);
     m_states.addState(nye);
     m_states.addState(blank);
+    m_states.addState(weather);
     m_states.setInitialState(primary);
 
     setNYETimeout();

@@ -25,6 +25,7 @@
 #include <QtWidgets/QtWidgets>
 #include <QtQmqtt/QtQmqtt>
 
+#include "weatherdisplay.h"
 #include "sonosrequest.h"
 #include "qmqttsubscriber.h"
 
@@ -52,6 +53,8 @@ signals:
     void endSonos();
     void startBlankScreen();
     void endBlankScreen();
+    void startWeather();
+    void stopWeather();
 
 public slots:
     void updateClock();
@@ -102,6 +105,7 @@ private:
     QWidget *m_nyeLayoutWidget;
     QWidget *m_sonosLayoutWidget;
     QWidget *m_blankLayoutWidget;
+    WeatherDisplay *m_weatherWidget;
 
     QStackedWidget *m_stackedWidget;
     
