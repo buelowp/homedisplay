@@ -129,6 +129,9 @@ PrimaryDisplay::PrimaryDisplay() : QMainWindow()
     m_sonosTimer->setInterval(500);
     m_sonosTimer->start();
 
+    m_endWeatherScreen = new QTimer(this);
+    connect(m_endWeatherScreen, &QTimer::timeout, this, &PrimaryDisplay::endWeatherScreen);
+
     m_startBlankScreen = new QTimer(this);
     m_endBlankScreen = new QTimer(this);
     setupBlankScreenTimers();
@@ -152,7 +155,6 @@ PrimaryDisplay::PrimaryDisplay() : QMainWindow()
     blank->addTransition(m_endBlankScreen, SIGNAL(timeout()), primary);
     weather->addTransition(this, SIGNAL(stopWeather()), primary);
     
-
     connect(metadata, SIGNAL(entered()), this, SLOT(showMetadataScreen()));
     connect(metadata, SIGNAL(exited()), this, SLOT(endMetadataScreen()));
     connect(primary, SIGNAL(entered()), this, SLOT(showPrimaryScreen()));
@@ -205,6 +207,17 @@ void PrimaryDisplay::setupBlankScreenTimers()
         qDebug() << __PRETTY_FUNCTION__ << ":" << "Blanking at" << tomorrow;
         m_startBlankScreen->start();
     }
+}
+
+bool PrimaryDisplay::event(QEvent* event)
+{
+    if (event->type() == QEvent::MouseButtonRelease) {
+        qDebug() << __PRETTY_FUNCTION__ << ": Starting weather widget";
+        emit startWeather();
+        return true;
+    }
+    
+    return QMainWindow::event(event);
 }
 
 void PrimaryDisplay::endMetadataScreen()
@@ -431,13 +444,31 @@ void PrimaryDisplay::lightningTimeout()
     m_lightningLabel->clear();
 }
 
+void PrimaryDisplay::endWeatherScreen()
+{
+    qDebug() << __PRETTY_FUNCTION__;
+    m_endWeatherScreen->stop();
+    m_stackedWidget->setCurrentIndex(WidgetIndex::Primary);
+}
+
+void PrimaryDisplay::showWeatherScreen()
+{
+    qDebug() << __PRETTY_FUNCTION__;
+    m_endWeatherScreen->setSingleShot(true);
+    m_endWeatherScreen->setInterval(1000 * 60);
+    m_endWeatherScreen->start();
+    m_stackedWidget->setCurrentIndex(WidgetIndex::Weather);
+}
+
+
 void PrimaryDisplay::messageReceivedOnTopic(QString t, QString p)
 {
     QJsonDocument doc = QJsonDocument::fromJson(p.toLocal8Bit());
-    QJsonObject parent = doc.object();
     
-    if (t == "weather/conditions") {
-        if (doc.isObject()) {
+    if (doc.isObject()) {
+        QJsonObject parent = doc.object();
+        m_weatherWidget->updateDisplay(t, parent);
+        if (t == "weather/conditions") {
             QJsonObject values = parent["environment"].toObject();
             double t = values["farenheit"].toDouble();
             double h = values["humidity"].toDouble();
@@ -447,22 +478,22 @@ void PrimaryDisplay::messageReceivedOnTopic(QString t, QString p)
             m_temperature->setText(temp);
             m_humidity->setText(humidity);
         }
-    }
-    else if (t == "weather/rainfall") {
-        if (parent.contains("today")) {
-            m_rainLabel->setText(QString("%1 in").arg(parent["today"].toDouble(), 0, 'f', 2));
+        else if (t == "weather/rainfall") {
+            if (parent.contains("today")) {
+                m_rainLabel->setText(QString("%1 in").arg(parent["today"].toDouble(), 0, 'f', 2));
+            }
         }
-    }
-    else if (t == "weather/lightning") {
-        QJsonObject object = doc.object();
-        if (object.contains("distance")) {
-            int d = object["distance"].toInt();
-            d = d * .62;
-            
-            m_lightningLabel->setText(QString("%1 miles").arg(d));
-            m_lightningTimer->stop();
-            m_lightningTimer->setInterval(1000 * 300);
-            m_lightningTimer->start();
+        else if (t == "weather/lightning") {
+            QJsonObject object = doc.object();
+            if (object.contains("distance")) {
+                int d = object["distance"].toInt();
+                d = d * .62;
+                
+                m_lightningLabel->setText(QString("%1 miles").arg(d));
+                m_lightningTimer->stop();
+                m_lightningTimer->setInterval(1000 * 300);
+                m_lightningTimer->start();
+            }
         }
     }
 }    

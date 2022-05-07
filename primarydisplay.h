@@ -44,6 +44,9 @@ public:
     PrimaryDisplay();
     virtual ~PrimaryDisplay();
 
+protected:
+    bool event(QEvent *event) override;
+    
 signals:
     void startNYE();
     void stopNYE();
@@ -76,6 +79,8 @@ protected slots:
     void sonosAlbumArt(QByteArray);
     void sonosAlbumArtError(QNetworkReply::NetworkError);
     void endMetadataScreen();
+    void endWeatherScreen();
+    void showWeatherScreen();
 
 private:
     
@@ -83,7 +88,8 @@ private:
         Primary = 0,
         Sonos,
         NYE,
-        Blank
+        Blank,
+        Weather
     } WidgetIndex;
     
     typedef enum FONT_SIZE:int {
@@ -139,6 +145,7 @@ private:
     QTimer *m_sonosTimer;
     QTimer *m_startBlankScreen;
     QTimer *m_endBlankScreen;
+    QTimer *m_endWeatherScreen;
 
 	QString m_clockColor;
 

@@ -29,7 +29,7 @@ int main(int argc, char **argv)
     if (!cache.exists()) {
         cache.mkpath(g_cachePath);
     }
-    app.setOverrideCursor(QCursor(Qt::BlankCursor));
+//    app.setOverrideCursor(QCursor(Qt::BlankCursor));
     frame.setFixedSize(800, 480);
     frame.show();
 //    frame.showFullScreen();

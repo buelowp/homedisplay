@@ -5,15 +5,25 @@
 
 WeatherDisplay::WeatherDisplay(QWidget *parent) : QWidget(parent)
 {
+    QFont l("Roboto-Regular", 28);
+
     m_temperature = new QLabel();
+    m_temperature->setFont(l);
     m_heatIndex = new QLabel();
+    m_heatIndex->setFont(l);
     m_humidity = new QLabel();
+    m_humidity->setFont(l);
     m_rose = new CompassRose();
     m_uvIndex = new QLabel();
+    m_uvIndex->setFont(l);
     m_windSpeed = new QLabel();
+    m_windSpeed->setFont(l);
     m_usvh = new QLabel();
+    m_usvh->setFont(l);
     m_rainToday = new QLabel();
+    m_rainToday->setFont(l);
     m_rainYTD = new QLabel();
+    m_rainYTD->setFont(l);
 
     m_layout = new QGridLayout();
     m_layout->addWidget(m_temperature, 0, 0, 1, 1);
@@ -38,6 +48,7 @@ WeatherDisplay::~WeatherDisplay()
  */
 void WeatherDisplay::updateDisplay(QString &topic, QJsonObject &object)
 {
+    qDebug() << __PRETTY_FUNCTION__ << ": " << topic;
     if (topic == "weather/rainfall") {
         if (object.contains("ytd")) {
             m_rainYTD->setText(QString("%1").arg(object["ytd"].toDouble()));
@@ -49,7 +60,7 @@ void WeatherDisplay::updateDisplay(QString &topic, QJsonObject &object)
         if (object.contains("environment")) {
             QJsonObject env = object["environment"].toObject();
             QJsonObject radiation = object["radiation"].toObject();
-            m_temperature->setText(QString("%1").arg(env["farenheit"].toDouble()));
+            m_temperature->setText(QString("%1%2").arg(env["farenheit"].toDouble(), 0, 'f', 1).arg(QChar(176)));
             m_humidity->setText(QString("%1%").arg(env["humidity"].toDouble()));
             m_usvh->setText(QString("%1 usvh").arg(radiation["uSvh"].toDouble()));
         }
@@ -60,7 +71,7 @@ void WeatherDisplay::updateDisplay(QString &topic, QJsonObject &object)
     
     if (topic == "weather/wind") {
         if (object.contains("speed")) {
-            m_windSpeed->setText(QString("%1 mph").arg(object["speed"].toString()));
+            m_windSpeed->setText(QString("%1 mph").arg(object["speed"].toInt()));
             m_rose->setAngle(object["direction"].toInt());
         }
     }

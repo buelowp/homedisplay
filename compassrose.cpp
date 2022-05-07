@@ -34,7 +34,7 @@ void CompassRose::paintEvent(QPaintEvent* event)
     };
 
     QColor roseColor(127, 0, 127);
-
+    QColor hashColor(50, 50, 50);
     int side = qMin(width(), height());
 
     QPainter painter(this);
@@ -42,12 +42,18 @@ void CompassRose::paintEvent(QPaintEvent* event)
     painter.translate(width() / 2, height() / 2);
     painter.scale(side / 200.0, side / 200.0);
 
-    painter.setPen(Qt::NoPen);
     painter.setPen(roseColor);
     painter.setBrush(roseColor);
 
     painter.save();
-    painter.rotate(30.0 * (m_angle / 60.0));
+    painter.rotate(m_angle);
     painter.drawConvexPolygon(windDir, 3);
     painter.restore();
+    
+    painter.setBrush(Qt::white);
+    painter.setPen(Qt::white);
+    for (int i = 0; i < 12; ++i) {
+        painter.drawLine(88, 0, 96, 0);
+        painter.rotate(30.0);
+    }
 }
