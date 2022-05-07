@@ -21,6 +21,9 @@ public:
     void updateDisplay(QString &topic, QJsonObject &object);
     
 private:
+    double calculateHeatIndex(double temp, double humidity);
+    double calculateWindchill(double temp, int speed);
+    
     QLabel *m_temperature;
     QLabel *m_humidity;
     QLabel *m_heatIndex;

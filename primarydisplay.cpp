@@ -449,6 +449,7 @@ void PrimaryDisplay::endWeatherScreen()
     qDebug() << __PRETTY_FUNCTION__;
     m_endWeatherScreen->stop();
     m_stackedWidget->setCurrentIndex(WidgetIndex::Primary);
+    emit stopWeather();
 }
 
 void PrimaryDisplay::showWeatherScreen()
