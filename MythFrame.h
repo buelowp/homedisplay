@@ -118,6 +118,7 @@ private:
     QLabel *m_rainLabel;
     QLabel *m_temperature;
     QLabel *m_humidity;
+    QLabel *m_uvIndex;
     
     SonosLabel *m_artist;
     SonosLabel *m_album;
