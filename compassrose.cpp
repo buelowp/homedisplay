@@ -33,7 +33,7 @@ void CompassRose::paintEvent(QPaintEvent* event)
         QPoint(0, -40)
     };
 
-    QColor roseColor(127, 0, 127);
+    QColor roseColor(255, 255, 127);
     QColor hashColor(50, 50, 50);
     int side = qMin(width(), height());
 
