@@ -32,8 +32,18 @@ private:
     QLabel *m_rainToday;
     QLabel *m_rainYTD;
     QLabel *m_usvh;
+    QLabel *m_temperatureLabel;
+    QLabel *m_humidityLabel;
+    QLabel *m_heatIndexLabel;
+    QLabel *m_windSpeedLabel;
+    QLabel *m_windDirLabel;
+    QLabel *m_uvIndexLabel;
+    QLabel *m_rainTodayLabel;
+    QLabel *m_rainYTDLabel;
+    QLabel *m_usvhLabel;
     CompassRose *m_rose;
     QGridLayout *m_layout;
+    int m_lastWS;
 };
 
 #endif // WEATHERDISPLAY_H

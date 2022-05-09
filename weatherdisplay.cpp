@@ -5,7 +5,10 @@
 
 WeatherDisplay::WeatherDisplay(QWidget *parent) : QWidget(parent)
 {
+    m_lastWS = 0;
+    
     QFont l("Roboto-Regular", 28);
+    QFont p("Robot-Regular", 12);
 
     m_temperature = new QLabel();
     m_temperature->setFont(l);
@@ -40,17 +43,63 @@ WeatherDisplay::WeatherDisplay(QWidget *parent) : QWidget(parent)
     m_rainYTD->setFont(l);
     m_rainYTD->setScaledContents(true);
     m_rainYTD->setAlignment(Qt::AlignCenter);
+    
+    m_temperatureLabel = new QLabel("Temperature");
+    m_temperatureLabel->setFont(p);
+    m_temperatureLabel->setScaledContents(true);
+    m_temperatureLabel->setAlignment(Qt::AlignCenter);
+    m_heatIndexLabel = new QLabel("Heat Index");
+    m_heatIndexLabel->setFont(p);
+    m_heatIndexLabel->setScaledContents(true);
+    m_heatIndexLabel->setAlignment(Qt::AlignCenter);
+    m_humidityLabel = new QLabel("Humidity");
+    m_humidityLabel->setFont(p);
+    m_humidityLabel->setScaledContents(true);
+    m_humidityLabel->setAlignment(Qt::AlignCenter);
+    m_uvIndexLabel = new QLabel("UV Index");
+    m_uvIndexLabel->setFont(p);
+    m_uvIndexLabel->setScaledContents(true);
+    m_uvIndexLabel->setAlignment(Qt::AlignCenter);
+    m_windSpeedLabel = new QLabel("Wind Speed");
+    m_windSpeedLabel->setFont(p);
+    m_windSpeedLabel->setScaledContents(true);
+    m_windSpeedLabel->setAlignment(Qt::AlignCenter);
+    m_windDirLabel = new QLabel("Wind Direction");
+    m_windDirLabel->setFont(p);
+    m_windDirLabel->setScaledContents(true);
+    m_windDirLabel->setAlignment(Qt::AlignCenter);
+    m_usvhLabel = new QLabel("Radiation");
+    m_usvhLabel->setFont(p);
+    m_usvhLabel->setScaledContents(true);
+    m_usvhLabel->setAlignment(Qt::AlignCenter);
+    m_rainTodayLabel = new QLabel("Rainfall Today");
+    m_rainTodayLabel->setFont(p);
+    m_rainTodayLabel->setScaledContents(true);
+    m_rainTodayLabel->setAlignment(Qt::AlignCenter);
+    m_rainYTDLabel = new QLabel("Rainfall YTD");
+    m_rainYTDLabel->setFont(p);
+    m_rainYTDLabel->setScaledContents(true);
+    m_rainYTDLabel->setAlignment(Qt::AlignCenter);
 
     m_layout = new QGridLayout();
-    m_layout->addWidget(m_temperature, 0, 0, 1, 1);
-    m_layout->addWidget(m_humidity, 0, 1, 1, 1);
-    m_layout->addWidget(m_heatIndex, 0, 2, 1, 1);
-    m_layout->addWidget(m_windSpeed, 1, 0, 1, 1);
-    m_layout->addWidget(m_rose, 1, 1, 2, 2);
-    m_layout->addWidget(m_rainToday, 2, 0, 1, 1);
-    m_layout->addWidget(m_rainYTD, 2, 1, 1, 1);
-    m_layout->addWidget(m_usvh, 3, 0, 1, 1);
-    m_layout->addWidget(m_uvIndex, 3, 1, 1, 1);
+    m_layout->addWidget(m_temperatureLabel, 0, 0, 1, 1);
+    m_layout->addWidget(m_temperature, 1, 0, 1, 1);
+    m_layout->addWidget(m_humidityLabel, 0, 1, 1, 1);
+    m_layout->addWidget(m_humidity, 1, 1, 1, 1);
+    m_layout->addWidget(m_heatIndexLabel, 0, 2, 1, 1);
+    m_layout->addWidget(m_heatIndex, 1, 2, 1, 1);
+    m_layout->addWidget(m_windSpeedLabel, 2, 1, 1, 1);
+    m_layout->addWidget(m_windSpeed, 3, 1, 1, 1);
+    m_layout->addWidget(m_windDirLabel, 2, 2, 1, 1);
+    m_layout->addWidget(m_rose, 3, 2, 2, 1);
+    m_layout->addWidget(m_rainTodayLabel, 4, 0, 1, 1);
+    m_layout->addWidget(m_rainToday, 5, 0, 1, 1);
+    m_layout->addWidget(m_rainYTDLabel, 4, 1, 1, 1);
+    m_layout->addWidget(m_rainYTD, 5, 1, 1, 1);
+    m_layout->addWidget(m_usvhLabel, 6, 0, 1, 1);
+    m_layout->addWidget(m_usvh, 7, 0, 1, 1);
+    m_layout->addWidget(m_uvIndexLabel, 6, 1, 1, 1);
+    m_layout->addWidget(m_uvIndex, 7, 1, 1, 1);
     
     setLayout(m_layout);
 }
@@ -77,7 +126,6 @@ double WeatherDisplay::calculateWindchill(double temp, int speed)
  */
 void WeatherDisplay::updateDisplay(QString &topic, QJsonObject &object)
 {
-    qDebug() << __PRETTY_FUNCTION__ << ": " << topic;
     if (topic == "weather/rainfall") {
         if (object.contains("ytd")) {
             m_rainYTD->setText(QString("%1").arg(object["ytd"].toDouble()));
@@ -94,20 +142,44 @@ void WeatherDisplay::updateDisplay(QString &topic, QJsonObject &object)
             double humidity = env["humidity"].toDouble();
             m_temperature->setText(QString("%1%2").arg(farenheit, 0, 'f', 1).arg(QChar(176)));
             m_humidity->setText(QString("%1%").arg(humidity, 0, 'f', 1));
-            m_heatIndex->setText(QString("%1%2").arg(calculateHeatIndex(celsius, humidity), 0, 'f', 1).arg(QChar(176)));
+            if (farenheit >= 60.0) {
+                m_heatIndexLabel->setText("Heat Index");
+                m_heatIndex->setText(QString("%1%2").arg(calculateHeatIndex(celsius, humidity), 0, 'f', 1).arg(QChar(176)));
+            }
+            else {
+                m_heatIndexLabel->setText("Wind Chill");
+                m_heatIndex->setText(QString("%1").arg(calculateWindchill(farenheit, m_lastWS), 0, 'f', 1));
+            }
             m_usvh->setText(QString("%1 usvh").arg(radiation["uSvh"].toDouble(), 0, 'f', 3));
         }
     }
     
     if (topic == "weather/light") {
         if (object.contains("uv")) {
-            m_uvIndex->setText(QString("%1").arg(object["uv"].toInt()));
+            int uv = object["uv"].toInt();
+            switch (uv) {
+                case 0:
+                case 1:
+                case 2:
+                case 3:
+                    m_uvIndex->setText(QString("<span style=\"color:green;\">%1</span>").arg(uv));
+                    break;
+                case 4:
+                case 5:
+                case 6:
+                    m_uvIndex->setText(QString("<span style=\"color:yellow;\">%1</span>").arg(uv));
+                    break;
+                default:
+                    m_uvIndex->setText(QString("<span style=\"color:red;\">%1</span>").arg(uv));
+                    break;
+            }
         }
     }
     
     if (topic == "weather/wind") {
         if (object.contains("speed")) {
-            m_windSpeed->setText(QString("%1 mph").arg(object["speed"].toInt()));
+            m_lastWS = object["speed"].toInt();
+            m_windSpeed->setText(QString("%1 mph").arg(m_lastWS));
             m_rose->setAngle(object["direction"].toInt());
         }
     }

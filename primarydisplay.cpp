@@ -46,12 +46,15 @@ PrimaryDisplay::PrimaryDisplay() : QMainWindow()
     m_rainLabel = new QLabel(m_primaryLayoutWidget);
     m_rainLabel->setAlignment(Qt::AlignCenter);
     m_rainLabel->setScaledContents(true);
+    m_uvIndex = new QLabel(m_primaryLayoutWidget);
+    m_uvIndex->setAlignment(Qt::AlignCenter);
+    m_uvIndex->setScaledContents(true);
 
     m_primaryLayout->addWidget(m_primaryClock, 0, 0, 1, 4);
     m_primaryLayout->addWidget(m_temperature, 2, 0, 1, 2);
     m_primaryLayout->addWidget(m_humidity, 2, 2, 1, 2);
     m_primaryLayout->addWidget(m_rainLabel, 3, 0, 1, 2);
-    m_primaryLayout->addWidget(m_lightningLabel, 3, 2, 1, 2);
+    m_primaryLayout->addWidget(m_uvIndex, 3, 2, 1, 2);
     m_primaryLayout->addWidget(m_primaryDate, 4, 0, 1, 4);
     
     m_nyeLayoutWidget = new QWidget();
@@ -100,6 +103,7 @@ PrimaryDisplay::PrimaryDisplay() : QMainWindow()
     m_title->setFont(t);
     m_lightningLabel->setFont(l);
     m_rainLabel->setFont(l);
+    m_uvIndex->setFont(l);
 
     m_weatherWidget = new WeatherDisplay();
     
@@ -456,7 +460,7 @@ void PrimaryDisplay::showWeatherScreen()
 {
     qDebug() << __PRETTY_FUNCTION__;
     m_endWeatherScreen->setSingleShot(true);
-    m_endWeatherScreen->setInterval(1000 * 60);
+    m_endWeatherScreen->setInterval(1000 * 180);
     m_endWeatherScreen->start();
     m_stackedWidget->setCurrentIndex(WidgetIndex::Weather);
 }
@@ -485,15 +489,35 @@ void PrimaryDisplay::messageReceivedOnTopic(QString t, QString p)
             }
         }
         else if (t == "weather/lightning") {
-            QJsonObject object = doc.object();
-            if (object.contains("distance")) {
-                int d = object["distance"].toInt();
+            if (parent.contains("distance")) {
+                int d = parent["distance"].toInt();
                 d = d * .62;
                 
                 m_lightningLabel->setText(QString("%1 miles").arg(d));
                 m_lightningTimer->stop();
                 m_lightningTimer->setInterval(1000 * 300);
                 m_lightningTimer->start();
+            }
+        }
+        else if (t == "weather/light") {
+            if (parent.contains("uv")) {
+                int uv = parent["uv"].toInt();
+                switch (uv) {
+                    case 0:
+                    case 1:
+                    case 2:
+                    case 3:
+                        m_uvIndex->setText(QString("UV Index: <span style=\"color:green;\">%1</span>").arg(uv));
+                        break;
+                    case 4:
+                    case 5:
+                    case 6:
+                        m_uvIndex->setText(QString("UV Index: <span style=\"color:yellow;\">%1</span>").arg(uv));
+                        break;
+                    default:
+                        m_uvIndex->setText(QString("UV Index: <span style=\"color:red;\">%1</span>").arg(uv));
+                        break;
+                }
             }
         }
     }

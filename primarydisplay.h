@@ -127,6 +127,7 @@ private:
     QLabel *m_rainLabel;
     QLabel *m_temperature;
     QLabel *m_humidity;
+    QLabel *m_uvIndex;
     
     QLabel *m_artist;
     QLabel *m_album;
