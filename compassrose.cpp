@@ -50,10 +50,58 @@ void CompassRose::paintEvent(QPaintEvent* event)
     painter.drawConvexPolygon(windDir, 3);
     painter.restore();
     
+    painter.setFont(QFont("Roboto-Regular", 8));
+    painter.setBrush(Qt::white);
+    painter.setPen(Qt::white);
+    double radius = std::min(width(), height()) / 3;
+    for (int i = 0; i < 12; ++i) {
+        int numeral = i + 1;
+        double radians = numeral * 2.0 * 3.141592654 / 12;
+
+        /*
+         * Calculate the position of the text centre as it would be required
+         * in the absence of a transform.
+         */
+        QPoint pos = rect().center() + QPoint(radius * std::sin(radians), -radius * std::cos(radians));
+
+        /*
+         * Set up the transform.
+         */
+        QTransform t;
+        t.translate(pos.x(), pos.y());
+        t.rotateRadians(radians);
+        painter.setTransform(t);
+
+        /*
+         * Specify a huge bounding rectangle centred at the origin.  The
+         * transform should take care of position and orientation.
+         */
+        switch (numeral) {
+            case 3:
+                painter.drawText(QRect(-(INT_MAX / 2), -(INT_MAX / 2), INT_MAX, INT_MAX), Qt::AlignCenter, QString("E"));
+                break;
+            case 6:
+                painter.drawText(QRect(-(INT_MAX / 2), -(INT_MAX / 2), INT_MAX, INT_MAX), Qt::AlignCenter, QString("S"));
+                break;
+            case 9:
+                painter.drawText(QRect(-(INT_MAX / 2), -(INT_MAX / 2), INT_MAX, INT_MAX), Qt::AlignCenter, QString("W"));
+                break;
+            case 12:
+                painter.drawText(QRect(-(INT_MAX / 2), -(INT_MAX / 2), INT_MAX, INT_MAX), Qt::AlignCenter, QString("N"));
+                break;
+        }
+    }
+/*
+    painter.setFont(QFont("Roboto-Regular", 8));
     painter.setBrush(Qt::white);
     painter.setPen(Qt::white);
     for (int i = 0; i < 12; ++i) {
-        painter.drawLine(88, 0, 96, 0);
+        if (i == 9)
+            painter.drawText(88, 0, "N");
+        else
+            painter.drawLine(88, 0, 96, 0);
+        
         painter.rotate(30.0);
     }
+*/
 }

@@ -8,7 +8,7 @@ WeatherDisplay::WeatherDisplay(QWidget *parent) : QWidget(parent)
     m_lastWS = 0;
     
     QFont l("Roboto-Regular", 28);
-    QFont p("Robot-Regular", 12);
+    QFont p("Roboto-Regular", 12);
 
     m_temperature = new QLabel();
     m_temperature->setFont(l);
@@ -142,7 +142,7 @@ void WeatherDisplay::updateDisplay(QString &topic, QJsonObject &object)
             double humidity = env["humidity"].toDouble();
             m_temperature->setText(QString("%1%2").arg(farenheit, 0, 'f', 1).arg(QChar(176)));
             m_humidity->setText(QString("%1%").arg(humidity, 0, 'f', 1));
-            if (farenheit >= 60.0) {
+            if (farenheit >= 50.0) {
                 m_heatIndexLabel->setText("Heat Index");
                 m_heatIndex->setText(QString("%1%2").arg(calculateHeatIndex(celsius, humidity), 0, 'f', 1).arg(QChar(176)));
             }
