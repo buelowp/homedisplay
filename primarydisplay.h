@@ -114,7 +114,7 @@ private:
     QLabel *m_temperature;
     QLabel *m_humidity;
     QLabel *m_uvIndex;
-    
+   
 	QByteArray prevTime;
     QTimer *m_lightningTimer;
     QTimer *m_startBlankScreen;
