@@ -28,14 +28,11 @@
 #include "weatherdisplay.h"
 #include "sonosrequest.h"
 #include "qmqttsubscriber.h"
+#include "sonosdisplay.h"
 
 #define ONE_SECOND      1000
 #define ONE_MINUTE      (ONE_SECOND * 60)
 #define ONE_HOUR        (ONE_MINUTE * 60)
-
-const QString g_progressBarStyle = "QProgressBar { border: 1px solid white;"
-            "padding: 1px; border-radius: 5px; background: black; }"
-            "QProgressBar::chunk {background: white;}";
 
 class PrimaryDisplay : public QMainWindow {
     Q_OBJECT
@@ -52,8 +49,6 @@ signals:
     void stopNYE();
     void startLightning();
     void endLightning();
-    void startSonos();
-    void endSonos();
     void startBlankScreen();
     void endBlankScreen();
     void startWeather();
@@ -73,15 +68,11 @@ protected slots:
     void connectionComplete();
     void disconnectedEvent();
     void lightningTimeout();
-    void sonosRequestResult(QByteArray);
-    void sonosRequestError(QNetworkReply::NetworkError);
-    void sonosUpdate();
-    void sonosAlbumArt(QByteArray);
-    void sonosAlbumArtError(QNetworkReply::NetworkError);
     void endMetadataScreen();
     void endWeatherScreen();
     void showWeatherScreen();
-
+    void updateNYEClock();
+    
 private:
     
     typedef enum WIDGET_INDEX:int {
@@ -100,50 +91,33 @@ private:
     } FontSize;
 
     void setupMqttSubscriber();
-    void setupSonos();
-    void calculateMinutes(int);
     void setupBlankScreenTimers();
     
     QMqttSubscriber *m_mqttClient;
-    SonosRequest *m_sonos;
 
     QWidget *m_primaryLayoutWidget;
     QWidget *m_nyeLayoutWidget;
-    QWidget *m_sonosLayoutWidget;
+    SonosDisplay *m_sonosWidget;
     QWidget *m_blankLayoutWidget;
     WeatherDisplay *m_weatherWidget;
 
     QStackedWidget *m_stackedWidget;
     
     QGridLayout *m_primaryLayout;
-    QGridLayout *m_nyeLayout;
+    QHBoxLayout *m_nyeLayout;
     QGridLayout *m_sonosLayout;
 
 	QLabel *m_primaryClock;
 	QLabel *m_primaryDate;
 	QLabel *m_lbCountdown;
 	QTimer *m_clockTimer;
-    QLabel *m_lightningLabel;
     QLabel *m_rainLabel;
     QLabel *m_temperature;
     QLabel *m_humidity;
     QLabel *m_uvIndex;
     
-    QLabel *m_artist;
-    QLabel *m_album;
-    QLabel *m_station;
-    QLabel *m_title;
-    QLabel *m_albumArt;
-
-    int m_duration;
-    int m_elapsed;
-    int m_trackNumber;
-    int m_volume;
-    QProgressBar *m_elapsedIndicator;
-    
 	QByteArray prevTime;
     QTimer *m_lightningTimer;
-    QTimer *m_sonosTimer;
     QTimer *m_startBlankScreen;
     QTimer *m_endBlankScreen;
     QTimer *m_endWeatherScreen;

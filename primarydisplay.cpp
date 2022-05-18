@@ -27,26 +27,23 @@ PrimaryDisplay::PrimaryDisplay() : QMainWindow()
     setPalette(pal);
 
     m_primaryLayoutWidget = new QWidget();
-    m_primaryLayout = new QGridLayout(m_primaryLayoutWidget);
-    m_primaryClock = new QLabel(m_primaryLayoutWidget);
+    m_primaryLayout = new QGridLayout();
+    m_primaryClock = new QLabel();
     m_primaryClock->setScaledContents(true);
     m_primaryClock->setAlignment(Qt::AlignCenter);
-    m_primaryDate = new QLabel(m_primaryLayoutWidget);
+    m_primaryDate = new QLabel();
     m_primaryDate->setAlignment(Qt::AlignCenter);
     m_primaryDate->setScaledContents(true);
-    m_lightningLabel = new QLabel(m_primaryLayoutWidget);
-    m_lightningLabel->setScaledContents(true);
-    m_temperature = new QLabel(m_primaryLayoutWidget);
+    m_temperature = new QLabel();
     m_temperature->setScaledContents(true);
-    m_humidity = new QLabel(m_primaryLayoutWidget);
+    m_humidity = new QLabel();
     m_humidity->setScaledContents(true);
     m_temperature->setAlignment(Qt::AlignCenter);
     m_humidity->setAlignment(Qt::AlignCenter);
-    m_lightningLabel->setAlignment(Qt::AlignCenter);
-    m_rainLabel = new QLabel(m_primaryLayoutWidget);
+    m_rainLabel = new QLabel();
     m_rainLabel->setAlignment(Qt::AlignCenter);
     m_rainLabel->setScaledContents(true);
-    m_uvIndex = new QLabel(m_primaryLayoutWidget);
+    m_uvIndex = new QLabel();
     m_uvIndex->setAlignment(Qt::AlignCenter);
     m_uvIndex->setScaledContents(true);
 
@@ -56,62 +53,34 @@ PrimaryDisplay::PrimaryDisplay() : QMainWindow()
     m_primaryLayout->addWidget(m_rainLabel, 3, 0, 1, 2);
     m_primaryLayout->addWidget(m_uvIndex, 3, 2, 1, 2);
     m_primaryLayout->addWidget(m_primaryDate, 4, 0, 1, 4);
+    m_primaryLayoutWidget->setLayout(m_primaryLayout);    
     
     m_nyeLayoutWidget = new QWidget();
-    m_nyeLayoutWidget->setFixedSize(800, 480);
-    m_nyeLayout = new QGridLayout(m_nyeLayoutWidget);
+    m_nyeLayout = new QHBoxLayout(m_nyeLayoutWidget);
     m_lbCountdown = new QLabel(m_primaryLayoutWidget);
     m_lbCountdown->setScaledContents(true);
-    m_nyeLayout->addWidget(m_lbCountdown, 0, 0, 0, 4);
-    
-    m_sonosLayoutWidget = new QWidget();
-    m_sonosLayoutWidget->setFixedSize(800, 480);
-    m_sonosLayout = new QGridLayout(m_sonosLayoutWidget);
-    m_title = new QLabel(m_sonosLayoutWidget);
-    m_title->setScaledContents(true);
-    m_artist = new QLabel(m_sonosLayoutWidget);
-    m_artist->setScaledContents(true);
-    m_album = new QLabel(m_sonosLayoutWidget);
-    m_album->setScaledContents(true);
-    m_station = new QLabel(m_sonosLayoutWidget);
-    m_station->setScaledContents(true);
-    m_albumArt = new QLabel(m_sonosLayoutWidget);
-    m_albumArt->setFixedSize(200, 200);
-    m_elapsedIndicator = new QProgressBar(m_sonosLayoutWidget);
-    m_elapsedIndicator->setStyleSheet(g_progressBarStyle);
-    
-    m_sonosLayout->addWidget(m_title, 0, 0, 2, 4);
-    m_sonosLayout->addWidget(m_albumArt, 2, 0, 3, 1);
-    m_sonosLayout->addWidget(m_artist, 2, 1, 1, 3);
-    m_sonosLayout->addWidget(m_album, 3, 1, 1, 3);
-    m_sonosLayout->addWidget(m_station, 4, 1, 1, 3);
-    m_sonosLayout->addWidget(m_elapsedIndicator, 5, 0, 1, 4);
+    m_nyeLayout->addWidget(m_lbCountdown);
     
     QFont c("Roboto-Regular", 36);
     QFont l("Roboto-Regular", 28);
     QFont p("Roboto-Regular", 100);
     QFont d("Roboto-Regular", 32);
-    QFont t("Roboto-Regular", 50);
 
     m_primaryClock->setFont(p);
     m_primaryDate->setFont(d);
     m_temperature->setFont(c);
     m_humidity->setFont(c);
-    m_artist->setFont(c);
-    m_album->setFont(c);
-    m_station->setFont(c);
-    m_title->setFont(t);
-    m_lightningLabel->setFont(l);
     m_rainLabel->setFont(l);
     m_uvIndex->setFont(l);
 
     m_weatherWidget = new WeatherDisplay();
+    m_sonosWidget = new SonosDisplay();
     
     m_blankLayoutWidget = new QWidget();
 
     m_stackedWidget = new QStackedWidget();
     m_stackedWidget->addWidget(m_primaryLayoutWidget);
-    m_stackedWidget->addWidget(m_sonosLayoutWidget);
+    m_stackedWidget->addWidget(m_sonosWidget);
     m_stackedWidget->addWidget(m_nyeLayoutWidget);
     m_stackedWidget->addWidget(m_blankLayoutWidget);
     m_stackedWidget->addWidget(m_weatherWidget);
@@ -120,19 +89,7 @@ PrimaryDisplay::PrimaryDisplay() : QMainWindow()
     connect(m_clockTimer, SIGNAL(timeout()), this, SLOT(updateClock()));
     m_clockTimer->setInterval(50);
     m_clockTimer->start();
-
-    m_sonos = new SonosRequest();
-    connect(m_sonos, &SonosRequest::result, this, &PrimaryDisplay::sonosRequestResult);
-    connect(m_sonos, &SonosRequest::error, this, &PrimaryDisplay::sonosRequestError);
-    connect(m_sonos, &SonosRequest::albumArt, this, &PrimaryDisplay::sonosAlbumArt);
-    connect(m_sonos, &SonosRequest::albumArtError, this, &PrimaryDisplay::sonosAlbumArtError);
-    setupSonos();
     
-    m_sonosTimer = new QTimer(this);
-    connect(m_sonosTimer, &QTimer::timeout, this, &PrimaryDisplay::sonosUpdate);
-    m_sonosTimer->setInterval(500);
-    m_sonosTimer->start();
-
     m_endWeatherScreen = new QTimer(this);
     connect(m_endWeatherScreen, &QTimer::timeout, this, &PrimaryDisplay::endWeatherScreen);
 
@@ -141,7 +98,6 @@ PrimaryDisplay::PrimaryDisplay() : QMainWindow()
     setupBlankScreenTimers();
   
     setupMqttSubscriber();
-    m_trackNumber = 0;
         
     QState *primary = new QState();
     QState *metadata = new QState();
@@ -150,12 +106,12 @@ PrimaryDisplay::PrimaryDisplay() : QMainWindow()
     QState *weather = new QState();
 
     nye->addTransition(this, SIGNAL(stopNYE()), primary);
-    primary->addTransition(this, SIGNAL(startSonos()), metadata);
+    primary->addTransition(m_sonosWidget, SIGNAL(startSonos()), metadata);
     primary->addTransition(this, SIGNAL(startNYE()), nye);
     primary->addTransition(m_startBlankScreen, SIGNAL(timeout()), blank);
     primary->addTransition(this, SIGNAL(startWeather()), weather);
     metadata->addTransition(this, SIGNAL(startNYE()), nye);
-    metadata->addTransition(this, SIGNAL(endSonos()), primary);
+    metadata->addTransition(m_sonosWidget, SIGNAL(endSonos()), primary);
     blank->addTransition(m_endBlankScreen, SIGNAL(timeout()), primary);
     weather->addTransition(this, SIGNAL(stopWeather()), primary);
     
@@ -228,112 +184,6 @@ void PrimaryDisplay::endMetadataScreen()
 {
 }
 
-void PrimaryDisplay::sonosAlbumArt(QByteArray ba)
-{
-    QPixmap art;
-    
-    art.loadFromData(ba);
-    m_albumArt->setPixmap(art.scaledToWidth(200));
-}
-
-void PrimaryDisplay::setupSonos()
-{
-    QSettings settings(QSettings::IniFormat, QSettings::UserScope, "MythClock", "MythClock");
-    QString hostname = settings.value("sonosserver").toString();
-    QString port = settings.value("sonosport").toString();
-    QHostInfo lookup = QHostInfo::fromName(hostname);
-    QList<QHostAddress> addresses = lookup.addresses();
-    
-    if (addresses.size() > 0) {
-        QString url = QString("%1:%2").arg(addresses.at(0).toString()).arg(settings.value("sonosport").toInt());
-        m_sonos->setURL(url, settings.value("sonosroom").toString());
-        qDebug() << __PRETTY_FUNCTION__ << ": setting host address to" << addresses.at(0);
-    }
-    else {
-        m_sonos->setURL(QString("%1:%2").arg(hostname).arg(port), settings.value("sonosroom").toString());
-        qDebug() << __PRETTY_FUNCTION__ << ": using" << hostname << ":" << port;
-    }
-}
-
-void PrimaryDisplay::sonosUpdate()
-{
-    if (!m_sonos->inProgress())
-        m_sonos->run();
-}
-
-void PrimaryDisplay::sonosRequestError(QNetworkReply::NetworkError error)
-{
-    qDebug() << __PRETTY_FUNCTION__ << error;
-}
-
-void PrimaryDisplay::sonosAlbumArtError(QNetworkReply::NetworkError error)
-{
-    qDebug() << __PRETTY_FUNCTION__ << error;
-}
-
-void PrimaryDisplay::calculateMinutes(int elapsed)
-{
-    QString display = QString("%1:%2").arg(elapsed/60, 2, 10, QChar('0')).arg(elapsed%60, 2, 10, QChar('0'));
-    m_elapsedIndicator->setFormat(display);
-    m_elapsedIndicator->setValue(elapsed);
-}
-
-void PrimaryDisplay::sonosRequestResult(QByteArray ba)
-{
-    QSettings settings(QSettings::IniFormat, QSettings::UserScope, "MythClock", "MythClock");
-    QJsonParseError *error = new QJsonParseError();
-    static QString lastState;
-    static QString lastTitle;
-
-    QJsonDocument doc = QJsonDocument::fromJson(ba, error);
-    if (error->error != QJsonParseError::NoError) {
-        qDebug() << __PRETTY_FUNCTION__ << ":" << error->errorString();
-    }
-    else {
-        if (doc.isObject()) {
-            QJsonObject parent = doc.object();
-            QString playback = parent["playbackState"].toString();
-            QJsonObject current = parent["currentTrack"].toObject();
-            if (playback == "PLAYING") {
-                if (current["type"].toString() == "radio") {
-                    if (lastTitle != current["title"].toString()) {
-                        m_artist->setText(current["artist"].toString());
-                        m_album->setText(current["album"].toString());
-      	                m_title->setText(current["title"].toString());
-                        QUrl url(settings.value("sonosaddress").toString() + current["albumArtUri"].toString());
-                        m_sonos->getAlbumArt(url);
-                        m_elapsedIndicator->setVisible(false);
-                        lastTitle = current["title"].toString();
-                    }
-                }
-                else {
-                    if (parent["trackNo"] != m_trackNumber) {
-                         m_artist->setText(current["artist"].toString());
-                         m_album->setText(current["album"].toString());
-                         m_title->setText(current["title"].toString());
-                         m_duration = current["duration"].toInt();
-                         m_elapsedIndicator->setMaximum(m_duration);
-                         m_elapsedIndicator->setMinimum(0);
-                         m_trackNumber = parent["trackNo"].toInt();
-                         QUrl url(settings.value("sonosaddress").toString() + current["albumArtUri"].toString());
-                         m_sonos->getAlbumArt(url);
-                    }
-                    m_elapsedIndicator->setVisible(true);
-                    calculateMinutes(parent["elapsedTime"].toInt());
-                    m_volume = parent["volume"].toInt();
-                }
-                if (lastState != playback) {
-                    lastState = playback;
-                    emit startSonos();
-                }
-            }
-            else {
-                emit endSonos();
-            }
-        }
-    }
-}
-
 void PrimaryDisplay::setupMqttSubscriber()
 {
     QSettings settings(QSettings::IniFormat, QSettings::UserScope, "MythClock", "MythClock");
@@ -393,7 +243,6 @@ void PrimaryDisplay::updateClock()
     else {
         m_primaryDate->setText(d.toString("dddd MMMM d, yyyy"));
         m_primaryClock->setText(t.toString("h:mm A"));
-        m_station->setText(t.toString("h:mm A"));
     }
 }
 
@@ -409,12 +258,18 @@ void PrimaryDisplay::showBlankScreen()
 void PrimaryDisplay::showPrimaryScreen()
 {
     m_stackedWidget->setCurrentIndex(WidgetIndex::Primary);
-    m_trackNumber = -1;
 }
 
 void PrimaryDisplay::showMetadataScreen()
 {
     m_stackedWidget->setCurrentIndex(WidgetIndex::Sonos);
+}
+
+void PrimaryDisplay::updateNYEClock()
+{
+    QTime t = QTime::currentTime();
+    QString countdown("<font style='font-size:200px; color:white; font-weight: bold;'>%1</font>");
+    m_lbCountdown->setText(countdown.arg(60 - t.second()));
 }
 
 void PrimaryDisplay::showNYEScreen()
@@ -426,7 +281,7 @@ void PrimaryDisplay::showNYEScreen()
     if (t.hour() == 23) {
         QString countdown("<font style='font-size:200px; color:white; font-weight: bold;'>%1</font>");
         m_lbCountdown->setText(countdown.arg(60 - t.second()));
-        QTimer::singleShot(1000, this, SLOT(showNYEScreen()));
+        QTimer::singleShot(1000, this, SLOT(updateNYEClock()));
     }
     else
         emit stopNYE();
@@ -445,7 +300,6 @@ void PrimaryDisplay::disconnectedEvent()
 
 void PrimaryDisplay::lightningTimeout()
 {
-    m_lightningLabel->clear();
 }
 
 void PrimaryDisplay::endWeatherScreen()
@@ -486,17 +340,6 @@ void PrimaryDisplay::messageReceivedOnTopic(QString t, QString p)
         else if (t == "weather/rainfall") {
             if (parent.contains("today")) {
                 m_rainLabel->setText(QString("%1 in").arg(parent["today"].toDouble(), 0, 'f', 2));
-            }
-        }
-        else if (t == "weather/lightning") {
-            if (parent.contains("distance")) {
-                int d = parent["distance"].toInt();
-                d = d * .62;
-                
-                m_lightningLabel->setText(QString("%1 miles").arg(d));
-                m_lightningTimer->stop();
-                m_lightningTimer->setInterval(1000 * 300);
-                m_lightningTimer->start();
             }
         }
         else if (t == "weather/light") {
