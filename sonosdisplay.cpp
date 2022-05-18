@@ -20,24 +20,26 @@ SonosDisplay::SonosDisplay(QWidget *parent) : QWidget(parent)
     m_artist->setScaledContents(true);
     m_album = new QLabel();
     m_album->setScaledContents(true);
-    m_station = new QLabel();
-    m_station->setScaledContents(true);
+    m_elapsedTime = new QLabel();
+    m_elapsedTime->setScaledContents(true);
     m_albumArt = new QLabel();
     m_albumArt->setFixedSize(200, 200);
     m_elapsedIndicator = new QProgressBar();
     m_elapsedIndicator->setStyleSheet(g_progressBarStyle);
+    m_elapsedIndicator->setTextVisible(false);
     
     m_artist->setFont(c);
     m_album->setFont(c);
-    m_station->setFont(c);
     m_title->setFont(t);
+    m_elapsedTime->setFont(c);
     
-    m_layout->addWidget(m_title, 0, 0, 2, 4);
-    m_layout->addWidget(m_albumArt, 2, 0, 3, 1);
-    m_layout->addWidget(m_artist, 2, 1, 1, 3);
-    m_layout->addWidget(m_album, 3, 1, 1, 3);
-//    m_layout->addWidget(m_station, 4, 1, 1, 3);
-    m_layout->addWidget(m_elapsedIndicator, 5, 0, 1, 4);
+    m_layout->setSpacing(20);
+    m_layout->addWidget(m_title, 0, 0, 1, 4);
+    m_layout->addWidget(m_albumArt, 1, 0, 3, 1);
+    m_layout->addWidget(m_artist, 1, 1, 1, 3);
+    m_layout->addWidget(m_album, 2, 1, 1, 3);
+    m_layout->addWidget(m_elapsedTime, 3, 1, 1, 3);
+    m_layout->addWidget(m_elapsedIndicator, 4, 0, 1, 4);
     setLayout(m_layout);
 
     setupSonos();
@@ -89,6 +91,7 @@ void SonosDisplay::sonosRequestResult(QByteArray ba)
                         QUrl url(settings.value("sonosaddress").toString() + current["albumArtUri"].toString());
                         getAlbumArt(url);
                         m_elapsedIndicator->setVisible(false);
+                        m_elapsedTime->setVisible(false);
                         lastTitle = current["title"].toString();
                     }
                 }
@@ -105,6 +108,7 @@ void SonosDisplay::sonosRequestResult(QByteArray ba)
                          getAlbumArt(url);
                     }
                     m_elapsedIndicator->setVisible(true);
+                    m_elapsedTime->setVisible(true);
                     calculateMinutes(parent["elapsedTime"].toInt());
                     m_volume = parent["volume"].toInt();
                 }
@@ -142,13 +146,13 @@ void SonosDisplay::setupSonos()
 void SonosDisplay::calculateMinutes(int elapsed)
 {
     QString display = QString("%1:%2").arg(elapsed/60, 2, 10, QChar('0')).arg(elapsed%60, 2, 10, QChar('0'));
-    m_elapsedIndicator->setFormat(display);
+//    m_elapsedIndicator->setFormat(display);
+    m_elapsedTime->setText(display);
     m_elapsedIndicator->setValue(elapsed);
 }
 
 void SonosDisplay::getAlbumArt(QUrl url)
 {
-    qDebug() << __PRETTY_FUNCTION__ << ":" << url;
     QByteArray base64;
 
     QNetworkRequest request;

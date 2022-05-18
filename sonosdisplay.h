@@ -42,6 +42,7 @@ private:
     QLabel *m_station;
     QLabel *m_title;
     QLabel *m_albumArt;
+    QLabel *m_elapsedTime;
     QGridLayout *m_layout;
     int m_duration;
     int m_elapsed;

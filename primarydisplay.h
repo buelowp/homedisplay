@@ -26,7 +26,6 @@
 #include <QtQmqtt/QtQmqtt>
 
 #include "weatherdisplay.h"
-#include "sonosrequest.h"
 #include "qmqttsubscriber.h"
 #include "sonosdisplay.h"
 
