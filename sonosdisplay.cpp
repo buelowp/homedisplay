@@ -193,13 +193,14 @@ void SonosDisplay::requestFinished(QNetworkReply* reply)
     QDateTime now = QDateTime::currentDateTime();
     
     if (reply->error() != QNetworkReply::NoError) {
-        qDebug() << __PRETTY_FUNCTION__ << ":" << now << ":" << reply->error();
+        qDebug() << __PRETTY_FUNCTION__ << ":" << reply->error();
+    	QTimer::singleShot(1000, this, &SonosDisplay::requestSonosStatus);
     }
     else {
         QByteArray ba = reply->readAll();
         sonosRequestResult(ba);
+    	QTimer::singleShot(100, this, &SonosDisplay::requestSonosStatus);
     }
 
-    QTimer::singleShot(100, this, &SonosDisplay::requestSonosStatus);
     reply->deleteLater();
 }

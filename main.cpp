@@ -22,12 +22,13 @@
 int main(int argc, char **argv)
 {
     QApplication app (argc, argv);
+    QThread::sleep(30);
     PrimaryDisplay frame;
 
-//    app.setOverrideCursor(QCursor(Qt::BlankCursor));
-    frame.setFixedSize(800, 480);
-    frame.show();
-//    frame.showFullScreen();
+    app.setOverrideCursor(QCursor(Qt::BlankCursor));
+//    frame.setFixedSize(800, 480);
+//    frame.show();
+    frame.showFullScreen();
 
     return app.exec();
 }
