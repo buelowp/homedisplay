@@ -24,11 +24,17 @@ int main(int argc, char **argv)
     QApplication app (argc, argv);
     QThread::sleep(30);
     PrimaryDisplay frame;
+    QSettings settings(QSettings::IniFormat, QSettings::UserScope, "MythClock", "MythClock");
 
-    app.setOverrideCursor(QCursor(Qt::BlankCursor));
-//    frame.setFixedSize(800, 480);
-//    frame.show();
-    frame.showFullScreen();
+    qDebug() << __PRETTY_FUNCTION__ << ": debug is" << settings.value("debug").toBool();
+    if (!settings.value("debug").toBool()) {
+        frame.showFullScreen();
+        app.setOverrideCursor(QCursor(Qt::BlankCursor));
+    }
+    else {
+        frame.setFixedSize(800, 480);
+        frame.show();
+    }
 
     return app.exec();
 }

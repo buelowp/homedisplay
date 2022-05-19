@@ -118,7 +118,6 @@ void SonosDisplay::sonosRequestResult(QByteArray ba)
                     m_volume = parent["volume"].toInt();
                 }
                 if (lastState != playback) {
-                    qDebug() << __PRETTY_FUNCTION__ << ":" << __LINE__ << ": laststate" << lastState;
                     lastState = playback;
                     emit startSonos();
                 }
@@ -127,7 +126,6 @@ void SonosDisplay::sonosRequestResult(QByteArray ba)
                 if (lastState != playback) {
                     emit endSonos();
                     lastState = playback;
-                    qDebug() << __PRETTY_FUNCTION__ << ":" << __LINE__ << ": laststate" << lastState;
                 }
             }
         }

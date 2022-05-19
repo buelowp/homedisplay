@@ -263,7 +263,6 @@ void PrimaryDisplay::showPrimaryScreen()
 
 void PrimaryDisplay::showMetadataScreen()
 {
-    qDebug() << __PRETTY_FUNCTION__;
     m_stackedWidget->setCurrentIndex(WidgetIndex::Sonos);
 }
 
