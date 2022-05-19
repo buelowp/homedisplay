@@ -1,0 +1,15 @@
+[Unit]
+Description=Start the clock display
+After=pm2-pi.service network.target
+
+[Service]
+Type=simple
+User=pi
+Group=pi
+Environment="DISPLAY=:0"
+Environment="XAUTHORITY=/home/pi/.Xauthority"
+ExecStart=/home/pi/homedisplay/build/piclock
+
+[Install]
+WantedBy=graphical.target
+
