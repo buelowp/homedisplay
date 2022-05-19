@@ -6,6 +6,7 @@
 WeatherDisplay::WeatherDisplay(QWidget *parent) : QWidget(parent)
 {
     m_lastWS = 0;
+    m_setHidden = false;
     
     QFont l("Roboto-Regular", 28);
     QFont p("Roboto-Regular", 12);
@@ -108,6 +109,11 @@ WeatherDisplay::~WeatherDisplay()
 {
 }
 
+void WeatherDisplay::setInvisible(bool state)
+{
+    m_setHidden = state;
+}
+
 double WeatherDisplay::calculateHeatIndex(double temp, double humidity)
 {
     double tdpfc =  (temp - (14.55 + 0.114 * temp) * (1 - (0.01 * humidity)) - pow(((2.5 + 0.007 * temp) * (1 - (0.01 * humidity))),3) - (15.9 + 0.117 * temp) * pow((1 - (0.01 * humidity)), 14));
@@ -132,8 +138,7 @@ void WeatherDisplay::updateDisplay(QString &topic, QJsonObject &object)
             m_rainToday->setText(QString("%1").arg(object["today"].toDouble()));
         }
     }
-    
-    if (topic == "weather/conditions") {
+    else if (topic == "weather/conditions") {
         if (object.contains("environment")) {
             QJsonObject env = object["environment"].toObject();
             QJsonObject radiation = object["radiation"].toObject();
@@ -153,8 +158,7 @@ void WeatherDisplay::updateDisplay(QString &topic, QJsonObject &object)
             m_usvh->setText(QString("%1 usvh").arg(radiation["uSvh"].toDouble(), 0, 'f', 3));
         }
     }
-    
-    if (topic == "weather/light") {
+    else if (topic == "weather/light") {
         if (object.contains("uv")) {
             int uv = object["uv"].toInt();
             switch (uv) {
@@ -175,12 +179,14 @@ void WeatherDisplay::updateDisplay(QString &topic, QJsonObject &object)
             }
         }
     }
-    
-    if (topic == "weather/wind") {
+    else if (topic == "weather/wind") {
         if (object.contains("speed")) {
             m_lastWS = object["speed"].toInt();
             m_windSpeed->setText(QString("%1 mph").arg(m_lastWS));
             m_rose->setAngle(object["direction"].toInt());
         }
     }
+    
+    if (m_setHidden)
+        setVisible(false);
 }

@@ -52,6 +52,9 @@ signals:
     void endBlankScreen();
     void startWeather();
     void stopWeather();
+    void hideWeather(bool);
+    void hideSonos(bool);
+    void hidePrimary(bool);
 
 public slots:
     void updateClock();
@@ -129,6 +132,7 @@ private:
     WidgetIndex m_currentWidget;
 
     bool m_retryAlbumArt;
+    bool m_setHidden;
 };
 
 #endif /* MYTHFRAME_H_ */
