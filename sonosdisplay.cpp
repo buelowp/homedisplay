@@ -40,14 +40,19 @@ SonosDisplay::SonosDisplay(QWidget *parent) : QWidget(parent)
     m_layout->addWidget(m_album, 2, 1, 1, 3);
     m_layout->addWidget(m_elapsedTime, 3, 1, 1, 3);
     m_layout->addWidget(m_elapsedIndicator, 4, 0, 1, 4);
+    m_layout->setAlignment(m_albumArt, Qt::AlignTop);
     setLayout(m_layout);
 
     setupSonos();
-    requestSonosStatus();
 }
 
 SonosDisplay::~SonosDisplay()
 {
+}
+
+void SonosDisplay::go()
+{
+    requestSonosStatus();
 }
 
 void SonosDisplay::requestSonosStatus()
@@ -70,7 +75,7 @@ void SonosDisplay::sonosRequestResult(QByteArray ba)
 {
     QSettings settings(QSettings::IniFormat, QSettings::UserScope, "MythClock", "MythClock");
     QJsonParseError *error = new QJsonParseError();
-    static QString lastState;
+    static QString lastState = "none";
     static QString lastTitle;
 
     QJsonDocument doc = QJsonDocument::fromJson(ba, error);
@@ -91,7 +96,7 @@ void SonosDisplay::sonosRequestResult(QByteArray ba)
                         QUrl url(settings.value("sonosaddress").toString() + current["albumArtUri"].toString());
                         getAlbumArt(url);
                         m_elapsedIndicator->setVisible(false);
-                        m_elapsedTime->setVisible(false);
+                        m_elapsedTime->setText(current["elapsedTimeFormatted"].toString());
                         lastTitle = current["title"].toString();
                     }
                 }
@@ -113,12 +118,17 @@ void SonosDisplay::sonosRequestResult(QByteArray ba)
                     m_volume = parent["volume"].toInt();
                 }
                 if (lastState != playback) {
+                    qDebug() << __PRETTY_FUNCTION__ << ":" << __LINE__ << ": laststate" << lastState;
                     lastState = playback;
                     emit startSonos();
                 }
             }
             else {
-                emit endSonos();
+                if (lastState != playback) {
+                    emit endSonos();
+                    lastState = playback;
+                    qDebug() << __PRETTY_FUNCTION__ << ":" << __LINE__ << ": laststate" << lastState;
+                }
             }
         }
     }

@@ -20,6 +20,8 @@ class SonosDisplay : public QWidget
 public:
     SonosDisplay(QWidget *parent = nullptr);
     ~SonosDisplay();
+    
+    void go();
 
 protected slots:
     void requestFinished(QNetworkReply *reply);

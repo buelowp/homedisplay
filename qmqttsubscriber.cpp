@@ -32,7 +32,7 @@ void QMqttSubscriber::subscribeToTopic(QString topic)
 
 void QMqttSubscriber::onConnected()
 {
-    qDebug() << __PRETTY_FUNCTION__ << ":" << hostName();
+    qDebug() << __PRETTY_FUNCTION__ << ":" << this->hostName();
     emit connectionComplete();
 }
 

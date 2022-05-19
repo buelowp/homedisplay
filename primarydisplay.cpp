@@ -131,10 +131,11 @@ PrimaryDisplay::PrimaryDisplay() : QMainWindow()
 
     setNYETimeout();
 
-    m_states.start();
     m_currentWidget = WidgetIndex::Primary;
     m_stackedWidget->setCurrentIndex(m_currentWidget);
     setCentralWidget(m_stackedWidget);
+    m_states.start();
+    m_sonosWidget->go();
 }
 
 PrimaryDisplay::~PrimaryDisplay() 
@@ -262,6 +263,7 @@ void PrimaryDisplay::showPrimaryScreen()
 
 void PrimaryDisplay::showMetadataScreen()
 {
+    qDebug() << __PRETTY_FUNCTION__;
     m_stackedWidget->setCurrentIndex(WidgetIndex::Sonos);
 }
 
