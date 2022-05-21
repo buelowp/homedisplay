@@ -97,6 +97,7 @@ PrimaryDisplay::PrimaryDisplay() : QMainWindow()
 
     m_startBlankScreen = new QTimer(this);
     m_endBlankScreen = new QTimer(this);
+    connect(m_endBlankScreen, &QTimer::timeout, this, &PrimaryDisplay::endBlankScreen);
     setupBlankScreenTimers();
   
     setupMqttSubscriber();
@@ -114,7 +115,7 @@ PrimaryDisplay::PrimaryDisplay() : QMainWindow()
     primary->addTransition(this, SIGNAL(startWeather()), weather);
     metadata->addTransition(this, SIGNAL(startNYE()), nye);
     metadata->addTransition(m_sonosWidget, SIGNAL(endSonos()), primary);
-    blank->addTransition(m_endBlankScreen, SIGNAL(timeout()), primary);
+    blank->addTransition(m_endBlankScreen, SIGNAL(hideBlankScreen()), primary);
     weather->addTransition(this, SIGNAL(stopWeather()), primary);
     
     connect(metadata, SIGNAL(entered()), this, SLOT(showMetadataScreen()));
@@ -122,6 +123,7 @@ PrimaryDisplay::PrimaryDisplay() : QMainWindow()
     connect(primary, SIGNAL(entered()), this, SLOT(showPrimaryScreen()));
     connect(nye, SIGNAL(entered()), this, SLOT(showNYEScreen()));
     connect(blank, SIGNAL(entered()), this, SLOT(showBlankScreen()));
+    connect(blank, SIGNAL(exited()), this, SLOT(endBlankScreen()));
     connect(weather, SIGNAL(entered()), this, SLOT(showWeatherScreen()));
 
     m_states.addState(primary);
@@ -246,15 +248,41 @@ void PrimaryDisplay::updateClock()
     }
 }
 
+void PrimaryDisplay::enableBacklight(bool state)
+{
+    QFile bl("/sys/class/blacklight/rpi_backlight/brightness");
+    if (bl.open(QIODevice::WriteOnly | QIODevice::Text)) {
+        qDebug() << __PRETTY_FUNCTION__ << ": Found original backlight";
+        QTextStream ts(&bl);
+        if (state == true)
+            ts << "255";
+        else
+            ts << "0";
+        bl.close();
+    }
+    else {
+        QFile bl2("/sys/class/backlight/10-0045/brightness");
+        if (bl2.open(QIODevice::WriteOnly | QIODevice::Text)) {
+            qDebug() << __PRETTY_FUNCTION__ << ": Found new backlight";
+            QTextStream ts(&bl);
+            if (state == true)
+                ts << "255";
+            else
+                ts << "0";
+            bl2.close();
+        }
+    }
+}
+
 void PrimaryDisplay::showBlankScreen()
 {
-    qDebug() << __PRETTY_FUNCTION__ << ":" << "Going dark";
     m_endBlankScreen->setInterval(ONE_HOUR * 4);
     m_endBlankScreen->setSingleShot(true);
     m_endBlankScreen->start();
     m_stackedWidget->setCurrentIndex(WidgetIndex::Blank);
     m_weatherWidget->setInvisible(true);
     m_setHidden = true;
+    enableBacklight(false);
 }
 
 void PrimaryDisplay::showPrimaryScreen()
@@ -322,6 +350,13 @@ void PrimaryDisplay::showWeatherScreen()
     m_endWeatherScreen->start();
     m_stackedWidget->setCurrentIndex(WidgetIndex::Weather);
     m_weatherWidget->setInvisible(false);
+}
+
+void PrimaryDisplay::endBlankScreen()
+{
+    enableBacklight(true);
+    setupBlankScreenTimers();
+    emit hideBlankScreen();
 }
 
 void PrimaryDisplay::messageReceivedOnTopic(QString t, QString p)

@@ -49,7 +49,7 @@ signals:
     void startLightning();
     void endLightning();
     void startBlankScreen();
-    void endBlankScreen();
+    void hideBlankScreen();
     void startWeather();
     void stopWeather();
     void hideWeather(bool);
@@ -72,11 +72,11 @@ protected slots:
     void lightningTimeout();
     void endMetadataScreen();
     void endWeatherScreen();
+    void endBlankScreen();
     void showWeatherScreen();
     void updateNYEClock();
     
 private:
-    
     typedef enum WIDGET_INDEX:int {
         Primary = 0,
         Sonos,
@@ -84,16 +84,10 @@ private:
         Blank,
         Weather
     } WidgetIndex;
-    
-    typedef enum FONT_SIZE:int {
-        Lightning = 28,
-        Default = 36,
-        Title = 50,
-        Clock = 90,
-    } FontSize;
 
     void setupMqttSubscriber();
     void setupBlankScreenTimers();
+    void enableBacklight(bool);
     
     QMqttSubscriber *m_mqttClient;
 
