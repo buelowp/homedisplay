@@ -97,7 +97,6 @@ PrimaryDisplay::PrimaryDisplay() : QMainWindow()
 
     m_startBlankScreen = new QTimer(this);
     m_endBlankScreen = new QTimer(this);
-    connect(m_endBlankScreen, &QTimer::timeout, this, &PrimaryDisplay::endBlankScreen);
     setupBlankScreenTimers();
   
     setupMqttSubscriber();
@@ -112,11 +111,11 @@ PrimaryDisplay::PrimaryDisplay() : QMainWindow()
     primary->addTransition(m_sonosWidget, SIGNAL(startSonos()), metadata);
     primary->addTransition(this, SIGNAL(startNYE()), nye);
     primary->addTransition(m_startBlankScreen, SIGNAL(timeout()), blank);
+    blank->addTransition(m_endBlankScreen, SIGNAL(timeout()), primary);
     primary->addTransition(this, SIGNAL(startWeather()), weather);
     metadata->addTransition(this, SIGNAL(startNYE()), nye);
     metadata->addTransition(m_sonosWidget, SIGNAL(endSonos()), primary);
-    blank->addTransition(m_endBlankScreen, SIGNAL(hideBlankScreen()), primary);
-    weather->addTransition(this, SIGNAL(stopWeather()), primary);
+    weather->addTransition(this, SIGNAL(hideWeatherScreen()), primary);
     
     connect(metadata, SIGNAL(entered()), this, SLOT(showMetadataScreen()));
     connect(metadata, SIGNAL(exited()), this, SLOT(endMetadataScreen()));
@@ -150,29 +149,25 @@ PrimaryDisplay::~PrimaryDisplay()
 void PrimaryDisplay::setupBlankScreenTimers()
 {
     QDateTime now = QDateTime::currentDateTime();
-
+    int interval;
+    
     if (now.time().hour() >= 1 && now.time().hour() < 5) {
-        qDebug() << __PRETTY_FUNCTION__ << ":" << "Blanking now";
-        m_startBlankScreen->setInterval(0);
-        m_startBlankScreen->setSingleShot(true);
-        m_startBlankScreen->start();
+        interval = 0;
     }
     else if (now.time().hour() == 0) {
         QTime end(1,0,0);
-        m_startBlankScreen->setInterval(now.time().msecsTo(end));
-        qDebug() << __PRETTY_FUNCTION__ << ":" << "Blanking at" << end;
-        m_startBlankScreen->setSingleShot(true);
-        m_startBlankScreen->start();
+        interval = now.time().msecsTo(end);
     }
     else {
         QDateTime tomorrow = QDateTime::currentDateTime();
         tomorrow = tomorrow.addDays(1);
         tomorrow.setTime(QTime(1,0,0));
-        m_startBlankScreen->setSingleShot(true);
-        m_startBlankScreen->setInterval(now.msecsTo(tomorrow));
-        qDebug() << __PRETTY_FUNCTION__ << ":" << "Blanking at" << tomorrow;
-        m_startBlankScreen->start();
+        interval = now.msecsTo(tomorrow);
     }
+    qDebug() << __PRETTY_FUNCTION__ << ": Blanking screen in" << interval / 1000 << "seconds";
+    m_startBlankScreen->setInterval(interval);        
+    m_startBlankScreen->setSingleShot(true);
+    m_startBlankScreen->start();
 }
 
 bool PrimaryDisplay::event(QEvent* event)
@@ -250,39 +245,24 @@ void PrimaryDisplay::updateClock()
 
 void PrimaryDisplay::enableBacklight(bool state)
 {
-    QFile bl("/sys/class/blacklight/rpi_backlight/brightness");
-    if (bl.open(QIODevice::WriteOnly | QIODevice::Text)) {
-        qDebug() << __PRETTY_FUNCTION__ << ": Found original backlight";
-        QTextStream ts(&bl);
-        if (state == true)
-            ts << "255";
-        else
-            ts << "0";
-        bl.close();
-    }
-    else {
-        QFile bl2("/sys/class/backlight/10-0045/brightness");
-        if (bl2.open(QIODevice::WriteOnly | QIODevice::Text)) {
-            qDebug() << __PRETTY_FUNCTION__ << ": Found new backlight";
+    QSettings settings(QSettings::IniFormat, QSettings::UserScope, "MythClock", "MythClock");
+    
+    if (settings.contains("backlight")) {
+        QString sysfs = settings.value("backlight").toString();
+        QFile bl(sysfs);
+        if (bl.open(QIODevice::WriteOnly | QIODevice::Text)) {
+            qDebug() << __PRETTY_FUNCTION__ << ": Found backlight at" << sysfs;
             QTextStream ts(&bl);
             if (state == true)
                 ts << "255";
             else
                 ts << "0";
-            bl2.close();
+            bl.close();
+        }
+        else {
+            qDebug() << __PRETTY_FUNCTION__ << ": Backlight not found at" << sysfs;
         }
     }
-}
-
-void PrimaryDisplay::showBlankScreen()
-{
-    m_endBlankScreen->setInterval(ONE_HOUR * 4);
-    m_endBlankScreen->setSingleShot(true);
-    m_endBlankScreen->start();
-    m_stackedWidget->setCurrentIndex(WidgetIndex::Blank);
-    m_weatherWidget->setInvisible(true);
-    m_setHidden = true;
-    enableBacklight(false);
 }
 
 void PrimaryDisplay::showPrimaryScreen()
@@ -338,7 +318,7 @@ void PrimaryDisplay::endWeatherScreen()
     qDebug() << __PRETTY_FUNCTION__;
     m_endWeatherScreen->stop();
     m_stackedWidget->setCurrentIndex(WidgetIndex::Primary);
-    emit stopWeather();
+    emit hideWeatherScreen();
     m_weatherWidget->setInvisible(true);
 }
 
@@ -352,11 +332,29 @@ void PrimaryDisplay::showWeatherScreen()
     m_weatherWidget->setInvisible(false);
 }
 
+void PrimaryDisplay::showBlankScreen()
+{
+    QSettings settings(QSettings::IniFormat, QSettings::UserScope, "MythClock", "MythClock");
+    int interval = ONE_HOUR * 4;
+    
+    if (settings.contains("blankinterval")) {
+        interval = settings.value("blankinterval").toInt();
+    }
+    m_stackedWidget->setCurrentIndex(WidgetIndex::Blank);
+    m_weatherWidget->setInvisible(true);
+    m_setHidden = true;
+    enableBacklight(false);
+    qDebug() << __PRETTY_FUNCTION__ << ": sleeping for" << interval / 1000 << "seconds";
+    m_endBlankScreen->setInterval(interval);
+    m_endBlankScreen->setSingleShot(true);
+    m_endBlankScreen->start();
+}
+
 void PrimaryDisplay::endBlankScreen()
 {
+    qDebug() << __PRETTY_FUNCTION__;
     enableBacklight(true);
     setupBlankScreenTimers();
-    emit hideBlankScreen();
 }
 
 void PrimaryDisplay::messageReceivedOnTopic(QString t, QString p)

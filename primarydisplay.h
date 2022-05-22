@@ -55,6 +55,7 @@ signals:
     void hideWeather(bool);
     void hideSonos(bool);
     void hidePrimary(bool);
+    void hideWeatherScreen();
 
 public slots:
     void updateClock();
