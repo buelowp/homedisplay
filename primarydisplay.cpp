@@ -134,6 +134,7 @@ PrimaryDisplay::PrimaryDisplay() : QMainWindow()
 
     setNYETimeout();
 
+    enableBacklight(true);
     m_currentWidget = WidgetIndex::Primary;
     m_stackedWidget->setCurrentIndex(m_currentWidget);
     m_weatherWidget->setInvisible(true);
@@ -179,10 +180,6 @@ bool PrimaryDisplay::event(QEvent* event)
     }
     
     return QMainWindow::event(event);
-}
-
-void PrimaryDisplay::endMetadataScreen()
-{
 }
 
 void PrimaryDisplay::setupMqttSubscriber()
@@ -251,7 +248,6 @@ void PrimaryDisplay::enableBacklight(bool state)
         QString sysfs = settings.value("backlight").toString();
         QFile bl(sysfs);
         if (bl.open(QIODevice::WriteOnly | QIODevice::Text)) {
-            qDebug() << __PRETTY_FUNCTION__ << ": Found backlight at" << sysfs;
             QTextStream ts(&bl);
             if (state == true)
                 ts << "255";
@@ -269,11 +265,6 @@ void PrimaryDisplay::showPrimaryScreen()
 {
     m_stackedWidget->setCurrentIndex(WidgetIndex::Primary);
     m_setHidden = false;
-}
-
-void PrimaryDisplay::showMetadataScreen()
-{
-    m_stackedWidget->setCurrentIndex(WidgetIndex::Sonos);
 }
 
 void PrimaryDisplay::updateNYEClock()
@@ -311,6 +302,16 @@ void PrimaryDisplay::disconnectedEvent()
 
 void PrimaryDisplay::lightningTimeout()
 {
+}
+
+void PrimaryDisplay::endMetadataScreen()
+{
+    m_stackedWidget->setCurrentIndex(WidgetIndex::Primary);    
+}
+
+void PrimaryDisplay::showMetadataScreen()
+{
+    m_stackedWidget->setCurrentIndex(WidgetIndex::Sonos);
 }
 
 void PrimaryDisplay::endWeatherScreen()
