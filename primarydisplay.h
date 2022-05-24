@@ -124,7 +124,6 @@ private:
 	QStateMachine m_states;
 
     QVector<QLabel*> m_labels;
-    WidgetIndex m_currentWidget;
 
     bool m_retryAlbumArt;
     bool m_setHidden;

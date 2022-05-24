@@ -118,7 +118,7 @@ PrimaryDisplay::PrimaryDisplay() : QMainWindow()
     weather->addTransition(this, SIGNAL(hideWeatherScreen()), primary);
     
     connect(metadata, SIGNAL(entered()), this, SLOT(showMetadataScreen()));
-    connect(metadata, SIGNAL(exited()), this, SLOT(endMetadataScreen()));
+//    connect(metadata, SIGNAL(exited()), this, SLOT(endMetadataScreen()));
     connect(primary, SIGNAL(entered()), this, SLOT(showPrimaryScreen()));
     connect(nye, SIGNAL(entered()), this, SLOT(showNYEScreen()));
     connect(blank, SIGNAL(entered()), this, SLOT(showBlankScreen()));
@@ -135,9 +135,7 @@ PrimaryDisplay::PrimaryDisplay() : QMainWindow()
     setNYETimeout();
 
     enableBacklight(true);
-    m_currentWidget = WidgetIndex::Primary;
-    m_stackedWidget->setCurrentIndex(m_currentWidget);
-    m_weatherWidget->setInvisible(true);
+    m_stackedWidget->setCurrentIndex(WidgetIndex::Primary);
     setCentralWidget(m_stackedWidget);
     m_states.start();
     m_sonosWidget->go();
@@ -234,10 +232,9 @@ void PrimaryDisplay::updateClock()
     QTime t = QTime::currentTime();
     QDate d = QDate::currentDate();
 
-    if (!m_setHidden) {
-        m_primaryDate->setText(d.toString("dddd MMMM d, yyyy"));
-        m_primaryClock->setText(t.toString("h:mm A"));
-    }
+
+    m_primaryDate->setText(d.toString("dddd MMMM d, yyyy"));
+    m_primaryClock->setText(t.toString("h:mm A"));
 }
 
 void PrimaryDisplay::enableBacklight(bool state)
@@ -263,8 +260,8 @@ void PrimaryDisplay::enableBacklight(bool state)
 
 void PrimaryDisplay::showPrimaryScreen()
 {
+    qDebug() << __PRETTY_FUNCTION__;
     m_stackedWidget->setCurrentIndex(WidgetIndex::Primary);
-    m_setHidden = false;
 }
 
 void PrimaryDisplay::updateNYEClock()
@@ -318,19 +315,16 @@ void PrimaryDisplay::endWeatherScreen()
 {
     qDebug() << __PRETTY_FUNCTION__;
     m_endWeatherScreen->stop();
-    m_stackedWidget->setCurrentIndex(WidgetIndex::Primary);
     emit hideWeatherScreen();
-    m_weatherWidget->setInvisible(true);
 }
 
 void PrimaryDisplay::showWeatherScreen()
 {
     qDebug() << __PRETTY_FUNCTION__;
     m_endWeatherScreen->setSingleShot(true);
-    m_endWeatherScreen->setInterval(1000 * 180);
+    m_endWeatherScreen->setInterval(1000 * 120);
     m_endWeatherScreen->start();
     m_stackedWidget->setCurrentIndex(WidgetIndex::Weather);
-    m_weatherWidget->setInvisible(false);
 }
 
 void PrimaryDisplay::showBlankScreen()
@@ -342,8 +336,6 @@ void PrimaryDisplay::showBlankScreen()
         interval = settings.value("blankinterval").toInt();
     }
     m_stackedWidget->setCurrentIndex(WidgetIndex::Blank);
-    m_weatherWidget->setInvisible(true);
-    m_setHidden = true;
     enableBacklight(false);
     qDebug() << __PRETTY_FUNCTION__ << ": sleeping for" << interval / 1000 << "seconds";
     m_endBlankScreen->setInterval(interval);
@@ -365,41 +357,40 @@ void PrimaryDisplay::messageReceivedOnTopic(QString t, QString p)
     if (doc.isObject()) {
         QJsonObject parent = doc.object();
         m_weatherWidget->updateDisplay(t, parent);
-        if (!m_setHidden) {
-            if (t == "weather/conditions") {
-                QJsonObject values = parent["environment"].toObject();
-                double t = values["farenheit"].toDouble();
-                double h = values["humidity"].toDouble();
-                
-                QString temp = QString("%1%2").arg(t, 0, 'f', 1).arg(QChar(176));
-                QString humidity = QString("%1%").arg(h, 0, 'f', 1);
-                m_temperature->setText(temp);
-                m_humidity->setText(humidity);
+        if (t == "weather/conditions") {
+            QJsonObject values = parent["environment"].toObject();
+            double t = values["farenheit"].toDouble();
+            double h = values["humidity"].toDouble();
+            
+            QString temp = QString("%1%2").arg(t, 0, 'f', 1).arg(QChar(176));
+            QString humidity = QString("%1%").arg(h, 0, 'f', 1);
+            m_temperature->setText(temp);
+            m_humidity->setText(humidity);
+        }
+        else if (t == "weather/rainfall") {
+            if (parent.contains("today")) {
+                m_rainLabel->setText(QString("%1 in").arg(parent["today"].toDouble(), 0, 'f', 2));
             }
-            else if (t == "weather/rainfall") {
-                if (parent.contains("today")) {
-                    m_rainLabel->setText(QString("%1 in").arg(parent["today"].toDouble(), 0, 'f', 2));
-                }
-            }
-            else if (t == "weather/light") {
-                if (parent.contains("uv")) {
-                    int uv = parent["uv"].toInt();
-                    switch (uv) {
-                        case 0:
-                        case 1:
-                        case 2:
-                        case 3:
-                            m_uvIndex->setText(QString("UV Index: <span style=\"color:green;\">%1</span>").arg(uv));
-                            break;
-                        case 4:
-                        case 5:
-                        case 6:
-                            m_uvIndex->setText(QString("UV Index: <span style=\"color:yellow;\">%1</span>").arg(uv));
-                            break;
-                        default:
-                            m_uvIndex->setText(QString("UV Index: <span style=\"color:red;\">%1</span>").arg(uv));
-                            break;
-                    }
+        }
+        else if (t == "weather/light") {
+            if (parent.contains("uv")) {
+                int uv = parent["uv"].toInt();
+                switch (uv) {
+                    case 0:
+                    case 1:
+                    case 2:
+                    case 3:
+                        m_uvIndex->setText(QString("UV Index: <span style=\"color:green;\">%1</span>").arg(uv));
+                        break;
+                    case 4:
+                    case 5:
+                    case 6:
+                        m_uvIndex->setText(QString("UV Index: <span style=\"color:yellow;\">%1</span>").arg(uv));
+                        break;
+                    default:
+                        m_uvIndex->setText(QString("UV Index: <span style=\"color:red;\">%1</span>").arg(uv));
+                        break;
+                    
                 }
             }
         }

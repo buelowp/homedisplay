@@ -19,10 +19,7 @@ public:
     ~WeatherDisplay();
 
     void updateDisplay(QString &topic, QJsonObject &object);
-    
-public slots:
-    void setInvisible(bool state);
-    
+        
 private:
     double calculateHeatIndex(double temp, double humidity);
     double calculateWindchill(double temp, int speed);
@@ -47,7 +44,6 @@ private:
     CompassRose *m_rose;
     QGridLayout *m_layout;
     int m_lastWS;
-    bool m_setHidden;
 };
 
 #endif // WEATHERDISPLAY_H

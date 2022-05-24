@@ -6,7 +6,6 @@
 WeatherDisplay::WeatherDisplay(QWidget *parent) : QWidget(parent)
 {
     m_lastWS = 0;
-    m_setHidden = false;
     
     QFont l("Roboto-Regular", 28);
     QFont p("Roboto-Regular", 12);
@@ -109,11 +108,6 @@ WeatherDisplay::~WeatherDisplay()
 {
 }
 
-void WeatherDisplay::setInvisible(bool state)
-{
-    m_setHidden = state;
-}
-
 double WeatherDisplay::calculateHeatIndex(double temp, double humidity)
 {
     double tdpfc =  (temp - (14.55 + 0.114 * temp) * (1 - (0.01 * humidity)) - pow(((2.5 + 0.007 * temp) * (1 - (0.01 * humidity))),3) - (15.9 + 0.117 * temp) * pow((1 - (0.01 * humidity)), 14));
@@ -186,7 +180,4 @@ void WeatherDisplay::updateDisplay(QString &topic, QJsonObject &object)
             m_rose->setAngle(object["direction"].toInt());
         }
     }
-    
-    if (m_setHidden)
-        setVisible(false);
 }
