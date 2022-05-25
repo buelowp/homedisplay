@@ -163,6 +163,7 @@ void PrimaryDisplay::setupBlankScreenTimers()
         tomorrow.setTime(QTime(1,0,0));
         interval = now.msecsTo(tomorrow);
     }
+    interval = 10000;
     qDebug() << __PRETTY_FUNCTION__ << ": Blanking screen in" << interval / 1000 << "seconds";
     m_startBlankScreen->setInterval(interval);        
     m_startBlankScreen->setSingleShot(true);
@@ -262,6 +263,7 @@ void PrimaryDisplay::showPrimaryScreen()
 {
     qDebug() << __PRETTY_FUNCTION__;
     m_stackedWidget->setCurrentIndex(WidgetIndex::Primary);
+    m_primaryLayoutWidget->move(0,0);
 }
 
 void PrimaryDisplay::updateNYEClock()
