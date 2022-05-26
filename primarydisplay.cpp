@@ -43,6 +43,7 @@ PrimaryDisplay::PrimaryDisplay() : QMainWindow()
     m_weatherWidget = new WeatherDisplay();
     m_sonosWidget = new SonosDisplay();
     m_clockWidget = new ClockDisplay();
+    m_clockWidget->setFixedSize(800,480);
     m_blankLayoutWidget = new QWidget();
 
     m_stackedWidget = new QStackedWidget();
@@ -128,27 +129,6 @@ void PrimaryDisplay::setupBlankScreenTimers()
     m_startBlankScreen->setInterval(interval);        
     m_startBlankScreen->setSingleShot(true);
     m_startBlankScreen->start();
-}
-
-bool PrimaryDisplay::eventFilter(QObject* object, QEvent* event)
-{
-    QChildEvent *ce;
-    switch (event->type()) {
-        case QEvent::Resize:
-            qDebug() << __PRETTY_FUNCTION__ << ": resize event for" << object->objectName();
-            break;
-        case QEvent::Move:
-            qDebug() << __PRETTY_FUNCTION__ << ": move event for" << object->objectName();
-            break;
-        case QEvent::ChildAdded:
-            qDebug() << __PRETTY_FUNCTION__ << ": added a child";
-            ce = static_cast<QChildEvent*>(event);
-            ce->child()->installEventFilter(this);
-            break;
-        default:
-            break;
-    }
-    return false;
 }
 
 bool PrimaryDisplay::event(QEvent* event)

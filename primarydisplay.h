@@ -43,7 +43,6 @@ public:
 
 protected:
     bool event(QEvent *event) override;
-    bool eventFilter(QObject *object, QEvent *event) override;
 
 signals:
     void startNYE();
