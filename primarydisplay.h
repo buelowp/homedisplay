@@ -28,6 +28,7 @@
 #include "weatherdisplay.h"
 #include "qmqttsubscriber.h"
 #include "sonosdisplay.h"
+#include "clockdisplay.h"
 
 #define ONE_SECOND      1000
 #define ONE_MINUTE      (ONE_SECOND * 60)
@@ -42,7 +43,8 @@ public:
 
 protected:
     bool event(QEvent *event) override;
-    
+    bool eventFilter(QObject *object, QEvent *event) override;
+
 signals:
     void startNYE();
     void stopNYE();
@@ -56,9 +58,6 @@ signals:
     void hideSonos(bool);
     void hidePrimary(bool);
     void hideWeatherScreen();
-
-public slots:
-    void updateClock();
 
 protected slots:
     void showNYECountDown();
@@ -97,36 +96,22 @@ private:
     SonosDisplay *m_sonosWidget;
     QWidget *m_blankLayoutWidget;
     WeatherDisplay *m_weatherWidget;
+    ClockDisplay *m_clockWidget;
 
     QStackedWidget *m_stackedWidget;
     
     QGridLayout *m_primaryLayout;
     QHBoxLayout *m_nyeLayout;
     QGridLayout *m_sonosLayout;
-
-	QLabel *m_primaryClock;
-	QLabel *m_primaryDate;
-	QLabel *m_lbCountdown;
-	QTimer *m_clockTimer;
-    QLabel *m_rainLabel;
-    QLabel *m_temperature;
-    QLabel *m_humidity;
-    QLabel *m_uvIndex;
    
 	QByteArray prevTime;
-    QTimer *m_lightningTimer;
     QTimer *m_startBlankScreen;
     QTimer *m_endBlankScreen;
     QTimer *m_endWeatherScreen;
 
-	QString m_clockColor;
+    QLabel *m_lbCountdown;
 
-	QStateMachine m_states;
-
-    QVector<QLabel*> m_labels;
-
-    bool m_retryAlbumArt;
-    bool m_setHidden;
+    QStateMachine m_states;
 };
 
 #endif /* MYTHFRAME_H_ */

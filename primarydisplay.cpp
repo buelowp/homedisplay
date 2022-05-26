@@ -20,8 +20,6 @@
 
 PrimaryDisplay::PrimaryDisplay() : QMainWindow() 
 {
-    m_setHidden = false;
-    
     QPalette pal(QColor(0,0,0));
     setBackgroundRole(QPalette::Window);
     pal.setColor(QPalette::Window, Qt::black);
@@ -29,33 +27,6 @@ PrimaryDisplay::PrimaryDisplay() : QMainWindow()
     setPalette(pal);
 
     m_primaryLayoutWidget = new QWidget();
-    m_primaryLayout = new QGridLayout();
-    m_primaryClock = new QLabel();
-    m_primaryClock->setScaledContents(true);
-    m_primaryClock->setAlignment(Qt::AlignCenter);
-    m_primaryDate = new QLabel();
-    m_primaryDate->setAlignment(Qt::AlignCenter);
-    m_primaryDate->setScaledContents(true);
-    m_temperature = new QLabel();
-    m_temperature->setScaledContents(true);
-    m_humidity = new QLabel();
-    m_humidity->setScaledContents(true);
-    m_temperature->setAlignment(Qt::AlignCenter);
-    m_humidity->setAlignment(Qt::AlignCenter);
-    m_rainLabel = new QLabel();
-    m_rainLabel->setAlignment(Qt::AlignCenter);
-    m_rainLabel->setScaledContents(true);
-    m_uvIndex = new QLabel();
-    m_uvIndex->setAlignment(Qt::AlignCenter);
-    m_uvIndex->setScaledContents(true);
-
-    m_primaryLayout->addWidget(m_primaryClock, 0, 0, 1, 4);
-    m_primaryLayout->addWidget(m_temperature, 2, 0, 1, 2);
-    m_primaryLayout->addWidget(m_humidity, 2, 2, 1, 2);
-    m_primaryLayout->addWidget(m_rainLabel, 3, 0, 1, 2);
-    m_primaryLayout->addWidget(m_uvIndex, 3, 2, 1, 2);
-    m_primaryLayout->addWidget(m_primaryDate, 4, 0, 1, 4);
-    m_primaryLayoutWidget->setLayout(m_primaryLayout);    
     
     m_nyeLayoutWidget = new QWidget();
     m_nyeLayout = new QHBoxLayout(m_nyeLayoutWidget);
@@ -68,30 +39,19 @@ PrimaryDisplay::PrimaryDisplay() : QMainWindow()
     QFont p("Roboto-Regular", 100);
     QFont d("Roboto-Regular", 32);
 
-    m_primaryClock->setFont(p);
-    m_primaryDate->setFont(d);
-    m_temperature->setFont(c);
-    m_humidity->setFont(c);
-    m_rainLabel->setFont(l);
-    m_uvIndex->setFont(l);
 
     m_weatherWidget = new WeatherDisplay();
     m_sonosWidget = new SonosDisplay();
-    
+    m_clockWidget = new ClockDisplay();
     m_blankLayoutWidget = new QWidget();
 
     m_stackedWidget = new QStackedWidget();
-    m_stackedWidget->addWidget(m_primaryLayoutWidget);
+    m_stackedWidget->addWidget(m_clockWidget);
     m_stackedWidget->addWidget(m_sonosWidget);
     m_stackedWidget->addWidget(m_nyeLayoutWidget);
     m_stackedWidget->addWidget(m_blankLayoutWidget);
     m_stackedWidget->addWidget(m_weatherWidget);
         
-    m_clockTimer = new QTimer(this);
-    connect(m_clockTimer, SIGNAL(timeout()), this, SLOT(updateClock()));
-    m_clockTimer->setInterval(50);
-    m_clockTimer->start();
-    
     m_endWeatherScreen = new QTimer(this);
     connect(m_endWeatherScreen, &QTimer::timeout, this, &PrimaryDisplay::endWeatherScreen);
 
@@ -163,11 +123,32 @@ void PrimaryDisplay::setupBlankScreenTimers()
         tomorrow.setTime(QTime(1,0,0));
         interval = now.msecsTo(tomorrow);
     }
-    interval = 10000;
+//    interval = 10000;
     qDebug() << __PRETTY_FUNCTION__ << ": Blanking screen in" << interval / 1000 << "seconds";
     m_startBlankScreen->setInterval(interval);        
     m_startBlankScreen->setSingleShot(true);
     m_startBlankScreen->start();
+}
+
+bool PrimaryDisplay::eventFilter(QObject* object, QEvent* event)
+{
+    QChildEvent *ce;
+    switch (event->type()) {
+        case QEvent::Resize:
+            qDebug() << __PRETTY_FUNCTION__ << ": resize event for" << object->objectName();
+            break;
+        case QEvent::Move:
+            qDebug() << __PRETTY_FUNCTION__ << ": move event for" << object->objectName();
+            break;
+        case QEvent::ChildAdded:
+            qDebug() << __PRETTY_FUNCTION__ << ": added a child";
+            ce = static_cast<QChildEvent*>(event);
+            ce->child()->installEventFilter(this);
+            break;
+        default:
+            break;
+    }
+    return false;
 }
 
 bool PrimaryDisplay::event(QEvent* event)
@@ -200,8 +181,6 @@ void PrimaryDisplay::setupMqttSubscriber()
     connect(m_mqttClient, SIGNAL(disconnectedEvent()), this, SLOT(disconnectedEvent()));
     connect(m_mqttClient, SIGNAL(messageReceivedOnTopic(QString, QString)), this, SLOT(messageReceivedOnTopic(QString, QString)));
     m_mqttClient->connectToHost();
-    m_lightningTimer = new QTimer();
-    connect(m_lightningTimer, SIGNAL(timeout()), this, SLOT(lightningTimeout()));
 }
 
 void PrimaryDisplay::setNYETimeout()
@@ -226,16 +205,6 @@ void PrimaryDisplay::setNYETimeout()
 void PrimaryDisplay::showNYECountDown()
 {
     emit startNYE();
-}
-
-void PrimaryDisplay::updateClock()
-{
-    QTime t = QTime::currentTime();
-    QDate d = QDate::currentDate();
-
-
-    m_primaryDate->setText(d.toString("dddd MMMM d, yyyy"));
-    m_primaryClock->setText(t.toString("h:mm A"));
 }
 
 void PrimaryDisplay::enableBacklight(bool state)
@@ -263,7 +232,7 @@ void PrimaryDisplay::showPrimaryScreen()
 {
     qDebug() << __PRETTY_FUNCTION__;
     m_stackedWidget->setCurrentIndex(WidgetIndex::Primary);
-    m_primaryLayoutWidget->move(0,0);
+    m_stackedWidget->move(0,0);
 }
 
 void PrimaryDisplay::updateNYEClock()
@@ -305,11 +274,13 @@ void PrimaryDisplay::lightningTimeout()
 
 void PrimaryDisplay::endMetadataScreen()
 {
+    qDebug() << __PRETTY_FUNCTION__;
     m_stackedWidget->setCurrentIndex(WidgetIndex::Primary);    
 }
 
 void PrimaryDisplay::showMetadataScreen()
 {
+    qDebug() << __PRETTY_FUNCTION__;
     m_stackedWidget->setCurrentIndex(WidgetIndex::Sonos);
 }
 
@@ -333,6 +304,7 @@ void PrimaryDisplay::showBlankScreen()
 {
     QSettings settings(QSettings::IniFormat, QSettings::UserScope, "MythClock", "MythClock");
     int interval = ONE_HOUR * 4;
+    qDebug() << __PRETTY_FUNCTION__ << ": sleeping for" << interval / 1000 << "seconds";
     
     if (settings.contains("blankinterval")) {
         interval = settings.value("blankinterval").toInt();
@@ -359,42 +331,6 @@ void PrimaryDisplay::messageReceivedOnTopic(QString t, QString p)
     if (doc.isObject()) {
         QJsonObject parent = doc.object();
         m_weatherWidget->updateDisplay(t, parent);
-        if (t == "weather/conditions") {
-            QJsonObject values = parent["environment"].toObject();
-            double t = values["farenheit"].toDouble();
-            double h = values["humidity"].toDouble();
-            
-            QString temp = QString("%1%2").arg(t, 0, 'f', 1).arg(QChar(176));
-            QString humidity = QString("%1%").arg(h, 0, 'f', 1);
-            m_temperature->setText(temp);
-            m_humidity->setText(humidity);
-        }
-        else if (t == "weather/rainfall") {
-            if (parent.contains("today")) {
-                m_rainLabel->setText(QString("%1 in").arg(parent["today"].toDouble(), 0, 'f', 2));
-            }
-        }
-        else if (t == "weather/light") {
-            if (parent.contains("uv")) {
-                int uv = parent["uv"].toInt();
-                switch (uv) {
-                    case 0:
-                    case 1:
-                    case 2:
-                    case 3:
-                        m_uvIndex->setText(QString("UV Index: <span style=\"color:green;\">%1</span>").arg(uv));
-                        break;
-                    case 4:
-                    case 5:
-                    case 6:
-                        m_uvIndex->setText(QString("UV Index: <span style=\"color:yellow;\">%1</span>").arg(uv));
-                        break;
-                    default:
-                        m_uvIndex->setText(QString("UV Index: <span style=\"color:red;\">%1</span>").arg(uv));
-                        break;
-                    
-                }
-            }
-        }
+        m_clockWidget->updateDisplay(t, parent);
     }
 }    

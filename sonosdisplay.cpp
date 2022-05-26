@@ -13,20 +13,28 @@ SonosDisplay::SonosDisplay(QWidget *parent) : QWidget(parent)
     connect(m_namMetaData, &QNetworkAccessManager::finished, this, &SonosDisplay::requestFinished);
     connect(m_namAlbumArt, &QNetworkAccessManager::finished, this, &SonosDisplay::albumArtFinished);
     
+    setObjectName("sonosdisplay");
     m_layout = new QGridLayout();
+    m_layout->setObjectName("layout");
     m_title = new QLabel();
     m_title->setScaledContents(true);
+    m_title->setObjectName("title");
     m_artist = new QLabel();
     m_artist->setScaledContents(true);
+    m_artist->setObjectName("artist");
     m_album = new QLabel();
     m_album->setScaledContents(true);
+    m_album->setObjectName("album");
     m_elapsedTime = new QLabel();
     m_elapsedTime->setScaledContents(true);
+    m_elapsedTime->setObjectName("et");
     m_albumArt = new QLabel();
     m_albumArt->setFixedSize(200, 200);
+    m_albumArt->setObjectName("albumart");
     m_elapsedIndicator = new QProgressBar();
     m_elapsedIndicator->setStyleSheet(g_progressBarStyle);
     m_elapsedIndicator->setTextVisible(false);
+    m_elapsedIndicator->setObjectName("ei");
     
     m_artist->setFont(c);
     m_album->setFont(c);
@@ -44,6 +52,7 @@ SonosDisplay::SonosDisplay(QWidget *parent) : QWidget(parent)
     setLayout(m_layout);
 
     setupSonos();
+//    installEventFilter(this);
 }
 
 SonosDisplay::~SonosDisplay()
@@ -201,4 +210,25 @@ void SonosDisplay::requestFinished(QNetworkReply* reply)
     }
 
     reply->deleteLater();
+}
+
+bool SonosDisplay::eventFilter(QObject* object, QEvent* event)
+{
+    QChildEvent *ce;
+    switch (event->type()) {
+        case QEvent::Resize:
+            qDebug() << __PRETTY_FUNCTION__ << ": resize event for" << object->objectName();
+            break;
+        case QEvent::Move:
+            qDebug() << __PRETTY_FUNCTION__ << ": move event for" << object->objectName();
+            break;
+        case QEvent::ChildAdded:
+            qDebug() << __PRETTY_FUNCTION__ << ": added a child";
+            ce = static_cast<QChildEvent*>(event);
+            ce->child()->installEventFilter(this);
+            break;
+        default:
+            break;
+    }
+    return false;
 }

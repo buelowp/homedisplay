@@ -23,6 +23,9 @@ public:
     
     void go();
 
+protected:
+    bool eventFilter(QObject *object, QEvent *event) override;
+
 protected slots:
     void requestFinished(QNetworkReply *reply);
     void albumArtFinished(QNetworkReply *reply);
