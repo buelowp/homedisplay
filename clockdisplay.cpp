@@ -81,7 +81,7 @@ void ClockDisplay::updateDisplay(QString &topic, QJsonObject &object)
 {
     if (topic == "weather/rainfall") {
         if (object.contains("today")) {
-            m_rain->setText(QString("%1 in").arg(object["today"].toDouble(), 0, 'f', 1));
+            m_rain->setText(QString("%1 in").arg(object["today"].toDouble(), 0, 'f', 2));
         }
     }
     else if (topic == "weather/conditions") {
