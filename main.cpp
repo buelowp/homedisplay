@@ -22,7 +22,6 @@
 int main(int argc, char **argv)
 {
     QApplication app (argc, argv);
-//    QThread::sleep(30);
     PrimaryDisplay frame;
     QSettings settings(QSettings::IniFormat, QSettings::UserScope, "MythClock", "MythClock");
 

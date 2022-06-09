@@ -79,9 +79,13 @@ void ClockDisplay::clockTimeout()
 
 void ClockDisplay::updateDisplay(QString &topic, QJsonObject &object)
 {
+    static double today = 0.0;
+
     if (topic == "weather/rainfall") {
         if (object.contains("today")) {
-            m_rain->setText(QString("%1 in").arg(object["today"].toDouble(), 0, 'f', 2));
+            today = object["today"].toDouble();
+            if (today > 0)
+                m_rain->setText(QString("%1 in").arg(today, 0, 'f', 2));
         }
     }
     else if (topic == "weather/conditions") {
@@ -109,6 +113,22 @@ void ClockDisplay::updateDisplay(QString &topic, QJsonObject &object)
                 default:
                     m_uvIndex->setText(QString("UV Index: <span style=\"color:red;\">%1</span>").arg(uv));
                     break;
+            }
+        }
+    }
+    else if (topic == "garden/moisture") {
+        if (today == 0) {
+            if (object.contains("moisture")) {
+                int moisture = object["moisture"].toInt();
+                if (moisture < 20)
+                    m_rain->setText(QString("Soil: <span style=\"color:red;\">%1%</span>").arg(moisture));
+                else if (moisture < 30)
+                    m_rain->setText(QString("Soil: <span style=\"color:yellow;\">%1%</span>").arg(moisture));
+                else if (moisture > 60)
+                    m_rain->setText(QString("Soil: <span style=\"color:blue;\">%1%</span>").arg(moisture));
+                else
+                    m_rain->setText(QString("Soil: <span style=\"color:green;\">%1%</span>").arg(moisture));
+
             }
         }
     }

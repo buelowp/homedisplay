@@ -240,6 +240,7 @@ void PrimaryDisplay::showNYEScreen()
 void PrimaryDisplay::connectionComplete()
 {
     m_mqttClient->subscribe("weather/#");
+    m_mqttClient->subscribe("garden/#");
 }
 
 void PrimaryDisplay::disconnectedEvent()
