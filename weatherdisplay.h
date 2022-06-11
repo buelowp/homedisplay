@@ -32,6 +32,7 @@ private:
     QLabel *m_rainToday;
     QLabel *m_rainYTD;
     QLabel *m_usvh;
+    QLabel *m_pressure;
     QLabel *m_temperatureLabel;
     QLabel *m_humidityLabel;
     QLabel *m_heatIndexLabel;
@@ -40,6 +41,7 @@ private:
     QLabel *m_uvIndexLabel;
     QLabel *m_rainTodayLabel;
     QLabel *m_rainYTDLabel;
+    QLabel *m_pressureLabel;
     QLabel *m_usvhLabel;
     CompassRose *m_rose;
     QGridLayout *m_layout;

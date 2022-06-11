@@ -43,7 +43,11 @@ WeatherDisplay::WeatherDisplay(QWidget *parent) : QWidget(parent)
     m_rainYTD->setFont(l);
     m_rainYTD->setScaledContents(true);
     m_rainYTD->setAlignment(Qt::AlignCenter);
-    
+    m_pressure = new QLabel();
+    m_pressure->setFont(l);
+    m_pressure->setScaledContents(true);
+    m_pressure->setAlignment(Qt::AlignCenter);
+
     m_temperatureLabel = new QLabel("Temperature");
     m_temperatureLabel->setFont(p);
     m_temperatureLabel->setScaledContents(true);
@@ -80,6 +84,11 @@ WeatherDisplay::WeatherDisplay(QWidget *parent) : QWidget(parent)
     m_rainYTDLabel->setFont(p);
     m_rainYTDLabel->setScaledContents(true);
     m_rainYTDLabel->setAlignment(Qt::AlignCenter);
+    m_pressureLabel = new QLabel("Atmospheric Pressure");
+    m_pressureLabel->setFont(p);
+    m_pressureLabel->setScaledContents(true);
+    m_pressureLabel->setAlignment(Qt::AlignCenter);
+
 
     m_layout = new QGridLayout();
     m_layout->addWidget(m_temperatureLabel, 0, 0, 1, 1);
@@ -88,10 +97,12 @@ WeatherDisplay::WeatherDisplay(QWidget *parent) : QWidget(parent)
     m_layout->addWidget(m_humidity, 1, 1, 1, 1);
     m_layout->addWidget(m_heatIndexLabel, 0, 2, 1, 1);
     m_layout->addWidget(m_heatIndex, 1, 2, 1, 1);
+    m_layout->addWidget(m_pressureLabel, 2, 0, 1, 1);
     m_layout->addWidget(m_windSpeedLabel, 2, 1, 1, 1);
+    m_layout->addWidget(m_pressure, 3, 0, 1, 1);
     m_layout->addWidget(m_windSpeed, 3, 1, 1, 1);
     m_layout->addWidget(m_windDirLabel, 2, 2, 1, 1);
-    m_layout->addWidget(m_rose, 3, 2, 2, 1);
+    m_layout->addWidget(m_rose, 3, 2, 3, 1);
     m_layout->addWidget(m_rainTodayLabel, 4, 0, 1, 1);
     m_layout->addWidget(m_rainToday, 5, 0, 1, 1);
     m_layout->addWidget(m_rainYTDLabel, 4, 1, 1, 1);
@@ -149,7 +160,7 @@ void WeatherDisplay::updateDisplay(QString &topic, QJsonObject &object)
                 m_heatIndexLabel->setText("Wind Chill");
                 m_heatIndex->setText(QString("%1").arg(calculateWindchill(farenheit, m_lastWS), 0, 'f', 1));
             }
-            m_usvh->setText(QString("%1 usvh").arg(radiation["uSvh"].toDouble(), 0, 'f', 3));
+            m_usvh->setText(QString("%1 usv/h").arg(radiation["uSvh"].toDouble(), 0, 'f', 3));
         }
     }
     else if (topic == "weather/light") {
@@ -178,6 +189,14 @@ void WeatherDisplay::updateDisplay(QString &topic, QJsonObject &object)
             m_lastWS = object["speed"].toInt();
             m_windSpeed->setText(QString("%1 mph").arg(m_lastWS));
             m_rose->setAngle(object["direction"].toInt());
+        }
+    }
+    else if (topic == "weather/pressure") {
+        qDebug() << __PRETTY_FUNCTION__ << ":" << object;
+        if (object.contains("pressure")) {
+            double pressure = object["pressure"].toDouble();
+            qDebug() << __PRETTY_FUNCTION__ << ":" << pressure;
+            m_pressure->setText(QString("%1 inHg").arg(pressure, 0, 'f', 2));
         }
     }
 }
