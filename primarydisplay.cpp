@@ -41,7 +41,9 @@ PrimaryDisplay::PrimaryDisplay() : QMainWindow()
 
 
     m_weatherWidget = new WeatherDisplay();
+    m_weatherWidget->setFixedSize(800, 480);
     m_sonosWidget = new SonosDisplay();
+    m_sonosWidget->setFixedSize(800, 480);
     m_clockWidget = new ClockDisplay();
     m_clockWidget->setFixedSize(800,480);
     m_blankLayoutWidget = new QWidget();
