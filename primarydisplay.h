@@ -43,6 +43,7 @@ public:
 
 protected:
     bool event(QEvent *event) override;
+    void showEvent(QShowEvent *event) override;
 
 signals:
     void startNYE();

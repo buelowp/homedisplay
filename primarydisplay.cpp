@@ -108,6 +108,14 @@ PrimaryDisplay::~PrimaryDisplay()
 {
 }
 
+void PrimaryDisplay::showEvent(QShowEvent* event)
+{
+    qDebug() << __PRETTY_FUNCTION__ << ":" << width() << "x" << height();
+    m_weatherWidget->setFixedSize(width(), height());
+    m_sonosWidget->setFixedSize(width(), height());
+    m_clockWidget->setFixedSize(width(), height());
+}
+
 void PrimaryDisplay::setupBlankScreenTimers()
 {
     QDateTime now = QDateTime::currentDateTime();
