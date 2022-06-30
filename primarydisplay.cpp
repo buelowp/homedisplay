@@ -60,6 +60,7 @@ PrimaryDisplay::PrimaryDisplay() : QMainWindow()
 
     m_startBlankScreen = new QTimer(this);
     m_endBlankScreen = new QTimer(this);
+    m_endDimScreen = new QTimer(this);
     setupBlankScreenTimers();
   
     setupMqttSubscriber();
@@ -68,30 +69,33 @@ PrimaryDisplay::PrimaryDisplay() : QMainWindow()
     QState *metadata = new QState();
     QState *nye = new QState();
     QState *blank = new QState();
+    QState *dim = new QState();
     QState *weather = new QState();
 
     nye->addTransition(this, SIGNAL(stopNYE()), primary);
     primary->addTransition(m_sonosWidget, SIGNAL(startSonos()), metadata);
     primary->addTransition(this, SIGNAL(startNYE()), nye);
     primary->addTransition(m_startBlankScreen, SIGNAL(timeout()), blank);
-    blank->addTransition(m_endBlankScreen, SIGNAL(timeout()), primary);
+    blank->addTransition(m_endBlankScreen, SIGNAL(timeout()), dim);
+    dim->addTransition(m_endDimScreen, SIGNAL(timeout()), primary);
     primary->addTransition(this, SIGNAL(startWeather()), weather);
     metadata->addTransition(this, SIGNAL(startNYE()), nye);
     metadata->addTransition(m_sonosWidget, SIGNAL(endSonos()), primary);
     weather->addTransition(this, SIGNAL(hideWeatherScreen()), primary);
     
     connect(metadata, SIGNAL(entered()), this, SLOT(showMetadataScreen()));
-//    connect(metadata, SIGNAL(exited()), this, SLOT(endMetadataScreen()));
     connect(primary, SIGNAL(entered()), this, SLOT(showPrimaryScreen()));
     connect(nye, SIGNAL(entered()), this, SLOT(showNYEScreen()));
     connect(blank, SIGNAL(entered()), this, SLOT(showBlankScreen()));
-    connect(blank, SIGNAL(exited()), this, SLOT(endBlankScreen()));
+    connect(dim, SIGNAL(entered()), this, SLOT(showDimScreen()));
+    connect(dim, SIGNAL(exited()), this, SLOT(endDimScreen()));
     connect(weather, SIGNAL(entered()), this, SLOT(showWeatherScreen()));
 
     m_states.addState(primary);
     m_states.addState(metadata);
     m_states.addState(nye);
     m_states.addState(blank);
+    m_states.addState(dim);
     m_states.addState(weather);
     m_states.setInitialState(primary);
 
@@ -121,7 +125,7 @@ void PrimaryDisplay::setupBlankScreenTimers()
     QDateTime now = QDateTime::currentDateTime();
     int interval;
     
-    if (now.time().hour() >= 1 && now.time().hour() < 5) {
+    if (now.time().hour() >= 1 && now.time().hour() < 3) {
         interval = 0;
     }
     else if (now.time().hour() == 0) {
@@ -134,7 +138,7 @@ void PrimaryDisplay::setupBlankScreenTimers()
         tomorrow.setTime(QTime(1,0,0));
         interval = now.msecsTo(tomorrow);
     }
-//    interval = 10000;
+
     qDebug() << __PRETTY_FUNCTION__ << ": Blanking screen in" << interval / 1000 << "seconds";
     m_startBlankScreen->setInterval(interval);        
     m_startBlankScreen->setSingleShot(true);
@@ -197,7 +201,7 @@ void PrimaryDisplay::showNYECountDown()
     emit startNYE();
 }
 
-void PrimaryDisplay::enableBacklight(bool state)
+void PrimaryDisplay::enableBacklight(bool state, uint8_t brightness)
 {
     QSettings settings(QSettings::IniFormat, QSettings::UserScope, "MythClock", "MythClock");
     
@@ -207,7 +211,7 @@ void PrimaryDisplay::enableBacklight(bool state)
         if (bl.open(QIODevice::WriteOnly | QIODevice::Text)) {
             QTextStream ts(&bl);
             if (state == true)
-                ts << "255";
+                ts << brightness;
             else
                 ts << "0";
             bl.close();
@@ -294,7 +298,7 @@ void PrimaryDisplay::showWeatherScreen()
 void PrimaryDisplay::showBlankScreen()
 {
     QSettings settings(QSettings::IniFormat, QSettings::UserScope, "MythClock", "MythClock");
-    int interval = ONE_HOUR * 4;
+    int interval = ONE_HOUR * 2;
     qDebug() << __PRETTY_FUNCTION__ << ": sleeping for" << interval / 1000 << "seconds";
     
     if (settings.contains("blankinterval")) {
@@ -308,10 +312,30 @@ void PrimaryDisplay::showBlankScreen()
     m_endBlankScreen->start();
 }
 
+void PrimaryDisplay::endDimScreen()
+{
+    qDebug() << __PRETTY_FUNCTION__;
+}
+
+void PrimaryDisplay::showDimScreen()
+{
+    QSettings settings(QSettings::IniFormat, QSettings::UserScope, "MythClock", "MythClock");
+    int interval = ONE_HOUR * 2;
+    qDebug() << __PRETTY_FUNCTION__ << ": sleeping for" << interval / 1000 << "seconds";
+
+    if (settings.contains("diminterval")) {
+        interval = settings.value("diminterval").toInt();
+    }
+    m_stackedWidget->setCurrentIndex(WidgetIndex::Primary);
+    enableBacklight(true, 100);
+    m_endDimScreen->setInterval(interval);
+    m_endDimScreen->setSingleShot(true);
+    m_endDimScreen->start();
+}
+
 void PrimaryDisplay::endBlankScreen()
 {
     qDebug() << __PRETTY_FUNCTION__;
-    enableBacklight(true);
     setupBlankScreenTimers();
 }
 

@@ -75,6 +75,8 @@ protected slots:
     void endBlankScreen();
     void showWeatherScreen();
     void updateNYEClock();
+    void showDimScreen();
+    void endDimScreen();
     
 private:
     typedef enum WIDGET_INDEX:int {
@@ -87,7 +89,7 @@ private:
 
     void setupMqttSubscriber();
     void setupBlankScreenTimers();
-    void enableBacklight(bool);
+    void enableBacklight(bool state, uint8_t brightness = 255);
     
     QMqttSubscriber *m_mqttClient;
 
@@ -107,6 +109,7 @@ private:
 	QByteArray prevTime;
     QTimer *m_startBlankScreen;
     QTimer *m_endBlankScreen;
+    QTimer *m_endDimScreen;
     QTimer *m_endWeatherScreen;
 
     QLabel *m_lbCountdown;
