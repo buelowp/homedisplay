@@ -321,13 +321,17 @@ void PrimaryDisplay::showDimScreen()
 {
     QSettings settings(QSettings::IniFormat, QSettings::UserScope, "MythClock", "MythClock");
     int interval = ONE_HOUR * 2;
+    int dim = 100;
     qDebug() << __PRETTY_FUNCTION__ << ": sleeping for" << interval / 1000 << "seconds";
 
     if (settings.contains("diminterval")) {
         interval = settings.value("diminterval").toInt();
     }
+    if (settings.contains("dimvalue")) {
+        dim = settings.value("dimvalue").toInt();
+    }
     m_stackedWidget->setCurrentIndex(WidgetIndex::Primary);
-    enableBacklight(true, 100);
+    enableBacklight(true, dim);
     m_endDimScreen->setInterval(interval);
     m_endDimScreen->setSingleShot(true);
     m_endDimScreen->start();
