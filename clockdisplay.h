@@ -18,6 +18,9 @@ public:
 
     void updateDisplay(QString &topic, QJsonObject &object);
 
+signals:
+    void startDimScreen();
+
 public slots:
     void clockTimeout();
     void showEvent(QShowEvent *e) override;

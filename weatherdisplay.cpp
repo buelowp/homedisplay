@@ -192,10 +192,8 @@ void WeatherDisplay::updateDisplay(QString &topic, QJsonObject &object)
         }
     }
     else if (topic == "weather/pressure") {
-        qDebug() << __PRETTY_FUNCTION__ << ":" << object;
         if (object.contains("pressure")) {
             double pressure = object["pressure"].toDouble();
-            qDebug() << __PRETTY_FUNCTION__ << ":" << pressure;
             m_pressure->setText(QString("%1 inHg").arg(pressure, 0, 'f', 2));
         }
     }

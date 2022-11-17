@@ -29,6 +29,7 @@
 #include "qmqttsubscriber.h"
 #include "sonosdisplay.h"
 #include "clockdisplay.h"
+#include "bigclock.h"
 
 #define ONE_SECOND      1000
 #define ONE_MINUTE      (ONE_SECOND * 60)
@@ -50,14 +51,15 @@ signals:
     void stopNYE();
     void startLightning();
     void endLightning();
-    void startBlankScreen();
-    void hideBlankScreen();
+//    void startBlankScreen();
+//    void hideBlankScreen();
     void startWeather();
     void stopWeather();
     void hideWeather(bool);
     void hideSonos(bool);
     void hidePrimary(bool);
     void hideWeatherScreen();
+    void dimDisplay();
 
 protected slots:
     void showNYECountDown();
@@ -84,7 +86,8 @@ private:
         Sonos,
         NYE,
         Blank,
-        Weather
+        Weather,
+        Bigclock,
     } WidgetIndex;
 
     void setupMqttSubscriber();
@@ -99,6 +102,7 @@ private:
     QWidget *m_blankLayoutWidget;
     WeatherDisplay *m_weatherWidget;
     ClockDisplay *m_clockWidget;
+    BigClock *m_bigClock;
 
     QStackedWidget *m_stackedWidget;
     
@@ -115,6 +119,8 @@ private:
     QLabel *m_lbCountdown;
 
     QStateMachine m_states;
+
+    bool m_showBigClock;
 };
 
 #endif /* MYTHFRAME_H_ */

@@ -20,6 +20,10 @@
 
 PrimaryDisplay::PrimaryDisplay() : QMainWindow() 
 {
+    QSettings settings(QSettings::IniFormat, QSettings::UserScope, "MythClock", "MythClock");
+    int widthSettings = settings.value("width", 800).toInt();
+    int heightSettings = settings.value("height", 480).toInt();
+
     QPalette pal(QColor(0,0,0));
     setBackgroundRole(QPalette::Window);
     pal.setColor(QPalette::Window, Qt::black);
@@ -41,11 +45,13 @@ PrimaryDisplay::PrimaryDisplay() : QMainWindow()
 
 
     m_weatherWidget = new WeatherDisplay();
-    m_weatherWidget->setFixedSize(800, 480);
+    m_weatherWidget->setFixedSize(widthSettings, heightSettings);
     m_sonosWidget = new SonosDisplay();
-    m_sonosWidget->setFixedSize(800, 480);
+    m_sonosWidget->setFixedSize(widthSettings, heightSettings);
     m_clockWidget = new ClockDisplay();
-    m_clockWidget->setFixedSize(800,480);
+    m_clockWidget->setFixedSize(widthSettings,heightSettings);
+    m_bigClock = new BigClock();
+    m_bigClock->setFixedSize(widthSettings, heightSettings);
     m_blankLayoutWidget = new QWidget();
 
     m_stackedWidget = new QStackedWidget();
@@ -54,6 +60,7 @@ PrimaryDisplay::PrimaryDisplay() : QMainWindow()
     m_stackedWidget->addWidget(m_nyeLayoutWidget);
     m_stackedWidget->addWidget(m_blankLayoutWidget);
     m_stackedWidget->addWidget(m_weatherWidget);
+    m_stackedWidget->addWidget(m_bigClock);
         
     m_endWeatherScreen = new QTimer(this);
     connect(m_endWeatherScreen, &QTimer::timeout, this, &PrimaryDisplay::endWeatherScreen);
@@ -75,8 +82,7 @@ PrimaryDisplay::PrimaryDisplay() : QMainWindow()
     nye->addTransition(this, SIGNAL(stopNYE()), primary);
     primary->addTransition(m_sonosWidget, SIGNAL(startSonos()), metadata);
     primary->addTransition(this, SIGNAL(startNYE()), nye);
-    primary->addTransition(m_startBlankScreen, SIGNAL(timeout()), blank);
-    blank->addTransition(m_endBlankScreen, SIGNAL(timeout()), dim);
+    primary->addTransition(m_startBlankScreen, &QTimer::timeout, dim);
     dim->addTransition(m_endDimScreen, SIGNAL(timeout()), primary);
     primary->addTransition(this, SIGNAL(startWeather()), weather);
     metadata->addTransition(this, SIGNAL(startNYE()), nye);
@@ -86,7 +92,6 @@ PrimaryDisplay::PrimaryDisplay() : QMainWindow()
     connect(metadata, SIGNAL(entered()), this, SLOT(showMetadataScreen()));
     connect(primary, SIGNAL(entered()), this, SLOT(showPrimaryScreen()));
     connect(nye, SIGNAL(entered()), this, SLOT(showNYEScreen()));
-    connect(blank, SIGNAL(entered()), this, SLOT(showBlankScreen()));
     connect(dim, SIGNAL(entered()), this, SLOT(showDimScreen()));
     connect(dim, SIGNAL(exited()), this, SLOT(endDimScreen()));
     connect(weather, SIGNAL(entered()), this, SLOT(showWeatherScreen()));
@@ -314,6 +319,7 @@ void PrimaryDisplay::showBlankScreen()
 
 void PrimaryDisplay::endDimScreen()
 {
+    m_bigClock->end();
     qDebug() << __PRETTY_FUNCTION__;
 }
 
@@ -335,6 +341,8 @@ void PrimaryDisplay::showDimScreen()
     m_endDimScreen->setInterval(interval);
     m_endDimScreen->setSingleShot(true);
     m_endDimScreen->start();
+    m_stackedWidget->setCurrentIndex(WidgetIndex::Bigclock);
+    m_bigClock->begin();
 }
 
 void PrimaryDisplay::endBlankScreen()
