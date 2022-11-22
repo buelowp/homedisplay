@@ -86,6 +86,7 @@ PrimaryDisplay::PrimaryDisplay() : QMainWindow()
     dim->addTransition(m_endDimScreen, SIGNAL(timeout()), primary);
     primary->addTransition(this, SIGNAL(startWeather()), weather);
     metadata->addTransition(this, SIGNAL(startNYE()), nye);
+    metadata->addTransition(this, &PrimaryDisplay::startWeather, weather);
     metadata->addTransition(m_sonosWidget, SIGNAL(endSonos()), primary);
     weather->addTransition(this, SIGNAL(hideWeatherScreen()), primary);
     
@@ -152,7 +153,7 @@ void PrimaryDisplay::setupBlankScreenTimers()
 
 bool PrimaryDisplay::event(QEvent* event)
 {
-    if (event->type() == QEvent::MouseButtonRelease) {
+    if (event->type() == QEvent::MouseButtonRelease || event->type() == QEvent::TouchEnd) {
         qDebug() << __PRETTY_FUNCTION__ << ": Starting weather widget";
         emit startWeather();
         return true;
@@ -295,7 +296,7 @@ void PrimaryDisplay::showWeatherScreen()
 {
     qDebug() << __PRETTY_FUNCTION__;
     m_endWeatherScreen->setSingleShot(true);
-    m_endWeatherScreen->setInterval(1000 * 120);
+    m_endWeatherScreen->setInterval(1000 * 60);
     m_endWeatherScreen->start();
     m_stackedWidget->setCurrentIndex(WidgetIndex::Weather);
 }

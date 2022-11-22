@@ -126,16 +126,10 @@ void SonosDisplay::sonosRequestResult(QByteArray ba)
                     calculateMinutes(parent["elapsedTime"].toInt());
                     m_volume = parent["volume"].toInt();
                 }
-                if (lastState != playback) {
-                    lastState = playback;
-                    emit startSonos();
-                }
+                emit startSonos();
             }
             else {
-                if (lastState != playback) {
-                    emit endSonos();
-                    lastState = playback;
-                }
+                emit endSonos();
             }
         }
     }

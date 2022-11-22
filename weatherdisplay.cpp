@@ -139,8 +139,8 @@ void WeatherDisplay::updateDisplay(QString &topic, QJsonObject &object)
 {
     if (topic == "weather/rainfall") {
         if (object.contains("ytd")) {
-            m_rainYTD->setText(QString("%1").arg(object["ytd"].toDouble()));
-            m_rainToday->setText(QString("%1").arg(object["today"].toDouble()));
+            m_rainYTD->setText(QString("%1\"").arg(object["ytd"].toDouble()));
+            m_rainToday->setText(QString("%1\"").arg(object["today"].toDouble()));
         }
     }
     else if (topic == "weather/conditions") {

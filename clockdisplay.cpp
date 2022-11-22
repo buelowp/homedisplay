@@ -63,7 +63,6 @@ void ClockDisplay::showEvent(QShowEvent* e)
 {
 }
 
-
 void ClockDisplay::clockTimeout()
 {
     QDateTime now = QDateTime::currentDateTime();
