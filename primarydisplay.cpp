@@ -220,6 +220,7 @@ void PrimaryDisplay::enableBacklight(bool state, uint8_t brightness)
                 ts << brightness;
             else
                 ts << "0";
+
             bl.close();
         }
         else {
@@ -320,6 +321,7 @@ void PrimaryDisplay::showBlankScreen()
 
 void PrimaryDisplay::endDimScreen()
 {
+    enableBacklight(true);
     m_bigClock->end();
     qDebug() << __PRETTY_FUNCTION__;
 }
