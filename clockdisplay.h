@@ -8,6 +8,8 @@
 #include <QtWidgets/QtWidgets>
 #include <QtGui/QtGui>
 
+#include "inside.h"
+
 class ClockDisplay : public QFrame
 {
     Q_OBJECT
@@ -24,18 +26,23 @@ signals:
 public slots:
     void clockTimeout();
     void showEvent(QShowEvent *e) override;
+    void temperature(float temp);
+    void humidity(float humidity);
 
 private:
+    Inside *m_sht31d;
     QGridLayout *m_layout;
 
 	QLabel *m_primaryClock;
 	QLabel *m_primaryDate;
 	QLabel *m_lbCountdown;
-    QLabel *m_rain;
+    QLabel *m_insideHumidity;
     QLabel *m_temperature;
     QLabel *m_humidity;
-    QLabel *m_uvIndex;
+    QLabel *m_insideTemp;
     QTimer *m_clockTimer;
+    QLabel *m_inside;
+    QLabel *m_outside;
     QDateTime m_time;
 };
 
