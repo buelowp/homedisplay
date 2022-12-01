@@ -78,7 +78,7 @@ ClockDisplay::ClockDisplay(QFrame *parent) : QFrame(parent)
     m_primaryClock->setText(m_time.time().toString("h:mm A"));
     m_primaryDate->setText(m_time.date().toString("dddd MMMM d, yyyy"));
 
-    m_sht31d = new Inside(this);
+    m_sht31d = new Inside(1000 * 60, this);
     connect(m_sht31d, &Inside::temperature, this, &ClockDisplay::temperature);
     connect(m_sht31d, &Inside::humidity, this, &ClockDisplay::humidity);
     if (m_sht31d->isOpen())
