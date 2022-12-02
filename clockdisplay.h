@@ -8,7 +8,7 @@
 #include <QtWidgets/QtWidgets>
 #include <QtGui/QtGui>
 
-#include "inside.h"
+#include "environment.h"
 
 class ClockDisplay : public QFrame
 {
@@ -26,11 +26,11 @@ signals:
 public slots:
     void clockTimeout();
     void showEvent(QShowEvent *e) override;
-    void temperature(float temp);
-    void humidity(float humidity);
+    void temperature(double temp);
+    void humidity(double humidity);
 
 private:
-    Inside *m_sht31d;
+    Environment *m_env;
     QGridLayout *m_layout;
 
 	QLabel *m_primaryClock;

@@ -78,11 +78,10 @@ ClockDisplay::ClockDisplay(QFrame *parent) : QFrame(parent)
     m_primaryClock->setText(m_time.time().toString("h:mm A"));
     m_primaryDate->setText(m_time.date().toString("dddd MMMM d, yyyy"));
 
-    m_sht31d = new Inside(1000 * 60, this);
-    connect(m_sht31d, &Inside::temperature, this, &ClockDisplay::temperature);
-    connect(m_sht31d, &Inside::humidity, this, &ClockDisplay::humidity);
-    if (m_sht31d->isOpen())
-        m_sht31d->go();
+    m_env = new Environment();
+    connect(m_env, &Environment::temperature , this, &ClockDisplay::temperature);
+    connect(m_env, &Environment::humidity , this, &ClockDisplay::humidity);
+    m_env->go();
 }
 
 ClockDisplay::~ClockDisplay()
@@ -93,14 +92,14 @@ void ClockDisplay::showEvent(QShowEvent* e)
 {
 }
 
-void ClockDisplay::humidity(float humidity)
+void ClockDisplay::humidity(double humidity)
 {
     m_insideHumidity->setText(QString("%1%").arg(humidity, 0, 'f', 1));
 }
 
-void ClockDisplay::temperature(float temp)
+void ClockDisplay::temperature(double temp)
 {
-    m_insideTemp->setText(QString("%1%2").arg(temp * 1.8 + 32, 0, 'f', 1).arg(QChar(176)));
+    m_insideTemp->setText(QString("%1%2").arg(temp, 0, 'f', 1).arg(QChar(176)));
 }
 
 void ClockDisplay::clockTimeout()
