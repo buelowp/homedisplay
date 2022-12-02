@@ -22,6 +22,6 @@ find_package (Qt5 COMPONENTS Qmqtt REQUIRED)
 
 add_executable (${PROJECT_NAME} ${SOURCES})
 
-target_link_libraries (${PROJECT_NAME} Qt5::Widgets Qt5::Core Qt5::Qmqtt)
+target_link_libraries (${PROJECT_NAME} Qt5::Widgets Qt5::Core Qt5::Qmqtt -li2c -ltsl2561)
 
 install (TARGETS ${PROJECT_NAME} DESTINATION bin)

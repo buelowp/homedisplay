@@ -112,15 +112,30 @@ PrimaryDisplay::PrimaryDisplay() : QMainWindow()
     setCentralWidget(m_stackedWidget);
     m_states.start();
     m_sonosWidget->go();
+
+    m_lux = new Lux();
+    connect(m_lux, &Lux::lux, this, &PrimaryDisplay::lux);
+    m_lux->go();
 }
 
 PrimaryDisplay::~PrimaryDisplay() 
 {
 }
 
+void PrimaryDisplay::lux(long l)
+{
+    long bright = myMap(l, m_lux->min(), m_lux->max(), 0, 255);
+    if (bright == 0)
+        bright = 255;
+    if (bright < 10)
+        bright = 10;
+
+    enableBacklight(true, bright);
+}
+
 void PrimaryDisplay::showEvent(QShowEvent* event)
 {
-    qDebug() << __PRETTY_FUNCTION__ << ":" << width() << "x" << height();
+    Q_UNUSED(event)
     m_weatherWidget->setFixedSize(width(), height());
     m_sonosWidget->setFixedSize(width(), height());
     m_clockWidget->setFixedSize(width(), height());
@@ -224,7 +239,7 @@ void PrimaryDisplay::enableBacklight(bool state, uint8_t brightness)
             bl.close();
         }
         else {
-            qDebug() << __PRETTY_FUNCTION__ << ": Backlight not found at" << sysfs;
+            qDebug() << __PRETTY_FUNCTION__ << ": Backlight not found at" << sysfs << "" << bl.errorString();
         }
     }
 }

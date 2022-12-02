@@ -30,6 +30,7 @@
 #include "sonosdisplay.h"
 #include "clockdisplay.h"
 #include "bigclock.h"
+#include "lux.h"
 
 #define ONE_SECOND      1000
 #define ONE_MINUTE      (ONE_SECOND * 60)
@@ -79,6 +80,7 @@ protected slots:
     void updateNYEClock();
     void showDimScreen();
     void endDimScreen();
+    void lux(long l);
     
 private:
     typedef enum WIDGET_INDEX:int {
@@ -93,6 +95,15 @@ private:
     void setupMqttSubscriber();
     void setupBlankScreenTimers();
     void enableBacklight(bool state, uint8_t brightness = 255);
+    long myMap(long x, long in_min, long in_max, long out_min, long out_max)
+    {
+        long out = out_max - out_min;
+        long in = (in_max - in_min) + out_min;
+        if (in > 0) {
+            return (x - in_min) * out / in;
+        }
+        return 255;
+    }
     
     QMqttSubscriber *m_mqttClient;
 
@@ -103,6 +114,7 @@ private:
     WeatherDisplay *m_weatherWidget;
     ClockDisplay *m_clockWidget;
     BigClock *m_bigClock;
+    Lux *m_lux;
 
     QStackedWidget *m_stackedWidget;
     
