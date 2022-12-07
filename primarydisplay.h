@@ -31,6 +31,7 @@
 #include "clockdisplay.h"
 #include "bigclock.h"
 #include "lux.h"
+#include "qmqueue.h"
 
 #define ONE_SECOND      1000
 #define ONE_MINUTE      (ONE_SECOND * 60)
@@ -115,6 +116,7 @@ private:
     ClockDisplay *m_clockWidget;
     BigClock *m_bigClock;
     Lux *m_lux;
+    QMQueue *m_mqueue;
 
     QStackedWidget *m_stackedWidget;
     

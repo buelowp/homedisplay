@@ -115,7 +115,12 @@ PrimaryDisplay::PrimaryDisplay() : QMainWindow()
 
     m_lux = new Lux();
     connect(m_lux, &Lux::lux, this, &PrimaryDisplay::lux);
-    m_lux->go();
+    if (m_lux->isOpen()) {
+        qDebug() << __PRETTY_FUNCTION__ << ": I can sense light";
+        m_lux->go();
+    }
+
+    m_mqueue = new QMQueue();
 }
 
 PrimaryDisplay::~PrimaryDisplay() 
@@ -130,7 +135,7 @@ void PrimaryDisplay::lux(long l)
     if (bright < 10)
         bright = 10;
 
-    enableBacklight(true, bright);
+    m_mqueue->set(bright);
 }
 
 void PrimaryDisplay::showEvent(QShowEvent* event)
