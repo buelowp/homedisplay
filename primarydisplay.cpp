@@ -20,7 +20,7 @@
 
 PrimaryDisplay::PrimaryDisplay() : QMainWindow() 
 {
-    QSettings settings(QSettings::IniFormat, QSettings::UserScope, "MythClock", "MythClock");
+    QSettings settings(QSettings::IniFormat, QSettings::UserScope, "home", "homedisplay");
     int widthSettings = settings.value("width", 800).toInt();
     int heightSettings = settings.value("height", 480).toInt();
 
@@ -56,7 +56,7 @@ PrimaryDisplay::PrimaryDisplay() : QMainWindow()
 
     m_stackedWidget = new QStackedWidget();
     m_stackedWidget->addWidget(m_clockWidget);
-    m_stackedWidget->addWidget(m_sonosWidget);
+//    m_stackedWidget->addWidget(m_sonosWidget);
     m_stackedWidget->addWidget(m_nyeLayoutWidget);
     m_stackedWidget->addWidget(m_blankLayoutWidget);
     m_stackedWidget->addWidget(m_weatherWidget);
@@ -164,7 +164,7 @@ bool PrimaryDisplay::event(QEvent* event)
 
 void PrimaryDisplay::setupMqttSubscriber()
 {
-    QSettings settings(QSettings::IniFormat, QSettings::UserScope, "MythClock", "MythClock");
+    QSettings settings(QSettings::IniFormat, QSettings::UserScope, "home", "homedisplay");
     QString hostname = settings.value("mqttserver").toString();
     QHostInfo lookup = QHostInfo::fromName(hostname);
     QList<QHostAddress> addresses = lookup.addresses();
@@ -209,7 +209,7 @@ void PrimaryDisplay::showNYECountDown()
 
 void PrimaryDisplay::enableBacklight(bool state, uint8_t brightness)
 {
-    QSettings settings(QSettings::IniFormat, QSettings::UserScope, "MythClock", "MythClock");
+    QSettings settings(QSettings::IniFormat, QSettings::UserScope, "home", "homedisplay");
     
     if (settings.contains("backlight")) {
         QString sysfs = settings.value("backlight").toString();
@@ -304,7 +304,7 @@ void PrimaryDisplay::showWeatherScreen()
 
 void PrimaryDisplay::showBlankScreen()
 {
-    QSettings settings(QSettings::IniFormat, QSettings::UserScope, "MythClock", "MythClock");
+    QSettings settings(QSettings::IniFormat, QSettings::UserScope, "home", "homedisplay");
     int interval = ONE_HOUR * 2;
     qDebug() << __PRETTY_FUNCTION__ << ": sleeping for" << interval / 1000 << "seconds";
     
@@ -328,7 +328,7 @@ void PrimaryDisplay::endDimScreen()
 
 void PrimaryDisplay::showDimScreen()
 {
-    QSettings settings(QSettings::IniFormat, QSettings::UserScope, "MythClock", "MythClock");
+    QSettings settings(QSettings::IniFormat, QSettings::UserScope, "home", "homedisplay");
     int interval = ONE_HOUR * 2;
     int dim = 100;
     qDebug() << __PRETTY_FUNCTION__ << ": sleeping for" << interval / 1000 << "seconds";
