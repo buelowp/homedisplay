@@ -8,6 +8,10 @@
 #include <QtWidgets/QtWidgets>
 #include <QtGui/QtGui>
 
+#include "environment.h"
+#include "weather.h"
+#include "customlabel.h"
+
 class ClockDisplay : public QFrame
 {
     Q_OBJECT
@@ -24,19 +28,51 @@ signals:
 public slots:
     void clockTimeout();
     void showEvent(QShowEvent *e) override;
+    void updateLocalConditions(double temp, double humidity);
+    void forecastConditions(double high, double low);
 
 private:
-    QGridLayout *m_layout;
+    void leftSideLayout();
+    void rightSideLayout();
+    QString mapValues(double input, double input_start, double input_end, double output_start, double output_end);
+    QColor mapValuesNoString(double input, double input_start, double input_end, double output_start, double output_end);
 
-	QLabel *m_primaryClock;
-	QLabel *m_primaryDate;
-	QLabel *m_lbCountdown;
-    QLabel *m_rain;
-    QLabel *m_temperature;
-    QLabel *m_humidity;
-    QLabel *m_uvIndex;
+    Weather *m_weather;
+
+    QGridLayout *m_leftSideLayout;
+    QWidget *m_leftSideWidget;
+    QGridLayout *m_rightSideLayout;
+    QWidget *m_rightSideWidget;
+
+	CustomLabel *m_primaryClock;
+	CustomLabel *m_primaryDate;
+    CustomLabel *m_localTemperature;
+    CustomLabel *m_localTemperatureLabel;
+    CustomLabel *m_localTemperatureSymbol;
+    CustomLabel *m_localHumidity;
+    CustomLabel *m_localHumidityLabel;
+    CustomLabel *m_localHumiditySymbol;
+    CustomLabel *m_outdoorTemperature;
+    CustomLabel *m_outdoorTemperatureSymbol;
+    CustomLabel *m_outdoorTemperatureLabel;
+    CustomLabel *m_outdoorHumidity;
+    CustomLabel *m_outdoorHumidtyLabel;
+    CustomLabel *m_outdoorHumiditySymbol;
+    CustomLabel *m_localHighTemp;
+    CustomLabel *m_localHighTempLabel;
+    CustomLabel *m_localLowTemp;
+    CustomLabel *m_localLowTempLabel;
+    CustomLabel *m_forecastHighTemp;
+    CustomLabel *m_forecastHighTempLabel;
+    CustomLabel *m_forecastLowTemp;
+    CustomLabel *m_forecastLowTempLabel;
+    CustomLabel *m_uvIndexLabel;
+    CustomLabel *m_uvIndex;
+    CustomLabel *m_sunrise;
+    CustomLabel *m_sunset;
+    CustomLabel *m_sunriseLabel;
+    CustomLabel *m_sunsetLabel;
     QTimer *m_clockTimer;
-    QDateTime m_time;
 };
 
 #endif // CLOCKDISPLAY_H
