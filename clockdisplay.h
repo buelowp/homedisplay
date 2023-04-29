@@ -7,10 +7,15 @@
 #include <QtCore/QtCore>
 #include <QtWidgets/QtWidgets>
 #include <QtGui/QtGui>
+#include <QtSql/QtSql>
+#include <sunset.h>
 
 #include "environment.h"
 #include "weather.h"
 #include "customlabel.h"
+
+#define LATITUDE    42.01379
+#define LONGITUDE   -87.9855
 
 class ClockDisplay : public QFrame
 {
@@ -30,6 +35,8 @@ public slots:
     void showEvent(QShowEvent *e) override;
     void updateLocalConditions(double temp, double humidity);
     void forecastConditions(double high, double low);
+    void sunPositionUpdate();
+    void setLocalLowHighTemps();
 
 private:
     void leftSideLayout();
@@ -73,6 +80,7 @@ private:
     CustomLabel *m_sunriseLabel;
     CustomLabel *m_sunsetLabel;
     QTimer *m_clockTimer;
+    QSqlDatabase m_tempsDb;
 };
 
 #endif // CLOCKDISPLAY_H

@@ -83,11 +83,11 @@ protected slots:
 private:
     typedef enum WIDGET_INDEX:int {
         Primary = 0,
-        Sonos,
         NYE,
         Blank,
         Weather,
         Bigclock,
+        Sonos,
     } WidgetIndex;
 
     void setupMqttSubscriber();

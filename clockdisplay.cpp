@@ -20,9 +20,16 @@ ClockDisplay::ClockDisplay(QFrame *parent) : QFrame(parent)
 
     clockTimeout();
 
+    m_tempsDb = QSqlDatabase::addDatabase("QMARIADB");
+    m_tempsDb.setHostName("172.24.1.12");
+    m_tempsDb.setDatabaseName("weather");
+    m_tempsDb.setUserName("weather");
+    m_tempsDb.setPassword("vt!W7zaykM");
+
     m_weather = new Weather();
     connect(m_weather, &Weather::forecast, this, &ClockDisplay::forecastConditions);
     m_weather->getToday();
+    sunPositionUpdate();
 }
 
 ClockDisplay::~ClockDisplay()
@@ -34,39 +41,36 @@ void ClockDisplay::leftSideLayout()
     m_leftSideLayout = new QGridLayout();
     m_leftSideWidget = new QWidget();
 
-    QFont clock("Roboto-Regular", 60);
-    QFont date("Roboto-Regular", 32);
-
-    m_primaryClock = new CustomLabel(60);
-    m_primaryDate = new CustomLabel(36);
-    m_localHighTempLabel = new CustomLabel("Today's High", 26);
-    m_localHighTemp = new CustomLabel(32);
-    m_localLowTemp = new CustomLabel(32);
-    m_localLowTempLabel = new CustomLabel("Today's Low", 26);
-    m_forecastHighTemp = new CustomLabel(32);
-    m_forecastHighTempLabel = new CustomLabel("Forecast High", 26);
-    m_forecastLowTemp = new CustomLabel(32);
-    m_forecastLowTempLabel = new CustomLabel("Forecast Low", 26);
-    m_sunrise = new CustomLabel(32);
-    m_sunset = new CustomLabel(32);
-    m_sunriseLabel = new CustomLabel("Sunrise", 26);
-    m_sunsetLabel = new CustomLabel("Sunset", 26);
+    m_primaryClock = new CustomLabel(40);
+    m_primaryDate = new CustomLabel(18);
+    m_localHighTempLabel = new CustomLabel("Today's High", 14);
+    m_localHighTemp = new CustomLabel(18);
+    m_localLowTemp = new CustomLabel(18);
+    m_localLowTempLabel = new CustomLabel("Today's Low", 14);
+    m_forecastHighTemp = new CustomLabel(18);
+    m_forecastHighTempLabel = new CustomLabel("Forecast High", 14);
+    m_forecastLowTemp = new CustomLabel(18);
+    m_forecastLowTempLabel = new CustomLabel("Forecast Low", 14);
+    m_sunrise = new CustomLabel(18);
+    m_sunset = new CustomLabel(18);
+    m_sunriseLabel = new CustomLabel("Sunrise", 14);
+    m_sunsetLabel = new CustomLabel("Sunset", 14);
 
                                                     // row, col, rowspan, colspan
-    m_leftSideLayout->addWidget(m_primaryClock,          0, 0, 2, 2, Qt::AlignCenter);
-    m_leftSideLayout->addWidget(m_primaryDate,           2, 0, 1, 2, Qt::AlignCenter);
-    m_leftSideLayout->addWidget(m_localLowTempLabel,     3, 0, 1, 1, Qt::AlignCenter);
-    m_leftSideLayout->addWidget(m_localLowTemp,          4, 0, 1, 1, Qt::AlignCenter);
-    m_leftSideLayout->addWidget(m_localHighTempLabel,    3, 1, 1, 1, Qt::AlignCenter);
-    m_leftSideLayout->addWidget(m_localHighTemp,         4, 1, 1, 1, Qt::AlignCenter);
-    m_leftSideLayout->addWidget(m_forecastLowTempLabel,  5, 0, 1, 1, Qt::AlignCenter);
-    m_leftSideLayout->addWidget(m_forecastLowTemp,       6, 0, 1, 1, Qt::AlignCenter);
-    m_leftSideLayout->addWidget(m_forecastHighTempLabel, 5, 1, 1, 1, Qt::AlignCenter);
-    m_leftSideLayout->addWidget(m_forecastHighTemp,      6, 1, 1, 1, Qt::AlignCenter);
-    m_leftSideLayout->addWidget(m_sunriseLabel,          7, 0, 1, 1, Qt::AlignCenter);
-    m_leftSideLayout->addWidget(m_sunrise,               8, 0, 1, 1, Qt::AlignCenter);
-    m_leftSideLayout->addWidget(m_sunsetLabel,           7, 1, 1, 1, Qt::AlignCenter);
-    m_leftSideLayout->addWidget(m_sunset,                8, 1, 1, 1, Qt::AlignCenter);
+    m_leftSideLayout->addWidget(m_primaryClock,          0, 0, 3, 2, Qt::AlignCenter);
+    m_leftSideLayout->addWidget(m_primaryDate,           3, 0, 2, 2, Qt::AlignCenter);
+    m_leftSideLayout->addWidget(m_localLowTempLabel,     6, 0, 1, 1, Qt::AlignCenter);
+    m_leftSideLayout->addWidget(m_localLowTemp,          7, 0, 1, 1, Qt::AlignCenter);
+    m_leftSideLayout->addWidget(m_localHighTempLabel,    6, 1, 1, 1, Qt::AlignCenter);
+    m_leftSideLayout->addWidget(m_localHighTemp,         7, 1, 1, 1, Qt::AlignCenter);
+    m_leftSideLayout->addWidget(m_forecastLowTempLabel,  8, 0, 1, 1, Qt::AlignCenter);
+    m_leftSideLayout->addWidget(m_forecastLowTemp,       9, 0, 1, 1, Qt::AlignCenter);
+    m_leftSideLayout->addWidget(m_forecastHighTempLabel, 8, 1, 1, 1, Qt::AlignCenter);
+    m_leftSideLayout->addWidget(m_forecastHighTemp,      9, 1, 1, 1, Qt::AlignCenter);
+    m_leftSideLayout->addWidget(m_sunriseLabel,          10, 0, 1, 1, Qt::AlignCenter);
+    m_leftSideLayout->addWidget(m_sunrise,               11, 0, 1, 1, Qt::AlignCenter);
+    m_leftSideLayout->addWidget(m_sunsetLabel,           10, 1, 1, 1, Qt::AlignCenter);
+    m_leftSideLayout->addWidget(m_sunset,                11, 1, 1, 1, Qt::AlignCenter);
     m_leftSideWidget->setLayout(m_leftSideLayout);
 }
 
@@ -75,23 +79,23 @@ void ClockDisplay::rightSideLayout()
     m_rightSideLayout = new QGridLayout();
     m_rightSideWidget = new QWidget();
 
-    CustomLabel *outside = new CustomLabel("Outside", 36);
-    CustomLabel *inside = new CustomLabel("Inside", 36);
+    CustomLabel *outside = new CustomLabel("Outside", 20);
+    CustomLabel *inside = new CustomLabel("Inside", 20);
 
-    m_localTemperatureLabel = new CustomLabel("Temperature", 32);
-    m_localTemperatureSymbol = new CustomLabel(QChar(176), 18, Qt::AlignLeft|Qt::AlignBottom);
-    m_localTemperature = new CustomLabel(32);
-    m_localHumidityLabel = new CustomLabel("Humidity", 32);
-    m_localHumidity = new CustomLabel(32);
-    m_localHumiditySymbol = new CustomLabel("%", 18, Qt::AlignLeft|Qt::AlignBottom);
-    m_outdoorTemperatureLabel = new CustomLabel("Temperature", 32);
-    m_outdoorTemperatureSymbol = new CustomLabel(QChar(176), 18, Qt::AlignLeft|Qt::AlignBottom);
-    m_outdoorTemperature = new CustomLabel(32);
-    m_outdoorHumidtyLabel = new CustomLabel("Humidity", 32);
-    m_outdoorHumiditySymbol = new CustomLabel("%", 18, Qt::AlignLeft|Qt::AlignBottom);
-    m_outdoorHumidity = new CustomLabel(32);
-    m_uvIndexLabel = new CustomLabel("UV Index", 32);
-    m_uvIndex = new CustomLabel(32);
+    m_localTemperatureLabel = new CustomLabel("Temperature", 16);
+    m_localTemperatureSymbol = new CustomLabel(QChar(176), 12, Qt::AlignLeft);
+    m_localTemperature = new CustomLabel(16);
+    m_localHumidityLabel = new CustomLabel("Humidity", 16);
+    m_localHumidity = new CustomLabel(16);
+    m_localHumiditySymbol = new CustomLabel("%", 12, Qt::AlignLeft|Qt::AlignBottom);
+    m_outdoorTemperatureLabel = new CustomLabel("Temperature", 16);
+    m_outdoorTemperatureSymbol = new CustomLabel(QChar(176), 12, Qt::AlignLeft);
+    m_outdoorTemperature = new CustomLabel(16);
+    m_outdoorHumidtyLabel = new CustomLabel("Humidity", 16);
+    m_outdoorHumiditySymbol = new CustomLabel("%", 12, Qt::AlignLeft|Qt::AlignBottom);
+    m_outdoorHumidity = new CustomLabel(16);
+    m_uvIndexLabel = new CustomLabel("UV Index", 16);
+    m_uvIndex = new CustomLabel(16);
 
 
     m_rightSideLayout->addWidget(outside,                    0, 0, 1, 3, Qt::AlignCenter);
@@ -113,15 +117,75 @@ void ClockDisplay::rightSideLayout()
     m_rightSideWidget->setLayout(m_rightSideLayout);
 }
 
+void ClockDisplay::setLocalLowHighTemps()
+{
+    if (m_tempsDb.open()) {
+        QSqlQuery query("SELECT * FROM limits WHERE DATE(timestamp) = CURDATE()", m_tempsDb);
+        while (query.next()) {
+            if (query.value(1).toString() == "HIGH") {
+                QDateTime when = QDateTime::fromString(query.value(3).toString(), Qt::ISODateWithMs);
+                QColor c = mapValuesNoString(query.value(2).toDouble(), 0, 100, 0, 320);
+                QString span = QString("<span style='color:#%1%2%3'>").arg(c.red(), 2, 16, QChar('0')).arg(c.green(), 2, 16, QChar('0')).arg(c.blue(), 2, 16, QChar('0'));
+                m_localHighTemp->setText(QString("%1%2</span>%3 <span style='font-size:10px'>(%4)</span>").arg(span).arg(query.value(2).toDouble(), 0, 'f', 1).arg(QChar(176)).arg(when.time().toString("hh:mm")));
+            }
+            if (query.value(1).toString() == "LOW") {
+                QDateTime when = QDateTime::fromString(query.value(3).toString(), Qt::ISODateWithMs);
+                QColor c = mapValuesNoString(query.value(2).toDouble(), 0, 100, 0, 320);
+                QString span = QString("<span style='color:#%1%2%3'>").arg(c.red(), 2, 16, QChar('0')).arg(c.green(), 2, 16, QChar('0')).arg(c.blue(), 2, 16, QChar('0'));
+                m_localLowTemp->setText(QString("%1%2</span>%3 <span style='font-size:10px'>(%4)</span>").arg(span).arg(query.value(2).toDouble(), 0, 'f', 1).arg(QChar(176)).arg(when.time().toString("hh:mm")));
+            }
+        }
+        m_tempsDb.close();
+    }
+    else {
+        qDebug() << __PRETTY_FUNCTION__ << "Unable to open database" << m_tempsDb.lastError().text();
+    }
+}
+
 void ClockDisplay::showEvent(QShowEvent* e)
 {
+}
+
+void ClockDisplay::sunPositionUpdate()
+{
+    SunSet sun(LATITUDE, LONGITUDE, 0);;
+
+    QDateTime now = QDateTime::currentDateTime();
+    QDateTime tomorrow;
+    int offset = now.offsetFromUtc() / 3600;
+    QTime sunrise;
+    QTime sunset;
+    int sr;
+    int ss;
+
+    sun.setCurrentDate(now.date().year(), now.date().month(), now.date().day());
+    sun.setTZOffset(offset);
+    sr = sun.calcSunrise();
+    ss = sun.calcSunset();
+    sunrise.setHMS(sr/60, sr%60, 0);
+    sunset.setHMS(ss/60, ss%60, 0);
+    m_sunrise->setText(sunrise.toString("h:mm ap"));
+    m_sunset->setText(sunset.toString("h:mm ap"));
+
+    tomorrow.setTime(QTime(3, 5, 0));
+    if (now.time().hour() > 2) {
+        tomorrow = now.addDays(1);
+        tomorrow.setTime(QTime(3, 5, 0));
+        QTimer::singleShot(now.msecsTo(tomorrow), this, &ClockDisplay::sunPositionUpdate);
+    }
+    else {
+        QDateTime later(now.date(), QTime(3, 5, 0), now.timeZone());
+        QTimer::singleShot(now.msecsTo(later), this, &ClockDisplay::sunPositionUpdate);
+    }
+
+    setLocalLowHighTemps();
 }
 
 void ClockDisplay::clockTimeout()
 {
     QDateTime now = QDateTime::currentDateTime();
 
-    m_primaryDate->setText(now.date().toString("dddd MMMM d, yyyy"));
+    m_primaryDate->setText(now.date().toString("ddd MMMM d, yyyy"));
     m_primaryClock->setText(now.time().toString("h:mm A"));
 }
 
@@ -171,28 +235,14 @@ void ClockDisplay::updateDisplay(QString &topic, QJsonObject &object)
             QJsonObject env = object["environment"].toObject();
             m_outdoorTemperature->setText(QString("%1").arg(env["farenheit"].toDouble(), 0, 'f', 1));
             m_outdoorTemperature->setStyleSheet(mapValues(env["farenheit"].toDouble(), 0, 100, 0, 320));
-            m_outdoorHumidity->setText(QString("%1%").arg(env["humidity"].toDouble(), 0, 'f', 1));
+            m_outdoorHumidity->setText(QString("%1").arg(env["humidity"].toDouble(), 0, 'f', 1));
         }
     }
     else if (topic == "weather/light") {
         if (object.contains("uv")) {
             int uv = object["uv"].toInt();
-            switch (uv) {
-                case 0:
-                case 1:
-                case 2:
-                case 3:
-                    m_uvIndex->setText(QString("UV Index: <span style=\"color:green;\">%1</span>").arg(uv));
-                    break;
-                case 4:
-                case 5:
-                case 6:
-                    m_uvIndex->setText(QString("UV Index: <span style=\"color:yellow;\">%1</span>").arg(uv));
-                    break;
-                default:
-                    m_uvIndex->setText(QString("UV Index: <span style=\"color:red;\">%1</span>").arg(uv));
-                    break;
-            }
+            m_uvIndex->setText(QString("%1").arg(uv));
+            m_uvIndex->setStyleSheet(mapValues(uv, 0, 9, 0, 240));
         }
     }
 }
@@ -200,7 +250,9 @@ void ClockDisplay::updateDisplay(QString &topic, QJsonObject &object)
 void ClockDisplay::forecastConditions(double high, double low)
 {
     m_forecastHighTemp->setText(QString("%1%2").arg(high, 0, 'f', 0).arg(QChar(176)));
+    m_forecastHighTemp->setStyleSheet(mapValues(high, 0, 100, 0, 320));
     m_forecastLowTemp->setText(QString("%1%2").arg(low, 0, 'f', 0).arg(QChar(176)));
+    m_forecastLowTemp->setStyleSheet(mapValues(low, 0, 100, 0, 320));
 }
 
 void ClockDisplay::updateLocalConditions(double temp, double humidity)

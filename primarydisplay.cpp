@@ -56,12 +56,12 @@ PrimaryDisplay::PrimaryDisplay() : QMainWindow()
 
     m_stackedWidget = new QStackedWidget();
     m_stackedWidget->addWidget(m_clockWidget);
-//    m_stackedWidget->addWidget(m_sonosWidget);
     m_stackedWidget->addWidget(m_nyeLayoutWidget);
     m_stackedWidget->addWidget(m_blankLayoutWidget);
     m_stackedWidget->addWidget(m_weatherWidget);
     m_stackedWidget->addWidget(m_bigClock);
-        
+    m_stackedWidget->addWidget(m_sonosWidget);
+
     m_endWeatherScreen = new QTimer(this);
     connect(m_endWeatherScreen, &QTimer::timeout, this, &PrimaryDisplay::endWeatherScreen);
 
@@ -111,7 +111,7 @@ PrimaryDisplay::PrimaryDisplay() : QMainWindow()
     m_stackedWidget->setCurrentIndex(WidgetIndex::Primary);
     setCentralWidget(m_stackedWidget);
     m_states.start();
-    m_sonosWidget->go();
+//    m_sonosWidget->go();
 }
 
 PrimaryDisplay::~PrimaryDisplay() 

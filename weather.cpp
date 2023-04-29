@@ -25,11 +25,11 @@ void Weather::requestFinished(QNetworkReply* reply)
                 decodeResponse(doc);
             }
             else {
-                qDebug() << "Invalid json received";
+                qDebug() << __PRETTY_FUNCTION__ << "Invalid json received";
             }
         }
         else {
-            qDebug() << reply->attribute( QNetworkRequest::HttpReasonPhraseAttribute ).toString();
+            qDebug() << __PRETTY_FUNCTION__ << reply->attribute( QNetworkRequest::HttpReasonPhraseAttribute ).toString();
         }
     }
 }
@@ -48,7 +48,7 @@ void Weather::decodeResponse(QJsonDocument& doc)
                 double high = day["maxtemp_f"].toDouble();
                 double low = day["mintemp_f"].toDouble();
                 emit forecast(high, low);
-                qDebug() << "Got a high:" << high << ", and a low:" << low;
+                qDebug() << __PRETTY_FUNCTION__ << "Got a high:" << high << ", and a low:" << low;
             }
         }
     }
@@ -56,7 +56,7 @@ void Weather::decodeResponse(QJsonDocument& doc)
 
 bool Weather::getToday()
 {
-    QSettings settings(QSettings::IniFormat, QSettings::UserScope, "home", "officedisplay");
+    QSettings settings(QSettings::IniFormat, QSettings::UserScope, "home", "homedisplay");
 
     QString key = settings.value("apikey").toString();
     QString zip = settings.value("zip").toString();
@@ -65,7 +65,7 @@ bool Weather::getToday()
         return false;
 
     QUrl url(QString("https://api.weatherapi.com/v1/forecast.json?key=%1&q=%2&days=1&aqi=no&alerts=no").arg(key).arg(zip));
-    qDebug() << url;
+    qDebug() << __PRETTY_FUNCTION__ << url;
     if (url.isValid()) {
         m_manager->get(QNetworkRequest(url));
         return true;

@@ -19,9 +19,10 @@ find_package (Threads REQUIRED)
 find_package (Qt5 COMPONENTS Widgets REQUIRED)
 find_package (Qt5 COMPONENTS Core REQUIRED)
 find_package (Qt5 COMPONENTS Qmqtt REQUIRED)
+find_package (Qt5 COMPONENTS Sql REQUIRED)
 
 add_executable (${PROJECT_NAME} ${SOURCES})
 
-target_link_libraries (${PROJECT_NAME} Qt5::Widgets Qt5::Core Qt5::Qmqtt)
+target_link_libraries (${PROJECT_NAME} Qt5::Widgets Qt5::Core Qt5::Sql Qt5::Qmqtt -lsunset)
 
 install (TARGETS ${PROJECT_NAME} DESTINATION bin)
