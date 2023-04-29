@@ -28,6 +28,11 @@ ClockDisplay::ClockDisplay(QFrame *parent) : QFrame(parent)
 
     m_weather = new Weather();
     connect(m_weather, &Weather::forecast, this, &ClockDisplay::forecastConditions);
+
+    m_environment = new Environment();
+    connect(m_environment, &Environment::conditions, this, &ClockDisplay::updateLocalConditions);
+    m_environment->go();
+
     m_weather->getToday();
     sunPositionUpdate();
 }

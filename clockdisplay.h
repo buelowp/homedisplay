@@ -45,6 +45,7 @@ private:
     QColor mapValuesNoString(double input, double input_start, double input_end, double output_start, double output_end);
 
     Weather *m_weather;
+    Environment *m_environment;
 
     QGridLayout *m_leftSideLayout;
     QWidget *m_leftSideWidget;

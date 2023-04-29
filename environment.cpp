@@ -33,8 +33,8 @@ Environment::~Environment()
 
 void Environment::go()
 {
-    m_timer->start();
     timeout();
+    m_timer->start();
 }
 
 void Environment::timeout()
@@ -49,5 +49,6 @@ void Environment::timeout()
         h = m_humidityStream->readAll().toInt();
         emit humidity(h / 1000);
         emit temperature((t / 1000) * 1.8 + 32);
+        emit conditions((t / 1000) * 1.8 + 32, h / 1000);
     }
 }
