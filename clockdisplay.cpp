@@ -9,8 +9,8 @@ ClockDisplay::ClockDisplay(QFrame *parent) : QFrame(parent)
     rightSideLayout();
 
     QHBoxLayout *parentLayout = new QHBoxLayout();
-    parentLayout->addWidget(m_leftSideWidget);
-    parentLayout->addWidget(m_rightSideWidget);
+    parentLayout->addWidget(m_leftSideWidget, 60);
+    parentLayout->addWidget(m_rightSideWidget, 40);
     setLayout(parentLayout);
 
     m_clockTimer = new QTimer();
@@ -41,8 +41,8 @@ void ClockDisplay::leftSideLayout()
     m_leftSideLayout = new QGridLayout();
     m_leftSideWidget = new QWidget();
 
-    m_primaryClock = new CustomLabel(40);
-    m_primaryDate = new CustomLabel(18);
+    m_primaryClock = new CustomLabel(50);
+    m_primaryDate = new CustomLabel(20);
     m_localHighTempLabel = new CustomLabel("Today's High", 14);
     m_localHighTemp = new CustomLabel(18);
     m_localLowTemp = new CustomLabel(18);
@@ -83,37 +83,44 @@ void ClockDisplay::rightSideLayout()
     CustomLabel *inside = new CustomLabel("Inside", 20);
 
     m_localTemperatureLabel = new CustomLabel("Temperature", 16);
-    m_localTemperatureSymbol = new CustomLabel(QChar(176), 12, Qt::AlignLeft);
+    m_localTemperatureSymbol = new CustomLabel(QChar(176), 12, Qt::AlignLeft|Qt::AlignVCenter);
     m_localTemperature = new CustomLabel(16);
     m_localHumidityLabel = new CustomLabel("Humidity", 16);
     m_localHumidity = new CustomLabel(16);
-    m_localHumiditySymbol = new CustomLabel("%", 12, Qt::AlignLeft|Qt::AlignBottom);
+    m_localHumiditySymbol = new CustomLabel("%", 12, Qt::AlignLeft);
     m_outdoorTemperatureLabel = new CustomLabel("Temperature", 16);
-    m_outdoorTemperatureSymbol = new CustomLabel(QChar(176), 12, Qt::AlignLeft);
+    m_outdoorTemperatureSymbol = new CustomLabel(QChar(176), 12, Qt::AlignLeft|Qt::AlignVCenter);
     m_outdoorTemperature = new CustomLabel(16);
     m_outdoorHumidtyLabel = new CustomLabel("Humidity", 16);
-    m_outdoorHumiditySymbol = new CustomLabel("%", 12, Qt::AlignLeft|Qt::AlignBottom);
+    m_outdoorHumiditySymbol = new CustomLabel("%", 12, Qt::AlignLeft|Qt::AlignVCenter);
     m_outdoorHumidity = new CustomLabel(16);
     m_uvIndexLabel = new CustomLabel("UV Index", 16);
     m_uvIndex = new CustomLabel(16);
+    m_rainFallSymbol = new CustomLabel("in", 12);
+    m_rainFallLabel = new CustomLabel("Rain Today", 16, Qt::AlignLeft|Qt::AlignVCenter);
+    m_rainFall = new CustomLabel(16);
 
 
-    m_rightSideLayout->addWidget(outside,                    0, 0, 1, 3, Qt::AlignCenter);
-    m_rightSideLayout->addWidget(m_outdoorTemperatureLabel,  1, 0, 1, 1, Qt::AlignLeft);
-    m_rightSideLayout->addWidget(m_outdoorTemperature,       1, 1, 1, 1, Qt::AlignRight);
-    m_rightSideLayout->addWidget(m_outdoorTemperatureSymbol, 1, 2, 1, 1, Qt::AlignLeft);
-    m_rightSideLayout->addWidget(m_outdoorHumidtyLabel,      2, 0, 1, 1, Qt::AlignLeft);
-    m_rightSideLayout->addWidget(m_outdoorHumidity,          2, 1, 1, 1, Qt::AlignRight);
-    m_rightSideLayout->addWidget(m_outdoorHumiditySymbol,    2, 2, 1, 1, Qt::AlignLeft);
-    m_rightSideLayout->addWidget(m_uvIndexLabel,             3, 0, 1, 1, Qt::AlignLeft);
-    m_rightSideLayout->addWidget(m_uvIndex,                  3, 1, 1, 1, Qt::AlignRight);
-    m_rightSideLayout->addWidget(inside,                     4, 0, 1, 3, Qt::AlignCenter);
-    m_rightSideLayout->addWidget(m_localTemperatureLabel,    5, 0, 1, 1, Qt::AlignLeft);
-    m_rightSideLayout->addWidget(m_localTemperature,         5, 1, 1, 1, Qt::AlignRight);
-    m_rightSideLayout->addWidget(m_localTemperatureSymbol,   5, 2, 1, 1, Qt::AlignLeft);
-    m_rightSideLayout->addWidget(m_localHumidityLabel,       6, 0, 1, 1, Qt::AlignLeft);
-    m_rightSideLayout->addWidget(m_localHumidity,            6, 1, 1, 1, Qt::AlignRight);
-    m_rightSideLayout->addWidget(m_localHumiditySymbol,      6, 2, 1, 1, Qt::AlignLeft);
+    m_rightSideLayout->addWidget(outside,                    0, 0, 1, 5, Qt::AlignCenter);
+    m_rightSideLayout->addWidget(m_outdoorTemperatureLabel,  1, 0, 1, 3, Qt::AlignLeft);
+    m_rightSideLayout->addWidget(m_outdoorTemperature,       1, 3, 1, 1, Qt::AlignRight);
+    m_rightSideLayout->addWidget(m_outdoorTemperatureSymbol, 1, 4, 1, 1, Qt::AlignLeft);
+    m_rightSideLayout->addWidget(m_outdoorHumidtyLabel,      2, 0, 1, 3, Qt::AlignLeft);
+    m_rightSideLayout->addWidget(m_outdoorHumidity,          2, 3, 1, 1, Qt::AlignRight);
+    m_rightSideLayout->addWidget(m_outdoorHumiditySymbol,    2, 4, 1, 1, Qt::AlignLeft);
+    m_rightSideLayout->addWidget(m_rainFallLabel,            3, 0, 1, 3, Qt::AlignLeft);
+    m_rightSideLayout->addWidget(m_rainFall,                 3, 3, 1, 1, Qt::AlignRight);
+    m_rightSideLayout->addWidget(m_rainFallSymbol,           3, 4, 1, 1, Qt::AlignLeft);
+    m_rightSideLayout->addWidget(m_uvIndexLabel,             4, 0, 1, 3, Qt::AlignLeft);
+    m_rightSideLayout->addWidget(m_uvIndex,                  4, 3, 1, 1, Qt::AlignRight);
+
+    m_rightSideLayout->addWidget(inside,                     5, 0, 1, 5, Qt::AlignCenter);
+    m_rightSideLayout->addWidget(m_localTemperatureLabel,    6, 0, 1, 3, Qt::AlignLeft);
+    m_rightSideLayout->addWidget(m_localTemperature,         6, 3, 1, 1, Qt::AlignRight);
+    m_rightSideLayout->addWidget(m_localTemperatureSymbol,   6, 4, 1, 1, Qt::AlignLeft);
+    m_rightSideLayout->addWidget(m_localHumidityLabel,       7, 0, 1, 3, Qt::AlignLeft);
+    m_rightSideLayout->addWidget(m_localHumidity,            7, 3, 1, 1, Qt::AlignRight);
+    m_rightSideLayout->addWidget(m_localHumiditySymbol,      7, 4, 1, 1, Qt::AlignLeft);
     m_rightSideWidget->setLayout(m_rightSideLayout);
 }
 
@@ -244,6 +251,9 @@ void ClockDisplay::updateDisplay(QString &topic, QJsonObject &object)
             m_uvIndex->setText(QString("%1").arg(uv));
             m_uvIndex->setStyleSheet(mapValues(uv, 0, 9, 0, 240));
         }
+    }
+    else if (topic == "weather/rainfall") {
+        m_rainFall->setText(QString("%1").arg(object["today"].toDouble(), 0, 'f', 2));
     }
 }
 

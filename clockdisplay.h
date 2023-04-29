@@ -79,6 +79,9 @@ private:
     CustomLabel *m_sunset;
     CustomLabel *m_sunriseLabel;
     CustomLabel *m_sunsetLabel;
+    CustomLabel *m_rainFallLabel;
+    CustomLabel *m_rainFallSymbol;
+    CustomLabel *m_rainFall;
     QTimer *m_clockTimer;
     QSqlDatabase m_tempsDb;
 };
