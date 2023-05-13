@@ -76,14 +76,13 @@ PrimaryDisplay::PrimaryDisplay() : QMainWindow()
     QState *metadata = new QState();
     QState *nye = new QState();
     QState *blank = new QState();
-    QState *dim = new QState();
     QState *weather = new QState();
 
     nye->addTransition(this, SIGNAL(stopNYE()), primary);
     primary->addTransition(m_sonosWidget, SIGNAL(startSonos()), metadata);
     primary->addTransition(this, SIGNAL(startNYE()), nye);
-    primary->addTransition(m_startBlankScreen, &QTimer::timeout, dim);
-    dim->addTransition(m_endDimScreen, SIGNAL(timeout()), primary);
+    primary->addTransition(m_startBlankScreen, &QTimer::timeout, blank);
+    blank->addTransition(m_endBlankScreen, SIGNAL(timeout()), primary);
     primary->addTransition(this, SIGNAL(startWeather()), weather);
     metadata->addTransition(this, SIGNAL(startNYE()), nye);
     metadata->addTransition(this, &PrimaryDisplay::startWeather, weather);
@@ -93,25 +92,38 @@ PrimaryDisplay::PrimaryDisplay() : QMainWindow()
     connect(metadata, SIGNAL(entered()), this, SLOT(showMetadataScreen()));
     connect(primary, SIGNAL(entered()), this, SLOT(showPrimaryScreen()));
     connect(nye, SIGNAL(entered()), this, SLOT(showNYEScreen()));
-    connect(dim, SIGNAL(entered()), this, SLOT(showDimScreen()));
-    connect(dim, SIGNAL(exited()), this, SLOT(endDimScreen()));
+    connect(blank, SIGNAL(entered()), this, SLOT(showBlankScreen()));
+    connect(blank, SIGNAL(exited()), this, SLOT(endBlankScreen()));
     connect(weather, SIGNAL(entered()), this, SLOT(showWeatherScreen()));
 
     m_states.addState(primary);
     m_states.addState(metadata);
     m_states.addState(nye);
     m_states.addState(blank);
-    m_states.addState(dim);
     m_states.addState(weather);
     m_states.setInitialState(primary);
 
     setNYETimeout();
 
+    m_lux = new Lux();
+    if (settings.value("usetsl2561").toBool()) {
+        connect(m_lux, &Lux::lux, this, &PrimaryDisplay::lux);
+        if (m_lux->isOpen()) {
+            qDebug() << __PRETTY_FUNCTION__ << ": I can sense light";
+            m_lux->go();
+        }
+    }
+
+    if (settings..value("blankscreen").toBool()) {
+        setupBlankScreenTimers();
+    }
+
     enableBacklight(true);
     m_stackedWidget->setCurrentIndex(WidgetIndex::Primary);
     setCentralWidget(m_stackedWidget);
     m_states.start();
-//    m_sonosWidget->go();
+    if (settings.value("usesonos").toBool() == true)
+        m_sonosWidget->go();
 }
 
 PrimaryDisplay::~PrimaryDisplay() 
@@ -181,6 +193,49 @@ void PrimaryDisplay::setupMqttSubscriber()
     connect(m_mqttClient, SIGNAL(disconnectedEvent()), this, SLOT(disconnectedEvent()));
     connect(m_mqttClient, SIGNAL(messageReceivedOnTopic(QString, QString)), this, SLOT(messageReceivedOnTopic(QString, QString)));
     m_mqttClient->connectToHost();
+}
+
+void PrimaryDisplay::lux(long l)
+{
+    QDateTime now = QDateTime::currentDateTime();
+
+    long bright = myMap(l, 0, 255, 10, 255);
+    if (bright == 0)
+        bright = 1;
+
+    if (now.time().hour() >= 7 && now.time().hour() <= 21) {
+        bright = 255;
+    }
+
+    if (bright < 10) {
+        bright = 10;
+    }
+    if (bright != m_lastBrightValue) {
+//        setBacklight(true, bright);
+        m_lastBrightValue = bright;
+    }
+}
+
+void PrimaryDisplay::setBacklight(bool state, uint8_t brightness)
+{
+    QSettings settings(QSettings::IniFormat, QSettings::UserScope, "MythClock", "MythClock");
+
+    if (settings.contains("backlight")) {
+        QString sysfs = settings.value("backlight").toString();
+        QFile bl(sysfs);
+        if (bl.open(QIODevice::WriteOnly | QIODevice::Text)) {
+            QTextStream ts(&bl);
+            if (state == true)
+                ts << brightness;
+            else
+                ts << "0";
+
+            bl.close();
+        }
+        else {
+            qDebug() << __PRETTY_FUNCTION__ << ": Backlight:" << sysfs << "" << bl.errorString();
+        }
+    }
 }
 
 void PrimaryDisplay::setNYETimeout()
