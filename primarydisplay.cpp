@@ -24,6 +24,8 @@ PrimaryDisplay::PrimaryDisplay() : QMainWindow()
     int widthSettings = settings.value("width", 800).toInt();
     int heightSettings = settings.value("height", 480).toInt();
 
+    m_lastBrightValue = 256;
+
     QPalette pal(QColor(0,0,0));
     setBackgroundRole(QPalette::Window);
     pal.setColor(QPalette::Window, Qt::black);
@@ -42,7 +44,6 @@ PrimaryDisplay::PrimaryDisplay() : QMainWindow()
     QFont l("Roboto-Regular", 28);
     QFont p("Roboto-Regular", 100);
     QFont d("Roboto-Regular", 32);
-
 
     m_weatherWidget = new WeatherDisplay();
     m_weatherWidget->setFixedSize(widthSettings, heightSettings);
@@ -107,7 +108,6 @@ PrimaryDisplay::PrimaryDisplay() : QMainWindow()
 
     setNYETimeout();
 
-    enableBacklight(true);
     m_stackedWidget->setCurrentIndex(WidgetIndex::Primary);
     setCentralWidget(m_stackedWidget);
     m_states.start();
@@ -119,23 +119,78 @@ PrimaryDisplay::PrimaryDisplay() : QMainWindow()
         qDebug() << __PRETTY_FUNCTION__ << ": I can sense light";
         m_lux->go();
     }
+    setBacklight(true);
 
-    m_mqueue = new QMQueue();
+    m_environment = new Environment();
+    connect(m_environment, &Environment::environment, this, &PrimaryDisplay::environment);
+    connect(m_environment, &Environment::temperature , m_clockWidget, &ClockDisplay::temperature);
+    connect(m_environment, &Environment::humidity , m_clockWidget, &ClockDisplay::humidity);
+    m_environment->go();
 }
 
 PrimaryDisplay::~PrimaryDisplay() 
 {
 }
 
+void PrimaryDisplay::environment(double temp, double humidity)
+{
+    QMQTT::Message message;
+
+    message.setTopic("house/master/environment");
+
+    QJsonObject object;
+    object["temperature"] = temp;
+    object["humidity"] = humidity;
+    QJsonDocument doc(object);
+    message.setPayload(doc.toJson());
+    m_mqttClient->publish(message);
+}
+
+void PrimaryDisplay::temperature(double temp)
+{
+    QMQTT::Message message;
+
+    message.setTopic("house/master/temperature");
+
+    QJsonObject object;
+    object["temperature"] = temp;
+    QJsonDocument doc(object);
+    message.setPayload(doc.toJson());
+    m_mqttClient->publish(message);
+}
+
+void PrimaryDisplay::humidity(double humidity)
+{
+    QMQTT::Message message;
+
+    message.setTopic("house/master/humidity");
+
+    QJsonObject object;
+    object["humidity"] = humidity;
+    QJsonDocument doc(object);
+    message.setPayload(doc.toJson());
+    m_mqttClient->publish(message);
+}
+
 void PrimaryDisplay::lux(long l)
 {
-    long bright = myMap(l, m_lux->min(), m_lux->max(), 0, 255);
-    if (bright == 0)
-        bright = 255;
-    if (bright < 10)
-        bright = 10;
+    QDateTime now = QDateTime::currentDateTime();
 
-    m_mqueue->set(bright);
+    long bright = myMap(l, 0, 255, 10, 255);
+    if (bright == 0)
+        bright = 1;
+
+    if (now.time().hour() >= 7 && now.time().hour() <= 21) {
+        bright = 255;
+    }
+
+    if (bright < 10) {
+        bright = 10;
+    }
+    if (bright != m_lastBrightValue) {
+//        setBacklight(true, bright);
+        m_lastBrightValue = bright;
+    }
 }
 
 void PrimaryDisplay::showEvent(QShowEvent* event)
@@ -151,18 +206,14 @@ void PrimaryDisplay::setupBlankScreenTimers()
     QDateTime now = QDateTime::currentDateTime();
     int interval;
     
-    if (now.time().hour() >= 1 && now.time().hour() < 3) {
+    if (now.time().hour() >= 23) {
         interval = 0;
     }
-    else if (now.time().hour() == 0) {
-        QTime end(1,0,0);
-        interval = now.time().msecsTo(end);
-    }
+
     else {
-        QDateTime tomorrow = QDateTime::currentDateTime();
-        tomorrow = tomorrow.addDays(1);
-        tomorrow.setTime(QTime(1,0,0));
-        interval = now.msecsTo(tomorrow);
+        QTime eleven(23, 0, 0);
+        QTime now = QTime::currentTime();
+        interval = now.msecsTo(eleven);
     }
 
     qDebug() << __PRETTY_FUNCTION__ << ": Blanking screen in" << interval / 1000 << "seconds";
@@ -227,10 +278,10 @@ void PrimaryDisplay::showNYECountDown()
     emit startNYE();
 }
 
-void PrimaryDisplay::enableBacklight(bool state, uint8_t brightness)
+void PrimaryDisplay::setBacklight(bool state, uint8_t brightness)
 {
     QSettings settings(QSettings::IniFormat, QSettings::UserScope, "MythClock", "MythClock");
-    
+
     if (settings.contains("backlight")) {
         QString sysfs = settings.value("backlight").toString();
         QFile bl(sysfs);
@@ -244,7 +295,7 @@ void PrimaryDisplay::enableBacklight(bool state, uint8_t brightness)
             bl.close();
         }
         else {
-            qDebug() << __PRETTY_FUNCTION__ << ": Backlight not found at" << sysfs << "" << bl.errorString();
+            qDebug() << __PRETTY_FUNCTION__ << ": Backlight:" << sysfs << "" << bl.errorString();
         }
     }
 }
@@ -332,7 +383,7 @@ void PrimaryDisplay::showBlankScreen()
         interval = settings.value("blankinterval").toInt();
     }
     m_stackedWidget->setCurrentIndex(WidgetIndex::Blank);
-    enableBacklight(false);
+    setBacklight(false);
     qDebug() << __PRETTY_FUNCTION__ << ": sleeping for" << interval / 1000 << "seconds";
     m_endBlankScreen->setInterval(interval);
     m_endBlankScreen->setSingleShot(true);
@@ -341,8 +392,8 @@ void PrimaryDisplay::showBlankScreen()
 
 void PrimaryDisplay::endDimScreen()
 {
-    enableBacklight(true);
     m_bigClock->end();
+    setupBlankScreenTimers();
     qDebug() << __PRETTY_FUNCTION__;
 }
 
@@ -350,17 +401,13 @@ void PrimaryDisplay::showDimScreen()
 {
     QSettings settings(QSettings::IniFormat, QSettings::UserScope, "MythClock", "MythClock");
     int interval = ONE_HOUR * 2;
-    int dim = 100;
-    qDebug() << __PRETTY_FUNCTION__ << ": sleeping for" << interval / 1000 << "seconds";
 
     if (settings.contains("diminterval")) {
         interval = settings.value("diminterval").toInt();
     }
-    if (settings.contains("dimvalue")) {
-        dim = settings.value("dimvalue").toInt();
-    }
+
+    qDebug() << __PRETTY_FUNCTION__ << ": sleeping for" << interval / 1000 << "seconds";
     m_stackedWidget->setCurrentIndex(WidgetIndex::Primary);
-    enableBacklight(true, dim);
     m_endDimScreen->setInterval(interval);
     m_endDimScreen->setSingleShot(true);
     m_endDimScreen->start();

@@ -21,6 +21,7 @@ public slots:
 signals:
     void temperature(double temp);
     void humidity(double humidity);
+    void environment(double temp, double humidity);
 
 private:
     QString m_hwmon;

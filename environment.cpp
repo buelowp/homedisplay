@@ -49,5 +49,6 @@ void Environment::timeout()
         h = m_humidityStream->readAll().toInt();
         emit humidity(h / 1000);
         emit temperature((t / 1000) * 1.8 + 32);
+        emit environment((t / 1000) * 1.8 + 32, h / 1000);
     }
 }

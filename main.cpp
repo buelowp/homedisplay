@@ -16,12 +16,53 @@
 
 */
 
-#include <QApplication>
+#include <QtCore/QtCore>
+#include <QtGui/QtGui>
 #include "primarydisplay.h"
+
+QFile debugFile;
+
+void myMessageOutput(QtMsgType type, const QMessageLogContext &context, const QString &msg)
+{
+    QDateTime now = QDateTime::currentDateTime();
+    QTextStream out(&debugFile);
+    QTextStream cerr(stderr);
+
+    QByteArray localMsg = msg.toLocal8Bit();
+    switch (type) {
+    case QtDebugMsg:
+        if (debugFile.isOpen())
+            out << "[" << now.toString("dd.MM.yyyy hh:mm:ss.zzz") << "]" << " Debug: " << localMsg.constData() << " (" << context.function << ":" << context.line << ")" << Qt::endl;
+        cerr << "[" << now.toString("dd.MM.yyyy hh:mm:ss.zzz") << "]" << " Debug: " << localMsg.constData() << " (" << context.function << ":" << context.line << ")" << Qt::endl;
+        break;
+    case QtInfoMsg:
+        if (debugFile.isOpen())
+            out << "[" << now.toString("dd.MM.yyyy hh:mm:ss.zzz") << "]" << " Info: " << localMsg.constData() << " (" << context.function << ":" << context.line << ")" << Qt::endl;
+        cerr << "[" << now.toString("dd.MM.yyyy hh:mm:ss.zzz") << "]" << " Info: " << localMsg.constData() << " (" << context.function << ":" << context.line << ")" << Qt::endl;
+        break;
+    case QtWarningMsg:
+        if (debugFile.isOpen())
+            out << "[" << now.toString("dd.MM.yyyy hh:mm:ss.zzz") << "]" << " Warn: " << localMsg.constData() << " (" << context.function << ":" << context.line << ")" << Qt::endl;
+        cerr << "[" << now.toString("dd.MM.yyyy hh:mm:ss.zzz") << "]" << " Warn: " << localMsg.constData() << " (" << context.function << ":" << context.line << ")" << Qt::endl;
+        break;
+    case QtCriticalMsg:
+        if (debugFile.isOpen())
+            out << "[" << now.toString("dd.MM.yyyy hh:mm:ss.zzz") << "]" << " Critical: " << localMsg.constData() << " (" << context.function << ":" << context.line << ")" << Qt::endl;
+        cerr << "[" << now.toString("dd.MM.yyyy hh:mm:ss.zzz") << "]" << " Critical: " << localMsg.constData() << " (" << context.function << ":" << context.line << ")" << Qt::endl;
+        break;
+    case QtFatalMsg:
+        if (debugFile.isOpen())
+            out << "[" << now.toString("dd.MM.yyyy hh:mm:ss.zzz") << "]" << " Fatal: " << localMsg.constData() << " (" << context.function << ":" << context.line << ")" << Qt::endl;
+        cerr << "[" << now.toString("dd.MM.yyyy hh:mm:ss.zzz") << "]" << " Fatal: " << localMsg.constData() << " (" << context.function << ":" << context.line << ")" << Qt::endl;
+        abort();
+    }
+}
 
 int main(int argc, char **argv)
 {
+    QApplication::setSetuidAllowed(true);
     QApplication app (argc, argv);
+    qInstallMessageHandler(myMessageOutput);
     PrimaryDisplay frame;
     QSettings settings(QSettings::IniFormat, QSettings::UserScope, "MythClock", "MythClock");
 

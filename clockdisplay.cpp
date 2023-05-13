@@ -77,11 +77,6 @@ ClockDisplay::ClockDisplay(QFrame *parent) : QFrame(parent)
     m_time = QDateTime::currentDateTime();
     m_primaryClock->setText(m_time.time().toString("h:mm A"));
     m_primaryDate->setText(m_time.date().toString("dddd MMMM d, yyyy"));
-
-    m_env = new Environment();
-    connect(m_env, &Environment::temperature , this, &ClockDisplay::temperature);
-    connect(m_env, &Environment::humidity , this, &ClockDisplay::humidity);
-    m_env->go();
 }
 
 ClockDisplay::~ClockDisplay()

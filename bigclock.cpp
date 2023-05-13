@@ -13,8 +13,9 @@ BigClock::BigClock(QFrame *parent) : QFrame(parent)
     m_primaryDate->setAlignment(Qt::AlignCenter);
     m_primaryDate->setScaledContents(true);
 
-    QFont c("Roboto-Regular", 120);
-    QFont d("Roboto-Regular", 32);
+    QFont c("Roboto-Regular", 130);
+    c.setBold(true);
+    QFont d("Roboto-Regular", 34);
 
     m_primaryClock->setFont(c);
     m_primaryDate->setFont(d);
@@ -57,7 +58,7 @@ void BigClock::updateClock()
         m_primaryDate->setText(now.date().toString("dddd MMMM d, yyyy"));
     }
     if (now.time() != m_time.time()) {
-        m_primaryClock->setText(now.time().toString("h:mm A"));
+        m_primaryClock->setText(now.time().toString("h:mm"));
     }
     m_time = now;
 }

@@ -32,6 +32,7 @@
 #include "bigclock.h"
 #include "lux.h"
 #include "qmqueue.h"
+#include "environment.h"
 
 #define ONE_SECOND      1000
 #define ONE_MINUTE      (ONE_SECOND * 60)
@@ -53,8 +54,6 @@ signals:
     void stopNYE();
     void startLightning();
     void endLightning();
-//    void startBlankScreen();
-//    void hideBlankScreen();
     void startWeather();
     void stopWeather();
     void hideWeather(bool);
@@ -82,7 +81,10 @@ protected slots:
     void showDimScreen();
     void endDimScreen();
     void lux(long l);
-    
+    void temperature(double temp);
+    void humidity(double humidity);
+    void environment(double temp, double humidity);
+
 private:
     typedef enum WIDGET_INDEX:int {
         Primary = 0,
@@ -95,7 +97,7 @@ private:
 
     void setupMqttSubscriber();
     void setupBlankScreenTimers();
-    void enableBacklight(bool state, uint8_t brightness = 255);
+    void setBacklight(bool state, uint8_t brightness = 255);
     long myMap(long x, long in_min, long in_max, long out_min, long out_max)
     {
         long out = out_max - out_min;
@@ -117,6 +119,7 @@ private:
     BigClock *m_bigClock;
     Lux *m_lux;
     QMQueue *m_mqueue;
+    Environment *m_environment;
 
     QStackedWidget *m_stackedWidget;
     
@@ -135,6 +138,7 @@ private:
     QStateMachine m_states;
 
     bool m_showBigClock;
+    long m_lastBrightValue;
 };
 
 #endif /* MYTHFRAME_H_ */

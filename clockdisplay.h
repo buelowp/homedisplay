@@ -30,7 +30,6 @@ public slots:
     void humidity(double humidity);
 
 private:
-    Environment *m_env;
     QGridLayout *m_layout;
 
 	QLabel *m_primaryClock;
