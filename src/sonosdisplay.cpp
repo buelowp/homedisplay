@@ -137,7 +137,7 @@ void SonosDisplay::sonosRequestResult(QByteArray ba)
 
 void SonosDisplay::setupSonos()
 {
-    QSettings settings(QSettings::IniFormat, QSettings::UserScope, "MythClock", "MythClock");
+    QSettings settings(QSettings::IniFormat, QSettings::UserScope, "home", "homedisplay");
     QString hostname = settings.value("sonosserver").toString();
     QString port = settings.value("sonosport").toString();
     QHostInfo lookup = QHostInfo::fromName(hostname);
