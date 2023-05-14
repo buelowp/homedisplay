@@ -23,6 +23,6 @@ find_package (Qt5 COMPONENTS Sql REQUIRED)
 
 add_executable (${PROJECT_NAME} ${SOURCES})
 
-target_link_libraries (${PROJECT_NAME} Qt5::Widgets Qt5::Core Qt5::Sql Qt5::Qmqtt -lsunset)
+target_link_libraries (${PROJECT_NAME} Qt5::Widgets Qt5::Core Qt5::Sql Qt5::Qmqtt -lsunset -ltsl2561)
 
 install (TARGETS ${PROJECT_NAME} DESTINATION bin)

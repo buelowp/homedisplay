@@ -3,11 +3,11 @@
 
 #include "lux.h"
 
-Lux::Lux(uint8_t device, uint8_t address, QObject *parent) : QObject(parent), m_address(address), m_max(0)
+Lux::Lux(uint8_t device, uint8_t address, QObject *parent) : QObject(parent), m_address(address), m_max(0), m_interval(1000)
 {
     m_timer = new QTimer();
     connect(m_timer, &QTimer::timeout, this, &Lux::timeout);
-    m_timer->setInterval(1000);
+    m_timer->setInterval(m_interval);
 
     m_device = QString("/dev/i2c-%1").arg(device);
     if ((m_tsl = tsl2561_init(address, m_device.toLocal8Bit().data())) != NULL) {
@@ -30,6 +30,7 @@ void Lux::timeout()
 {
     long l = 0;
     l = tsl2561_lux(m_tsl);
+
     if (l > m_max)
         m_max = l;
 

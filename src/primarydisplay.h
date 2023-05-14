@@ -35,6 +35,7 @@
 #define ONE_SECOND      1000
 #define ONE_MINUTE      (ONE_SECOND * 60)
 #define ONE_HOUR        (ONE_MINUTE * 60)
+#define FIVE_HOURS      (ONE_HOUR * 60)
 
 class PrimaryDisplay : public QMainWindow {
     Q_OBJECT
@@ -82,19 +83,21 @@ protected slots:
     void endDimScreen();
     void lux(long l);
     void setBacklight(bool state, uint8_t brightness);
+    void showBigClock();
+    void endBigClock();
     
 private:
     typedef enum WIDGET_INDEX:int {
         Primary = 0,
+        Metadata,
         NYE,
         Blank,
         Weather,
         Bigclock,
-        Sonos,
     } WidgetIndex;
 
     void setupMqttSubscriber();
-    void setupBlankScreenTimers();
+    int getNightScreenTransitionTime();
     void enableBacklight(bool state, uint8_t brightness = 255);
     
     long myMap(long x, long in_min, long in_max, long out_min, long out_max)
@@ -129,6 +132,8 @@ private:
     QTimer *m_endBlankScreen;
     QTimer *m_endDimScreen;
     QTimer *m_endWeatherScreen;
+    QTimer *m_startBigClockScreen;
+    QTimer *m_endBigClockScreen;
 
     QLabel *m_lbCountdown;
 
