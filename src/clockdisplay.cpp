@@ -5,6 +5,8 @@
 
 ClockDisplay::ClockDisplay(QFrame *parent) : QFrame(parent)
 {
+    QSettings settings(QSettings::IniFormat, QSettings::UserScope, "home", "homedisplay");
+
     leftSideLayout();
     rightSideLayout();
 
@@ -16,15 +18,14 @@ ClockDisplay::ClockDisplay(QFrame *parent) : QFrame(parent)
     m_clockTimer = new QTimer();
     connect(m_clockTimer, &QTimer::timeout, this, &ClockDisplay::clockTimeout);
     m_clockTimer->setInterval(500);
-    m_clockTimer->start();
 
     clockTimeout();
 
     m_tempsDb = QSqlDatabase::addDatabase("QMARIADB");
-    m_tempsDb.setHostName("172.24.1.12");
-    m_tempsDb.setDatabaseName("weather");
-    m_tempsDb.setUserName("weather");
-    m_tempsDb.setPassword("vt!W7zaykM");
+    m_tempsDb.setHostName(settings.value("dbserver").toString());
+    m_tempsDb.setDatabaseName(settings.value("db").toString());
+    m_tempsDb.setUserName(settings.value("dbusername").toString());
+    m_tempsDb.setPassword(settings.value("dbpass").toString());
 
     m_weather = new Weather();
     connect(m_weather, &Weather::forecast, this, &ClockDisplay::forecastConditions);
@@ -32,9 +33,9 @@ ClockDisplay::ClockDisplay(QFrame *parent) : QFrame(parent)
     m_environment = new Environment();
     connect(m_environment, &Environment::conditions, this, &ClockDisplay::updateLocalConditions);
     m_environment->go();
-
-    m_weather->getToday();
     sunPositionUpdate();
+
+    QTimer::singleShot(60000, m_weather, &Weather::getToday);
 }
 
 ClockDisplay::~ClockDisplay()
@@ -46,7 +47,8 @@ void ClockDisplay::leftSideLayout()
     m_leftSideLayout = new QGridLayout();
     m_leftSideWidget = new QWidget();
 
-    m_primaryClock = new CustomLabel(50);
+    m_primaryClock = new CustomLabel(60);
+    m_primaryClock->setStyleSheet("QLabel{color:#FFFFC0}");
     m_primaryDate = new CustomLabel(20);
     m_localHighTempLabel = new CustomLabel("Today's High", 14);
     m_localHighTemp = new CustomLabel(18);
@@ -152,15 +154,29 @@ void ClockDisplay::setLocalLowHighTemps()
     else {
         qDebug() << __PRETTY_FUNCTION__ << "Unable to open database" << m_tempsDb.lastError().text();
     }
+
+    QTimer::singleShot(60000, this, &ClockDisplay::setLocalLowHighTemps);
 }
 
 void ClockDisplay::showEvent(QShowEvent* e)
 {
+    Q_UNUSED(e)
+    qDebug() << __PRETTY_FUNCTION__;
+    m_clockTimer->start();
+}
+
+void ClockDisplay::hideEvent(QHideEvent* e)
+{
+    Q_UNUSED(e)
+    qDebug() << __PRETTY_FUNCTION__;
+    m_clockTimer->stop();
 }
 
 void ClockDisplay::sunPositionUpdate()
 {
-    SunSet sun(LATITUDE, LONGITUDE, 0);;
+    QSettings settings(QSettings::IniFormat, QSettings::UserScope, "home", "homedisplay");
+
+    SunSet sun(settings.value("lat").toDouble(), settings.value("lon").toDouble(), 0);;
 
     QDateTime now = QDateTime::currentDateTime();
     QDateTime tomorrow;
@@ -191,6 +207,7 @@ void ClockDisplay::sunPositionUpdate()
     }
 
     setLocalLowHighTemps();
+    m_weather->getToday();
 }
 
 void ClockDisplay::clockTimeout()
@@ -268,6 +285,7 @@ void ClockDisplay::forecastConditions(double high, double low)
     m_forecastHighTemp->setStyleSheet(mapValues(high, 0, 100, 0, 320));
     m_forecastLowTemp->setText(QString("%1%2").arg(low, 0, 'f', 0).arg(QChar(176)));
     m_forecastLowTemp->setStyleSheet(mapValues(low, 0, 100, 0, 320));
+    QTimer::singleShot(TWENTYFOUR_HOURS, m_weather, &Weather::getToday);
 }
 
 void ClockDisplay::updateLocalConditions(double temp, double humidity)

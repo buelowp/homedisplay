@@ -61,7 +61,7 @@ void Weather::decodeResponse(QJsonDocument& doc)
 
 bool Weather::getToday()
 {
-    QSettings settings(QSettings::IniFormat, QSettings::UserScope, "home", "officedisplay");
+    QSettings settings(QSettings::IniFormat, QSettings::UserScope, "home", "homedisplay");
 
     QString key = settings.value("apikey").toString();
     QString zip = settings.value("zip").toString();

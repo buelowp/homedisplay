@@ -121,6 +121,7 @@ PrimaryDisplay::PrimaryDisplay() : QMainWindow()
 
     int interval = getNightScreenTransitionTime();
     if (settings.value("blankscreen").toBool()) {
+        qDebug() << __PRETTY_FUNCTION__ << ": Blank screen is enabled";
         connect(blank, SIGNAL(entered()), this, SLOT(showBlankScreen()));
         connect(blank, SIGNAL(exited()), this, SLOT(endBlankScreen()));
         m_startBlankScreen->setInterval(interval);
@@ -129,6 +130,7 @@ PrimaryDisplay::PrimaryDisplay() : QMainWindow()
     }
 
     if (settings.value("bigclock").toBool()) {
+        qDebug() << __PRETTY_FUNCTION__ << ": Big clock is enabled";
         connect(bigclock, &QState::entered, this, &PrimaryDisplay::showBigClock);
         connect(bigclock, &QState::exited, this, &PrimaryDisplay::endBigClock);
         m_startBigClockScreen->setInterval(interval);
@@ -177,17 +179,6 @@ int PrimaryDisplay::getNightScreenTransitionTime()
 
     qDebug() << __PRETTY_FUNCTION__ << ": Night screen in" << interval / 1000 << "seconds";
     return interval;
-}
-
-bool PrimaryDisplay::event(QEvent* event)
-{
-    if (event->type() == QEvent::MouseButtonRelease || event->type() == QEvent::TouchEnd) {
-        qDebug() << __PRETTY_FUNCTION__ << ": Starting weather widget";
-        emit startWeather();
-        return true;
-    }
-    
-    return QMainWindow::event(event);
 }
 
 void PrimaryDisplay::setupMqttSubscriber()
@@ -393,7 +384,6 @@ void PrimaryDisplay::showBlankScreen()
 void PrimaryDisplay::endDimScreen()
 {
     enableBacklight(true);
-    m_bigClock->end();
     qDebug() << __PRETTY_FUNCTION__;
 }
 
@@ -416,7 +406,6 @@ void PrimaryDisplay::showDimScreen()
     m_endDimScreen->setSingleShot(true);
     m_endDimScreen->start();
     m_stackedWidget->setCurrentIndex(WidgetIndex::Bigclock);
-    m_bigClock->begin();
 }
 
 void PrimaryDisplay::endBlankScreen()
@@ -429,6 +418,7 @@ void PrimaryDisplay::endBlankScreen()
 
 void PrimaryDisplay::showBigClock()
 {
+    qDebug() << __PRETTY_FUNCTION__;
     m_stackedWidget->setCurrentIndex(WidgetIndex::Bigclock);
     m_endBigClockScreen->setInterval(FIVE_HOURS);
     m_endBigClockScreen->setSingleShot(true);
@@ -437,6 +427,7 @@ void PrimaryDisplay::showBigClock()
 
 void PrimaryDisplay::endBigClock()
 {
+    qDebug() << __PRETTY_FUNCTION__;
     m_stackedWidget->setCurrentIndex(WidgetIndex::Primary);
     m_startBigClockScreen->setInterval(getNightScreenTransitionTime());
     m_startBigClockScreen->setSingleShot(true);

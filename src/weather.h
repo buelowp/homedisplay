@@ -18,10 +18,9 @@ public:
     Weather(QObject *parent = nullptr);
     ~Weather();
 
-    bool getToday();
-
 public slots:
     void requestFinished(QNetworkReply *reply);
+    bool getToday();
 
 signals:
     void forecast(double high, double low);

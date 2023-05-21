@@ -13,9 +13,7 @@
 #include "environment.h"
 #include "weather.h"
 #include "customlabel.h"
-
-#define LATITUDE    42.01379
-#define LONGITUDE   -87.9855
+#include "defines.h"
 
 class ClockDisplay : public QFrame
 {
@@ -30,9 +28,12 @@ public:
 signals:
     void startDimScreen();
 
+protected:
+    void showEvent(QShowEvent *e) override;
+    void hideEvent(QHideEvent *e) override;
+
 public slots:
     void clockTimeout();
-    void showEvent(QShowEvent *e) override;
     void updateLocalConditions(double temp, double humidity);
     void forecastConditions(double high, double low);
     void sunPositionUpdate();
@@ -84,6 +85,7 @@ private:
     CustomLabel *m_rainFallSymbol;
     CustomLabel *m_rainFall;
     QTimer *m_clockTimer;
+    QTimer *m_weatherUpdateTimer;
     QSqlDatabase m_tempsDb;
 };
 

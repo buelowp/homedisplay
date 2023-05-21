@@ -31,11 +31,7 @@
 #include "clockdisplay.h"
 #include "bigclock.h"
 #include "lux.h"
-
-#define ONE_SECOND      1000
-#define ONE_MINUTE      (ONE_SECOND * 60)
-#define ONE_HOUR        (ONE_MINUTE * 60)
-#define FIVE_HOURS      (ONE_HOUR * 60)
+#include "defines.h"
 
 class PrimaryDisplay : public QMainWindow {
     Q_OBJECT
@@ -45,7 +41,6 @@ public:
     virtual ~PrimaryDisplay();
 
 protected:
-    bool event(QEvent *event) override;
     void showEvent(QShowEvent *event) override;
 
 signals:
@@ -89,11 +84,11 @@ protected slots:
 private:
     typedef enum WIDGET_INDEX:int {
         Primary = 0,
-        Metadata,
         NYE,
         Blank,
         Weather,
         Bigclock,
+        Metadata,
     } WidgetIndex;
 
     void setupMqttSubscriber();
