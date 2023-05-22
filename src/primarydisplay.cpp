@@ -110,8 +110,8 @@ PrimaryDisplay::PrimaryDisplay() : QMainWindow()
 
     setNYETimeout();
 
-    m_lux = new Lux();
     if (settings.value("usetsl2561").toBool()) {
+        m_lux = new Lux();
         connect(m_lux, &Lux::lux, this, &PrimaryDisplay::lux);
         if (m_lux->isOpen()) {
             qDebug() << __PRETTY_FUNCTION__ << ": I can sense light";
@@ -138,6 +138,11 @@ PrimaryDisplay::PrimaryDisplay() : QMainWindow()
         m_startBigClockScreen->start();
     }
 
+    m_environment = new Environment();
+    connect(m_environment, &Environment::conditions, m_clockWidget, &ClockDisplay::updateLocalConditions);
+    connect(m_environment, &Environment::conditions, this, &PrimaryDisplay::updateLocalConditions);
+    m_environment->go();
+
     enableBacklight(true);
     m_stackedWidget->setCurrentIndex(WidgetIndex::Primary);
     setCentralWidget(m_stackedWidget);
@@ -148,6 +153,21 @@ PrimaryDisplay::PrimaryDisplay() : QMainWindow()
 
 PrimaryDisplay::~PrimaryDisplay() 
 {
+}
+
+void PrimaryDisplay::updateLocalConditions(double temp, double humidity)
+{
+    QSettings settings(QSettings::IniFormat, QSettings::UserScope, "home", "homedisplay");
+    QMQTT::Message message;
+    QString topic(QString("house/%1/environment").arg(settings.value("localconditionstopic").toString()));
+
+    message.setTopic(topic);
+    QJsonObject object;
+    object["temperature"] = temp;
+    object["humidity"] = humidity;
+    QJsonDocument doc(object);
+    message.setPayload(doc.toJson());
+    m_mqttClient->publish(message);
 }
 
 void PrimaryDisplay::showEvent(QShowEvent* event)

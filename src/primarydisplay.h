@@ -31,6 +31,7 @@
 #include "clockdisplay.h"
 #include "bigclock.h"
 #include "lux.h"
+#include "environment.h"
 #include "defines.h"
 
 class PrimaryDisplay : public QMainWindow {
@@ -80,6 +81,7 @@ protected slots:
     void setBacklight(bool state, uint8_t brightness);
     void showBigClock();
     void endBigClock();
+    void updateLocalConditions(double temp, double humidity);
     
 private:
     typedef enum WIDGET_INDEX:int {
@@ -115,6 +117,7 @@ private:
     ClockDisplay *m_clockWidget;
     BigClock *m_bigClock;
     Lux *m_lux;
+    Environment *m_environment;
 
     QStackedWidget *m_stackedWidget;
     
