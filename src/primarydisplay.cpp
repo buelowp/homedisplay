@@ -388,7 +388,6 @@ void PrimaryDisplay::showBlankScreen()
 {
     QSettings settings(QSettings::IniFormat, QSettings::UserScope, "home", "homedisplay");
     int interval = ONE_HOUR * 2;
-    qDebug() << __PRETTY_FUNCTION__ << ": sleeping for" << interval / 1000 << "seconds";
     
     if (settings.contains("blankinterval")) {
         interval = settings.value("blankinterval").toInt();
