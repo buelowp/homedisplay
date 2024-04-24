@@ -18,14 +18,12 @@ public:
     BigClock(QFrame *parent = nullptr);
     ~BigClock();
 
-    void begin();
-    void end();
-
 public slots:
     void updateClock();
 
 protected:
     void showEvent(QShowEvent *e) override;
+    void hideEvent(QHideEvent *e) override;
 
 private:
     QGridLayout *m_layout;

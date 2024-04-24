@@ -23,7 +23,7 @@ int main(int argc, char **argv)
 {
     QApplication app (argc, argv);
     PrimaryDisplay frame;
-    QSettings settings(QSettings::IniFormat, QSettings::UserScope, "MythClock", "MythClock");
+    QSettings settings(QSettings::IniFormat, QSettings::UserScope, "home", "homedisplay");
 
     qDebug() << __PRETTY_FUNCTION__ << ": debug is" << settings.value("debug").toBool();
     if (!settings.value("debug").toBool()) {

@@ -35,17 +35,15 @@ BigClock::~BigClock()
 
 void BigClock::showEvent(QShowEvent* e)
 {
+    Q_UNUSED(e)
     qDebug() << __PRETTY_FUNCTION__;
-    updateClock();
-}
-
-void BigClock::begin()
-{
     m_updateTimer->start();
 }
 
-void BigClock::end()
+void BigClock::hideEvent(QHideEvent* e)
 {
+    Q_UNUSED(e)
+    qDebug() << __PRETTY_FUNCTION__;
     m_updateTimer->stop();
 }
 

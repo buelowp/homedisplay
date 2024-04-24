@@ -20,7 +20,7 @@
 
 PrimaryDisplay::PrimaryDisplay() : QMainWindow() 
 {
-    QSettings settings(QSettings::IniFormat, QSettings::UserScope, "MythClock", "MythClock");
+    QSettings settings(QSettings::IniFormat, QSettings::UserScope, "home", "homedisplay");
     int widthSettings = settings.value("width", 800).toInt();
     int heightSettings = settings.value("height", 480).toInt();
 
@@ -56,19 +56,20 @@ PrimaryDisplay::PrimaryDisplay() : QMainWindow()
 
     m_stackedWidget = new QStackedWidget();
     m_stackedWidget->addWidget(m_clockWidget);
-    m_stackedWidget->addWidget(m_sonosWidget);
     m_stackedWidget->addWidget(m_nyeLayoutWidget);
     m_stackedWidget->addWidget(m_blankLayoutWidget);
     m_stackedWidget->addWidget(m_weatherWidget);
     m_stackedWidget->addWidget(m_bigClock);
-        
+    m_stackedWidget->addWidget(m_sonosWidget);
+
     m_endWeatherScreen = new QTimer(this);
     connect(m_endWeatherScreen, &QTimer::timeout, this, &PrimaryDisplay::endWeatherScreen);
 
     m_startBlankScreen = new QTimer(this);
     m_endBlankScreen = new QTimer(this);
     m_endDimScreen = new QTimer(this);
-    setupBlankScreenTimers();
+    m_startBigClockScreen = new QTimer(this);
+    m_endBigClockScreen = new QTimer(this);
   
     setupMqttSubscriber();
         
@@ -76,46 +77,97 @@ PrimaryDisplay::PrimaryDisplay() : QMainWindow()
     QState *metadata = new QState();
     QState *nye = new QState();
     QState *blank = new QState();
-    QState *dim = new QState();
     QState *weather = new QState();
+    QState *bigclock = new QState();
 
     nye->addTransition(this, SIGNAL(stopNYE()), primary);
     primary->addTransition(m_sonosWidget, SIGNAL(startSonos()), metadata);
     primary->addTransition(this, SIGNAL(startNYE()), nye);
-    primary->addTransition(m_startBlankScreen, &QTimer::timeout, dim);
-    dim->addTransition(m_endDimScreen, SIGNAL(timeout()), primary);
+    primary->addTransition(m_startBlankScreen, &QTimer::timeout, blank);
     primary->addTransition(this, SIGNAL(startWeather()), weather);
+    primary->addTransition(m_startBigClockScreen, &QTimer::timeout, bigclock);
     metadata->addTransition(this, SIGNAL(startNYE()), nye);
     metadata->addTransition(this, &PrimaryDisplay::startWeather, weather);
     metadata->addTransition(m_sonosWidget, SIGNAL(endSonos()), primary);
     weather->addTransition(this, SIGNAL(hideWeatherScreen()), primary);
-    
+    blank->addTransition(m_endBlankScreen, SIGNAL(timeout()), primary);
+    bigclock->addTransition(m_endBigClockScreen, &QTimer::timeout, primary);
+
     connect(metadata, SIGNAL(entered()), this, SLOT(showMetadataScreen()));
     connect(primary, SIGNAL(entered()), this, SLOT(showPrimaryScreen()));
     connect(nye, SIGNAL(entered()), this, SLOT(showNYEScreen()));
-    connect(dim, SIGNAL(entered()), this, SLOT(showDimScreen()));
-    connect(dim, SIGNAL(exited()), this, SLOT(endDimScreen()));
     connect(weather, SIGNAL(entered()), this, SLOT(showWeatherScreen()));
+    connect(bigclock, &QState::entered, this, &PrimaryDisplay::showBigClock);
+    connect(blank, &QState::entered, this, &PrimaryDisplay::showBlankScreen);
 
     m_states.addState(primary);
     m_states.addState(metadata);
     m_states.addState(nye);
     m_states.addState(blank);
-    m_states.addState(dim);
     m_states.addState(weather);
+    m_states.addState(bigclock);
     m_states.setInitialState(primary);
 
     setNYETimeout();
+
+    if (settings.value("usetsl2561").toBool()) {
+        m_lux = new Lux();
+        connect(m_lux, &Lux::lux, this, &PrimaryDisplay::lux);
+        if (m_lux->isOpen()) {
+            qDebug() << __PRETTY_FUNCTION__ << ": I can sense light";
+            m_lux->go();
+        }
+    }
+
+    int interval = getNightScreenTransitionTime();
+    if (settings.value("blankscreen").toBool()) {
+        qDebug() << __PRETTY_FUNCTION__ << ": Blank screen is enabled";
+        connect(blank, SIGNAL(entered()), this, SLOT(showBlankScreen()));
+        connect(blank, SIGNAL(exited()), this, SLOT(endBlankScreen()));
+        m_startBlankScreen->setInterval(interval);
+        m_startBlankScreen->setSingleShot(true);
+        m_startBlankScreen->start();
+    }
+
+    if (settings.value("bigclock").toBool()) {
+        qDebug() << __PRETTY_FUNCTION__ << ": Big clock is enabled";
+        connect(bigclock, &QState::entered, this, &PrimaryDisplay::showBigClock);
+        connect(bigclock, &QState::exited, this, &PrimaryDisplay::endBigClock);
+        m_startBigClockScreen->setInterval(interval);
+        m_startBigClockScreen->setSingleShot(true);
+        m_startBigClockScreen->start();
+    }
+
+    m_environment = new Environment();
+    connect(m_environment, &Environment::conditions, m_clockWidget, &ClockDisplay::updateLocalConditions);
+    connect(m_environment, &Environment::conditions, this, &PrimaryDisplay::updateLocalConditions);
+    m_environment->go();
 
     enableBacklight(true);
     m_stackedWidget->setCurrentIndex(WidgetIndex::Primary);
     setCentralWidget(m_stackedWidget);
     m_states.start();
-    m_sonosWidget->go();
+    if (settings.value("usesonos").toBool() == true)
+        m_sonosWidget->go();
 }
 
 PrimaryDisplay::~PrimaryDisplay() 
 {
+}
+
+void PrimaryDisplay::updateLocalConditions(double temp, double humidity)
+{
+    QSettings settings(QSettings::IniFormat, QSettings::UserScope, "home", "homedisplay");
+    QMQTT::Message message;
+    QString topic(QString("house/%1/environment").arg(settings.value("localconditionstopic").toString()));
+
+    message.setTopic(topic);
+    QJsonObject object;
+    object["temperature"] = temp;
+    object["humidity"] = humidity;
+    QJsonDocument doc(object);
+    message.setPayload(doc.toJson());
+    m_mqttClient->publish(message);
 }
 
 void PrimaryDisplay::showEvent(QShowEvent* event)
@@ -126,10 +178,10 @@ void PrimaryDisplay::showEvent(QShowEvent* event)
     m_clockWidget->setFixedSize(width(), height());
 }
 
-void PrimaryDisplay::setupBlankScreenTimers()
+int PrimaryDisplay::getNightScreenTransitionTime()
 {
     QDateTime now = QDateTime::currentDateTime();
-    int interval;
+    int interval = 1000;
     
     if (now.time().hour() >= 1 && now.time().hour() < 3) {
         interval = 0;
@@ -145,26 +197,13 @@ void PrimaryDisplay::setupBlankScreenTimers()
         interval = now.msecsTo(tomorrow);
     }
 
-    qDebug() << __PRETTY_FUNCTION__ << ": Blanking screen in" << interval / 1000 << "seconds";
-    m_startBlankScreen->setInterval(interval);        
-    m_startBlankScreen->setSingleShot(true);
-    m_startBlankScreen->start();
-}
-
-bool PrimaryDisplay::event(QEvent* event)
-{
-    if (event->type() == QEvent::MouseButtonRelease || event->type() == QEvent::TouchEnd) {
-        qDebug() << __PRETTY_FUNCTION__ << ": Starting weather widget";
-        emit startWeather();
-        return true;
-    }
-    
-    return QMainWindow::event(event);
+    qDebug() << __PRETTY_FUNCTION__ << ": Night screen in" << interval / 1000 << "seconds";
+    return interval;
 }
 
 void PrimaryDisplay::setupMqttSubscriber()
 {
-    QSettings settings(QSettings::IniFormat, QSettings::UserScope, "MythClock", "MythClock");
+    QSettings settings(QSettings::IniFormat, QSettings::UserScope, "home", "homedisplay");
     QString hostname = settings.value("mqttserver").toString();
     QHostInfo lookup = QHostInfo::fromName(hostname);
     QList<QHostAddress> addresses = lookup.addresses();
@@ -181,6 +220,49 @@ void PrimaryDisplay::setupMqttSubscriber()
     connect(m_mqttClient, SIGNAL(disconnectedEvent()), this, SLOT(disconnectedEvent()));
     connect(m_mqttClient, SIGNAL(messageReceivedOnTopic(QString, QString)), this, SLOT(messageReceivedOnTopic(QString, QString)));
     m_mqttClient->connectToHost();
+}
+
+void PrimaryDisplay::lux(long l)
+{
+    QDateTime now = QDateTime::currentDateTime();
+
+    long bright = myMap(l, 0, 255, 10, 255);
+    if (bright == 0)
+        bright = 10;
+
+    if (now.time().hour() >= 7 && now.time().hour() <= 21) {
+        bright = 255;
+    }
+
+    if (bright < 10) {
+        bright = 10;
+    }
+    if (bright != m_lastBrightValue) {
+//        setBacklight(true, bright);
+        m_lastBrightValue = bright;
+    }
+}
+
+void PrimaryDisplay::setBacklight(bool state, uint8_t brightness)
+{
+    QSettings settings(QSettings::IniFormat, QSettings::UserScope, "MythClock", "MythClock");
+
+    if (settings.contains("backlight")) {
+        QString sysfs = settings.value("backlight").toString();
+        QFile bl(sysfs);
+        if (bl.open(QIODevice::WriteOnly | QIODevice::Text)) {
+            QTextStream ts(&bl);
+            if (state == true)
+                ts << brightness;
+            else
+                ts << "0";
+
+            bl.close();
+        }
+        else {
+            qDebug() << __PRETTY_FUNCTION__ << ": Backlight:" << sysfs << "" << bl.errorString();
+        }
+    }
 }
 
 void PrimaryDisplay::setNYETimeout()
@@ -209,7 +291,7 @@ void PrimaryDisplay::showNYECountDown()
 
 void PrimaryDisplay::enableBacklight(bool state, uint8_t brightness)
 {
-    QSettings settings(QSettings::IniFormat, QSettings::UserScope, "MythClock", "MythClock");
+    QSettings settings(QSettings::IniFormat, QSettings::UserScope, "home", "homedisplay");
     
     if (settings.contains("backlight")) {
         QString sysfs = settings.value("backlight").toString();
@@ -283,7 +365,7 @@ void PrimaryDisplay::endMetadataScreen()
 void PrimaryDisplay::showMetadataScreen()
 {
     qDebug() << __PRETTY_FUNCTION__;
-    m_stackedWidget->setCurrentIndex(WidgetIndex::Sonos);
+    m_stackedWidget->setCurrentIndex(WidgetIndex::Metadata);
 }
 
 void PrimaryDisplay::endWeatherScreen()
@@ -304,9 +386,8 @@ void PrimaryDisplay::showWeatherScreen()
 
 void PrimaryDisplay::showBlankScreen()
 {
-    QSettings settings(QSettings::IniFormat, QSettings::UserScope, "MythClock", "MythClock");
+    QSettings settings(QSettings::IniFormat, QSettings::UserScope, "home", "homedisplay");
     int interval = ONE_HOUR * 2;
-    qDebug() << __PRETTY_FUNCTION__ << ": sleeping for" << interval / 1000 << "seconds";
     
     if (settings.contains("blankinterval")) {
         interval = settings.value("blankinterval").toInt();
@@ -322,13 +403,12 @@ void PrimaryDisplay::showBlankScreen()
 void PrimaryDisplay::endDimScreen()
 {
     enableBacklight(true);
-    m_bigClock->end();
     qDebug() << __PRETTY_FUNCTION__;
 }
 
 void PrimaryDisplay::showDimScreen()
 {
-    QSettings settings(QSettings::IniFormat, QSettings::UserScope, "MythClock", "MythClock");
+    QSettings settings(QSettings::IniFormat, QSettings::UserScope, "home", "homedisplay");
     int interval = ONE_HOUR * 2;
     int dim = 100;
     qDebug() << __PRETTY_FUNCTION__ << ": sleeping for" << interval / 1000 << "seconds";
@@ -345,13 +425,32 @@ void PrimaryDisplay::showDimScreen()
     m_endDimScreen->setSingleShot(true);
     m_endDimScreen->start();
     m_stackedWidget->setCurrentIndex(WidgetIndex::Bigclock);
-    m_bigClock->begin();
 }
 
 void PrimaryDisplay::endBlankScreen()
 {
     qDebug() << __PRETTY_FUNCTION__;
-    setupBlankScreenTimers();
+    m_startBlankScreen->setInterval(getNightScreenTransitionTime());
+    m_startBlankScreen->setSingleShot(true);
+    m_startBlankScreen->start();
+}
+
+void PrimaryDisplay::showBigClock()
+{
+    qDebug() << __PRETTY_FUNCTION__;
+    m_stackedWidget->setCurrentIndex(WidgetIndex::Bigclock);
+    m_endBigClockScreen->setInterval(FIVE_HOURS);
+    m_endBigClockScreen->setSingleShot(true);
+    m_endBigClockScreen->start();
+}
+
+void PrimaryDisplay::endBigClock()
+{
+    qDebug() << __PRETTY_FUNCTION__;
+    m_stackedWidget->setCurrentIndex(WidgetIndex::Primary);
+    m_startBigClockScreen->setInterval(getNightScreenTransitionTime());
+    m_startBigClockScreen->setSingleShot(true);
+    m_startBigClockScreen->start();
 }
 
 void PrimaryDisplay::messageReceivedOnTopic(QString t, QString p)

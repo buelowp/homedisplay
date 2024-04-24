@@ -1,9 +1,9 @@
 cmake_minimum_required (VERSION 3.1.0)
 
-project (piclock)
+project (homedisplay)
 
-FILE (GLOB SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/*.cpp")
-FILE (GLOB HEADERS "${CMAKE_CURRENT_SOURCE_DIR}/*.h")
+FILE (GLOB SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp")
+FILE (GLOB HEADERS "${CMAKE_CURRENT_SOURCE_DIR}/src/*.h")
 
 set (CMAKE_CXX_STANDARD 17)
 set (THREADS_PREFER_PTHREAD_FLAG ON)
@@ -19,9 +19,10 @@ find_package (Threads REQUIRED)
 find_package (Qt5 COMPONENTS Widgets REQUIRED)
 find_package (Qt5 COMPONENTS Core REQUIRED)
 find_package (Qt5 COMPONENTS Qmqtt REQUIRED)
+find_package (Qt5 COMPONENTS Sql REQUIRED)
 
 add_executable (${PROJECT_NAME} ${SOURCES})
 
-target_link_libraries (${PROJECT_NAME} Qt5::Widgets Qt5::Core Qt5::Qmqtt)
+target_link_libraries (${PROJECT_NAME} Qt5::Widgets Qt5::Core Qt5::Sql Qt5::Qmqtt -lsunset -ltsl2561)
 
 install (TARGETS ${PROJECT_NAME} DESTINATION bin)

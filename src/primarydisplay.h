@@ -30,10 +30,9 @@
 #include "sonosdisplay.h"
 #include "clockdisplay.h"
 #include "bigclock.h"
-
-#define ONE_SECOND      1000
-#define ONE_MINUTE      (ONE_SECOND * 60)
-#define ONE_HOUR        (ONE_MINUTE * 60)
+#include "lux.h"
+#include "environment.h"
+#include "defines.h"
 
 class PrimaryDisplay : public QMainWindow {
     Q_OBJECT
@@ -43,7 +42,6 @@ public:
     virtual ~PrimaryDisplay();
 
 protected:
-    bool event(QEvent *event) override;
     void showEvent(QShowEvent *event) override;
 
 signals:
@@ -79,21 +77,36 @@ protected slots:
     void updateNYEClock();
     void showDimScreen();
     void endDimScreen();
+    void lux(long l);
+    void setBacklight(bool state, uint8_t brightness);
+    void showBigClock();
+    void endBigClock();
+    void updateLocalConditions(double temp, double humidity);
     
 private:
     typedef enum WIDGET_INDEX:int {
         Primary = 0,
-        Sonos,
         NYE,
         Blank,
         Weather,
         Bigclock,
+        Metadata,
     } WidgetIndex;
 
     void setupMqttSubscriber();
-    void setupBlankScreenTimers();
+    int getNightScreenTransitionTime();
     void enableBacklight(bool state, uint8_t brightness = 255);
     
+    long myMap(long x, long in_min, long in_max, long out_min, long out_max)
+    {
+        long out = out_max - out_min;
+        long in = (in_max - in_min) + out_min;
+        if (in > 0) {
+            return (x - in_min) * out / in;
+        }
+        return 255;
+    }
+
     QMqttSubscriber *m_mqttClient;
 
     QWidget *m_primaryLayoutWidget;
@@ -103,6 +116,8 @@ private:
     WeatherDisplay *m_weatherWidget;
     ClockDisplay *m_clockWidget;
     BigClock *m_bigClock;
+    Lux *m_lux;
+    Environment *m_environment;
 
     QStackedWidget *m_stackedWidget;
     
@@ -115,12 +130,16 @@ private:
     QTimer *m_endBlankScreen;
     QTimer *m_endDimScreen;
     QTimer *m_endWeatherScreen;
+    QTimer *m_startBigClockScreen;
+    QTimer *m_endBigClockScreen;
 
     QLabel *m_lbCountdown;
 
     QStateMachine m_states;
 
     bool m_showBigClock;
+
+    long m_lastBrightValue;
 };
 
 #endif /* MYTHFRAME_H_ */
