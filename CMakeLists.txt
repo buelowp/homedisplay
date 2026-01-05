@@ -16,13 +16,13 @@ if (CMAKE_VERSION VERSION_LESS "3.7.0")
 endif()
 
 find_package (Threads REQUIRED)
-find_package (Qt5 COMPONENTS Widgets REQUIRED)
-find_package (Qt5 COMPONENTS Core REQUIRED)
-find_package (Qt5 COMPONENTS Qmqtt REQUIRED)
-find_package (Qt5 COMPONENTS Sql REQUIRED)
+find_package (Qt6 COMPONENTS Widgets REQUIRED)
+find_package (Qt6 COMPONENTS Core REQUIRED)
+find_package (Qt6 COMPONENTS QtMqtt REQUIRED)
+find_package (Qt6 COMPONENTS Sql REQUIRED)
 
 add_executable (${PROJECT_NAME} ${SOURCES})
 
-target_link_libraries (${PROJECT_NAME} Qt5::Widgets Qt5::Core Qt5::Sql Qt5::Qmqtt -lsunset -ltsl2561)
+target_link_libraries (${PROJECT_NAME} Qt6::Widgets Qt6::Core Qt6::Sql Qt6::QtMqtt -lsunset -ltsl2561)
 
 install (TARGETS ${PROJECT_NAME} DESTINATION bin)

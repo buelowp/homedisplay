@@ -204,21 +204,17 @@ int PrimaryDisplay::getNightScreenTransitionTime()
 void PrimaryDisplay::setupMqttSubscriber()
 {
     QSettings settings(QSettings::IniFormat, QSettings::UserScope, "home", "homedisplay");
-    QString hostname = settings.value("mqttserver").toString();
-    QHostInfo lookup = QHostInfo::fromName(hostname);
-    QList<QHostAddress> addresses = lookup.addresses();
+    m_mqttClient = new QMqttClient;
+    m_hostName = QString("%1-%2").arg(QHostInfo::localHostName()).arg(QRandomGenerator::global()->generate());
+    m_mqttClient->setClientId(m_hostName);
+    m_mqttClient->setAutoKeepAlive(true);
     
-    if (addresses.size() > 0) {
-        m_mqttClient = new QMqttSubscriber(addresses.at(0), settings.value("mqttport").toInt(), this);
-        qDebug() << __PRETTY_FUNCTION__ << ": setting host address to" << addresses.at(0);
-    }
-    else {
-        m_mqttClient = new QMqttSubscriber(QHostAddress::LocalHost, settings.value("mqttport").toInt(), this);
-        qDebug() << __PRETTY_FUNCTION__ << ": Using localhost";
-    }
-    connect(m_mqttClient, SIGNAL(connectionComplete()), this, SLOT(connectionComplete()));
-    connect(m_mqttClient, SIGNAL(disconnectedEvent()), this, SLOT(disconnectedEvent()));
-    connect(m_mqttClient, SIGNAL(messageReceivedOnTopic(QString, QString)), this, SLOT(messageReceivedOnTopic(QString, QString)));
+    connect(m_mqttClient, SIGNAL(connected()), this, SLOT(connected()));
+    connect(m_mqttClient, SIGNAL(disconnected()), this, SLOT(disconnected()));
+    connect(m_mqttClient, &QMqttClient::errorChanged, this, &MainWindow::error);
+    connect(m_mqttClient, &QMqttClient::messageReceived, this, &MainWindow::messageReceived);
+    m_mqttClient->setHostname(settings.value("mqttserver", "172.24.1.2").toString());
+    m_mqttClient->setPort(settings.value("mqttport", 1883).toInt());
     m_mqttClient->connectToHost();
 }
 
@@ -340,16 +336,21 @@ void PrimaryDisplay::showNYEScreen()
         emit stopNYE();
 }
 
-void PrimaryDisplay::connectionComplete()
+void PrimaryDisplay::connected()
 {
     m_mqttClient->subscribe("weather/#");
     m_mqttClient->subscribe("garden/#");
 }
 
-void PrimaryDisplay::disconnectedEvent()
+void PrimaryDisplay::disconnected()
 {
     qDebug() << __PRETTY_FUNCTION__ << ": MQTT connection lost";
     m_mqttClient->connectToHost();
+}
+
+void PrimaryDisplay::errorChanged(QMqttClient::ClientError error)
+{
+    qDebug() << __PRETTY_FUNCTION__ << ":" << error;
 }
 
 void PrimaryDisplay::lightningTimeout()
@@ -454,13 +455,17 @@ void PrimaryDisplay::endBigClock()
     m_startBigClockScreen->start();
 }
 
-void PrimaryDisplay::messageReceivedOnTopic(QString t, QString p)
+void PrimaryDisplay::messageReceived(const QByteArray &message, const QMqttTopicName &topic)
 {
-    QJsonDocument doc = QJsonDocument::fromJson(p.toLocal8Bit());
+    QJsonParserError error;
+    QJsonDocument doc = QJsonDocument::fromJson(message, &error);
     
     if (doc.isObject()) {
         QJsonObject parent = doc.object();
-        m_weatherWidget->updateDisplay(t, parent);
-        m_clockWidget->updateDisplay(t, parent);
+        m_weatherWidget->updateDisplay(topic.name(), parent);
+        m_clockWidget->updateDisplay(topic.name(), parent);
+    }
+    else {
+        qDebug() << __PRETTY_FUNCTION__ << ":" << error.error();
     }
 }    
