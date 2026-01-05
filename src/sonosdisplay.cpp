@@ -51,8 +51,8 @@ SonosDisplay::SonosDisplay(QWidget *parent) : QWidget(parent)
     m_layout->setAlignment(m_albumArt, Qt::AlignTop);
     setLayout(m_layout);
 
-//    setupSonos();
-//    installEventFilter(this);
+    setupSonos();
+    installEventFilter(this);
 }
 
 SonosDisplay::~SonosDisplay()
@@ -167,6 +167,7 @@ void SonosDisplay::getAlbumArt(QUrl url)
     QByteArray base64;
 
     QNetworkRequest request;
+    qDebug() << __PRETTY_FUNCTION__ << ":" << url;
     request.setUrl(url);
     request.setRawHeader("User-Agent", "SonosRequest 1.0");
     m_namAlbumArt->get(request);

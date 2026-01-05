@@ -315,7 +315,7 @@ void PrimaryDisplay::showPrimaryScreen()
 {
     qDebug() << __PRETTY_FUNCTION__;
     m_stackedWidget->setCurrentIndex(WidgetIndex::Primary);
-    m_stackedWidget->move(0,0);
+//    m_stackedWidget->move(0,0);
 }
 
 void PrimaryDisplay::updateNYEClock()
@@ -430,6 +430,7 @@ void PrimaryDisplay::showDimScreen()
 void PrimaryDisplay::endBlankScreen()
 {
     qDebug() << __PRETTY_FUNCTION__;
+    enableBacklight(true);
     m_startBlankScreen->setInterval(getNightScreenTransitionTime());
     m_startBlankScreen->setSingleShot(true);
     m_startBlankScreen->start();
