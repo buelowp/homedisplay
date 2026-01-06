@@ -23,10 +23,10 @@
 #include <QtNetwork/QtNetwork>
 #include <QtCore/QtCore>
 #include <QtWidgets/QtWidgets>
-#include <QtQmqtt/QtQmqtt>
+#include <QtMqtt/QtMqtt>
+#include <QtStateMachine/QtStateMachine>
 
 #include "weatherdisplay.h"
-#include "qmqttsubscriber.h"
 #include "sonosdisplay.h"
 #include "clockdisplay.h"
 #include "bigclock.h"
@@ -66,9 +66,6 @@ protected slots:
 	void showNYEScreen();
     void setNYETimeout();
     void showBlankScreen();
-    void messageReceivedOnTopic(QString, QString);
-    void connectionComplete();
-    void disconnectedEvent();
     void lightningTimeout();
     void endMetadataScreen();
     void endWeatherScreen();
@@ -82,6 +79,10 @@ protected slots:
     void showBigClock();
     void endBigClock();
     void updateLocalConditions(double temp, double humidity);
+    void connected();
+    void disconnected();
+    void errorChanged(QMqttClient::ClientError error);
+    void messageReceived(const QByteArray &message, const QMqttTopicName &topic);
     
 private:
     typedef enum WIDGET_INDEX:int {
@@ -107,7 +108,7 @@ private:
         return 255;
     }
 
-    QMqttSubscriber *m_mqttClient;
+    QMqttClient *m_mqttClient;
 
     QWidget *m_primaryLayoutWidget;
     QWidget *m_nyeLayoutWidget;
@@ -140,6 +141,8 @@ private:
     bool m_showBigClock;
 
     long m_lastBrightValue;
+
+    QString m_hostName;
 };
 
 #endif /* MYTHFRAME_H_ */

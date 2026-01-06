@@ -9,8 +9,8 @@ Environment::Environment(int interval, QObject *parent) : QObject(parent), m_int
     connect(m_timer, &QTimer::timeout, this, &Environment::timeout);
     m_timer->setInterval(m_interval);
 
-    m_temp = new QFile("/sys/class/hwmon/hwmon2/temp1_input");
-    m_humidity = new QFile("/sys/class/hwmon/hwmon2/humidity1_input");
+    m_temp = new QFile("/sys/class/hwmon/hwmon1/temp1_input");
+    m_humidity = new QFile("/sys/class/hwmon/hwmon1/humidity1_input");
     if (m_temp->open(QFile::ReadOnly)) {
         m_tempStream = new QTextStream(m_temp);
     }

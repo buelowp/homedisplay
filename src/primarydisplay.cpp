@@ -158,16 +158,13 @@ PrimaryDisplay::~PrimaryDisplay()
 void PrimaryDisplay::updateLocalConditions(double temp, double humidity)
 {
     QSettings settings(QSettings::IniFormat, QSettings::UserScope, "home", "homedisplay");
-    QMQTT::Message message;
-    QString topic(QString("house/%1/environment").arg(settings.value("localconditionstopic").toString()));
+    QMqttTopicName topic(QString("house/%1/environment").arg(settings.value("localconditionstopic").toString()));
 
-    message.setTopic(topic);
     QJsonObject object;
     object["temperature"] = temp;
     object["humidity"] = humidity;
     QJsonDocument doc(object);
-    message.setPayload(doc.toJson());
-    m_mqttClient->publish(message);
+    m_mqttClient->publish(topic, doc.toJson());
 }
 
 void PrimaryDisplay::showEvent(QShowEvent* event)
@@ -204,21 +201,17 @@ int PrimaryDisplay::getNightScreenTransitionTime()
 void PrimaryDisplay::setupMqttSubscriber()
 {
     QSettings settings(QSettings::IniFormat, QSettings::UserScope, "home", "homedisplay");
-    QString hostname = settings.value("mqttserver").toString();
-    QHostInfo lookup = QHostInfo::fromName(hostname);
-    QList<QHostAddress> addresses = lookup.addresses();
+    m_mqttClient = new QMqttClient;
+    m_hostName = QString("%1-%2").arg(QHostInfo::localHostName()).arg(QRandomGenerator::global()->generate());
+    m_mqttClient->setClientId(m_hostName);
+    m_mqttClient->setAutoKeepAlive(true);
     
-    if (addresses.size() > 0) {
-        m_mqttClient = new QMqttSubscriber(addresses.at(0), settings.value("mqttport").toInt(), this);
-        qDebug() << __PRETTY_FUNCTION__ << ": setting host address to" << addresses.at(0);
-    }
-    else {
-        m_mqttClient = new QMqttSubscriber(QHostAddress::LocalHost, settings.value("mqttport").toInt(), this);
-        qDebug() << __PRETTY_FUNCTION__ << ": Using localhost";
-    }
-    connect(m_mqttClient, SIGNAL(connectionComplete()), this, SLOT(connectionComplete()));
-    connect(m_mqttClient, SIGNAL(disconnectedEvent()), this, SLOT(disconnectedEvent()));
-    connect(m_mqttClient, SIGNAL(messageReceivedOnTopic(QString, QString)), this, SLOT(messageReceivedOnTopic(QString, QString)));
+    connect(m_mqttClient, &QMqttClient::connected, this, &PrimaryDisplay::connected);
+    connect(m_mqttClient, &QMqttClient::disconnected, this, &PrimaryDisplay::disconnected);
+    connect(m_mqttClient, &QMqttClient::errorChanged, this, &PrimaryDisplay::errorChanged);
+    connect(m_mqttClient, &QMqttClient::messageReceived, this, &PrimaryDisplay::messageReceived);
+    m_mqttClient->setHostname(settings.value("mqttserver", "172.24.1.2").toString());
+    m_mqttClient->setPort(settings.value("mqttport", 1883).toInt());
     m_mqttClient->connectToHost();
 }
 
@@ -340,16 +333,22 @@ void PrimaryDisplay::showNYEScreen()
         emit stopNYE();
 }
 
-void PrimaryDisplay::connectionComplete()
+void PrimaryDisplay::connected()
 {
-    m_mqttClient->subscribe("weather/#");
-    m_mqttClient->subscribe("garden/#");
+    m_mqttClient->subscribe(QMqttTopicFilter("weather/#"));
+    m_mqttClient->subscribe(QMqttTopicFilter("garden/#"));
 }
 
-void PrimaryDisplay::disconnectedEvent()
+void PrimaryDisplay::disconnected()
 {
     qDebug() << __PRETTY_FUNCTION__ << ": MQTT connection lost";
     m_mqttClient->connectToHost();
+}
+
+void PrimaryDisplay::errorChanged(QMqttClient::ClientError error)
+{
+    qDebug() << __PRETTY_FUNCTION__ << ":" << m_mqttClient->hostname() << ":" << m_mqttClient->port();
+    qDebug() << __PRETTY_FUNCTION__ << ":" << error;
 }
 
 void PrimaryDisplay::lightningTimeout()
@@ -454,13 +453,18 @@ void PrimaryDisplay::endBigClock()
     m_startBigClockScreen->start();
 }
 
-void PrimaryDisplay::messageReceivedOnTopic(QString t, QString p)
+void PrimaryDisplay::messageReceived(const QByteArray &message, const QMqttTopicName &topic)
 {
-    QJsonDocument doc = QJsonDocument::fromJson(p.toLocal8Bit());
+    QJsonParseError error;
+    QJsonDocument doc = QJsonDocument::fromJson(message, &error);
+    QString tname = topic.name();
     
     if (doc.isObject()) {
         QJsonObject parent = doc.object();
-        m_weatherWidget->updateDisplay(t, parent);
-        m_clockWidget->updateDisplay(t, parent);
+        m_weatherWidget->updateDisplay(tname, parent);
+        m_clockWidget->updateDisplay(tname, parent);
+    }
+    else {
+        qDebug() << __PRETTY_FUNCTION__ << ":" << error.errorString();
     }
 }    
