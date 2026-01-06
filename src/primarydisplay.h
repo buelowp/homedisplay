@@ -24,9 +24,9 @@
 #include <QtCore/QtCore>
 #include <QtWidgets/QtWidgets>
 #include <QtMqtt/QtMqtt>
+#include <QtStateMachine/QtStateMachine>
 
 #include "weatherdisplay.h"
-#include "qmqttsubscriber.h"
 #include "sonosdisplay.h"
 #include "clockdisplay.h"
 #include "bigclock.h"
@@ -141,6 +141,8 @@ private:
     bool m_showBigClock;
 
     long m_lastBrightValue;
+
+    QString m_hostName;
 };
 
 #endif /* MYTHFRAME_H_ */

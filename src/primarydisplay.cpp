@@ -158,16 +158,13 @@ PrimaryDisplay::~PrimaryDisplay()
 void PrimaryDisplay::updateLocalConditions(double temp, double humidity)
 {
     QSettings settings(QSettings::IniFormat, QSettings::UserScope, "home", "homedisplay");
-    QMQTT::Message message;
-    QString topic(QString("house/%1/environment").arg(settings.value("localconditionstopic").toString()));
+    QMqttTopicName topic(QString("house/%1/environment").arg(settings.value("localconditionstopic").toString()));
 
-    message.setTopic(topic);
     QJsonObject object;
     object["temperature"] = temp;
     object["humidity"] = humidity;
     QJsonDocument doc(object);
-    message.setPayload(doc.toJson());
-    m_mqttClient->publish(message);
+    m_mqttClient->publish(topic, doc.toJson());
 }
 
 void PrimaryDisplay::showEvent(QShowEvent* event)
@@ -209,10 +206,10 @@ void PrimaryDisplay::setupMqttSubscriber()
     m_mqttClient->setClientId(m_hostName);
     m_mqttClient->setAutoKeepAlive(true);
     
-    connect(m_mqttClient, SIGNAL(connected()), this, SLOT(connected()));
-    connect(m_mqttClient, SIGNAL(disconnected()), this, SLOT(disconnected()));
-    connect(m_mqttClient, &QMqttClient::errorChanged, this, &MainWindow::error);
-    connect(m_mqttClient, &QMqttClient::messageReceived, this, &MainWindow::messageReceived);
+    connect(m_mqttClient, &QMqttClient::connected, this, &PrimaryDisplay::connected);
+    connect(m_mqttClient, &QMqttClient::disconnected, this, &PrimaryDisplay::disconnected);
+    connect(m_mqttClient, &QMqttClient::errorChanged, this, &PrimaryDisplay::errorChanged);
+    connect(m_mqttClient, &QMqttClient::messageReceived, this, &PrimaryDisplay::messageReceived);
     m_mqttClient->setHostname(settings.value("mqttserver", "172.24.1.2").toString());
     m_mqttClient->setPort(settings.value("mqttport", 1883).toInt());
     m_mqttClient->connectToHost();
@@ -338,8 +335,8 @@ void PrimaryDisplay::showNYEScreen()
 
 void PrimaryDisplay::connected()
 {
-    m_mqttClient->subscribe("weather/#");
-    m_mqttClient->subscribe("garden/#");
+    m_mqttClient->subscribe(QMqttTopicFilter("weather/#"));
+    m_mqttClient->subscribe(QMqttTopicFilter("garden/#"));
 }
 
 void PrimaryDisplay::disconnected()
@@ -350,6 +347,7 @@ void PrimaryDisplay::disconnected()
 
 void PrimaryDisplay::errorChanged(QMqttClient::ClientError error)
 {
+    qDebug() << __PRETTY_FUNCTION__ << ":" << m_mqttClient->hostname() << ":" << m_mqttClient->port();
     qDebug() << __PRETTY_FUNCTION__ << ":" << error;
 }
 
@@ -457,15 +455,16 @@ void PrimaryDisplay::endBigClock()
 
 void PrimaryDisplay::messageReceived(const QByteArray &message, const QMqttTopicName &topic)
 {
-    QJsonParserError error;
+    QJsonParseError error;
     QJsonDocument doc = QJsonDocument::fromJson(message, &error);
+    QString tname = topic.name();
     
     if (doc.isObject()) {
         QJsonObject parent = doc.object();
-        m_weatherWidget->updateDisplay(topic.name(), parent);
-        m_clockWidget->updateDisplay(topic.name(), parent);
+        m_weatherWidget->updateDisplay(tname, parent);
+        m_clockWidget->updateDisplay(tname, parent);
     }
     else {
-        qDebug() << __PRETTY_FUNCTION__ << ":" << error.error();
+        qDebug() << __PRETTY_FUNCTION__ << ":" << error.errorString();
     }
 }    
