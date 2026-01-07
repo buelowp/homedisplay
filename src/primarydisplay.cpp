@@ -72,28 +72,41 @@ PrimaryDisplay::PrimaryDisplay() : QMainWindow()
     m_endBigClockScreen = new QTimer(this);
   
     setupMqttSubscriber();
-        
+    m_sonos = new Noson();
+    m_sonosThread = new QThread();
+    if (settings.value("usesonos").toBool() == true) {
+        m_sonos->moveToThread(m_sonosThread);
+        connect(m_sonosThread, &QThread::finished, m_sonos, &Noson::deleteLater);
+        connect(m_sonosThread, &QThread::started, m_sonos, &Noson::go);
+        connect(m_sonos, &Noson::title, m_sonosWidget, &SonosDisplay::updateTitle);
+        connect(m_sonos, &Noson::artist, m_sonosWidget, &SonosDisplay::updateArtist);
+        connect(m_sonos, &Noson::album, m_sonosWidget, &SonosDisplay::updateAlbum);
+        connect(m_sonos, &Noson::duration, m_sonosWidget, &SonosDisplay::updateDuration);
+        connect(m_sonos, &Noson::position, m_sonosWidget, &SonosDisplay::updatePosition);
+        m_sonosThread->start();
+    }
+
     QState *primary = new QState();
-    QState *metadata = new QState();
+    QState *sonos = new QState();
     QState *nye = new QState();
     QState *blank = new QState();
     QState *weather = new QState();
     QState *bigclock = new QState();
 
     nye->addTransition(this, SIGNAL(stopNYE()), primary);
-    primary->addTransition(m_sonosWidget, SIGNAL(startSonos()), metadata);
+    primary->addTransition(m_sonos, &Noson::startDisplay, sonos);
     primary->addTransition(this, SIGNAL(startNYE()), nye);
     primary->addTransition(m_startBlankScreen, &QTimer::timeout, blank);
     primary->addTransition(this, SIGNAL(startWeather()), weather);
     primary->addTransition(m_startBigClockScreen, &QTimer::timeout, bigclock);
-    metadata->addTransition(this, SIGNAL(startNYE()), nye);
-    metadata->addTransition(this, &PrimaryDisplay::startWeather, weather);
-    metadata->addTransition(m_sonosWidget, SIGNAL(endSonos()), primary);
+    sonos->addTransition(this, SIGNAL(startNYE()), nye);
+    sonos->addTransition(this, &PrimaryDisplay::startWeather, weather);
+    sonos->addTransition(m_sonos, &Noson::endDisplay, primary);
     weather->addTransition(this, SIGNAL(hideWeatherScreen()), primary);
     blank->addTransition(m_endBlankScreen, SIGNAL(timeout()), primary);
     bigclock->addTransition(m_endBigClockScreen, &QTimer::timeout, primary);
 
-    connect(metadata, SIGNAL(entered()), this, SLOT(showMetadataScreen()));
+    connect(sonos, SIGNAL(entered()), this, SLOT(showSonosScreen()));
     connect(primary, SIGNAL(entered()), this, SLOT(showPrimaryScreen()));
     connect(nye, SIGNAL(entered()), this, SLOT(showNYEScreen()));
     connect(weather, SIGNAL(entered()), this, SLOT(showWeatherScreen()));
@@ -101,7 +114,7 @@ PrimaryDisplay::PrimaryDisplay() : QMainWindow()
     connect(blank, &QState::entered, this, &PrimaryDisplay::showBlankScreen);
 
     m_states.addState(primary);
-    m_states.addState(metadata);
+    m_states.addState(sonos);
     m_states.addState(nye);
     m_states.addState(blank);
     m_states.addState(weather);
@@ -147,8 +160,6 @@ PrimaryDisplay::PrimaryDisplay() : QMainWindow()
     m_stackedWidget->setCurrentIndex(WidgetIndex::Primary);
     setCentralWidget(m_stackedWidget);
     m_states.start();
-    if (settings.value("usesonos").toBool() == true)
-        m_sonosWidget->go();
 }
 
 PrimaryDisplay::~PrimaryDisplay() 
@@ -355,16 +366,16 @@ void PrimaryDisplay::lightningTimeout()
 {
 }
 
-void PrimaryDisplay::endMetadataScreen()
+void PrimaryDisplay::endSonosScreen()
 {
     qDebug() << __PRETTY_FUNCTION__;
     m_stackedWidget->setCurrentIndex(WidgetIndex::Primary);    
 }
 
-void PrimaryDisplay::showMetadataScreen()
+void PrimaryDisplay::showSonosScreen()
 {
     qDebug() << __PRETTY_FUNCTION__;
-    m_stackedWidget->setCurrentIndex(WidgetIndex::Metadata);
+    m_stackedWidget->setCurrentIndex(WidgetIndex::Sonos);
 }
 
 void PrimaryDisplay::endWeatherScreen()
