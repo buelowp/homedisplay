@@ -22,12 +22,12 @@ public:
     ~SonosDisplay();
     
 public slots:
-    void updateAlbumArt(QString art);
     void updateAlbum(QString a);
     void updateTitle(QString title);
     void updateArtist(QString artist);
     void updatePosition(QTime remain);
     void updateDuration(QTime duration);
+    void updateAlbumArt(QPixmap &pixmap);
     
 private:
     void calculateMinutes(int);

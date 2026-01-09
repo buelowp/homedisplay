@@ -51,8 +51,9 @@ SonosDisplay::~SonosDisplay()
 {
 }
 
-void SonosDisplay::updateAlbumArt(QString art)
+void SonosDisplay::updateAlbumArt(QPixmap &pixmap)
 {
+    m_albumArt->setPixmap(pixmap.scaledToWidth(200));
 }
 
 void SonosDisplay::updateTitle(QString title)

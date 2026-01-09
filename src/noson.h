@@ -9,6 +9,7 @@
 
 #include <QtCore/QtCore>
 #include <QtStateMachine/QtStateMachine>
+#include <QtNetwork/QtNetwork>
 
 class Noson : public QObject
 {
@@ -18,6 +19,7 @@ public:
     ~Noson() {};
 
     void go();
+    QPixmap albumArt() { return m_albumArt; }
 
 signals:
     void stop();
@@ -29,15 +31,25 @@ signals:
     void artist(QString a);
     void duration(QTime t);
     void position(QTime t);
+    void art(QPixmap &p);
+    void getArt();
 
 public slots:
     void switchState();
     void playerStopped();
     void playerStarted();
 
+    void smstart();
+    void smstop();
+    void smchange(bool);
+
+    void albumArtFinished(QNetworkReply* reply);
+    void downloadAlbumArt();
+
 private:
     void setDuration(QString s);
     void parsePositionInfo();
+    void updateAlbumArt(QString s);
 
     SONOS::System *m_sonos;
     SONOS::ZonePtr m_zone;
@@ -47,4 +59,9 @@ private:
     QStateMachine *m_sm;
     QTime m_duration;
     QTime m_position;
+    QTimer *m_updateTimer;
+    QString m_albumArtURI;
+    QUrl m_albumArtURL;
+    QNetworkAccessManager *m_namAlbumArt;
+    QPixmap m_albumArt;
 };

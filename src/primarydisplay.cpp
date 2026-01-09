@@ -73,17 +73,14 @@ PrimaryDisplay::PrimaryDisplay() : QMainWindow()
   
     setupMqttSubscriber();
     m_sonos = new Noson();
-    m_sonosThread = new QThread();
     if (settings.value("usesonos").toBool() == true) {
-        m_sonos->moveToThread(m_sonosThread);
-        connect(m_sonosThread, &QThread::finished, m_sonos, &Noson::deleteLater);
-        connect(m_sonosThread, &QThread::started, m_sonos, &Noson::go);
         connect(m_sonos, &Noson::title, m_sonosWidget, &SonosDisplay::updateTitle);
         connect(m_sonos, &Noson::artist, m_sonosWidget, &SonosDisplay::updateArtist);
         connect(m_sonos, &Noson::album, m_sonosWidget, &SonosDisplay::updateAlbum);
         connect(m_sonos, &Noson::duration, m_sonosWidget, &SonosDisplay::updateDuration);
         connect(m_sonos, &Noson::position, m_sonosWidget, &SonosDisplay::updatePosition);
-        m_sonosThread->start();
+        connect(m_sonos, &Noson::art, m_sonosWidget, &SonosDisplay::updateAlbumArt);
+        m_sonos->go();
     }
 
     QState *primary = new QState();
