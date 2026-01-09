@@ -8,11 +8,6 @@ SonosDisplay::SonosDisplay(QWidget *parent) : QWidget(parent)
     QFont c("Roboto-Regular", 24);
     QFont t("Roboto-Regular", 36);
 
-    m_namAlbumArt = new QNetworkAccessManager(this);
-    m_namMetaData = new QNetworkAccessManager(this);
-    connect(m_namMetaData, &QNetworkAccessManager::finished, this, &SonosDisplay::requestFinished);
-    connect(m_namAlbumArt, &QNetworkAccessManager::finished, this, &SonosDisplay::albumArtFinished);
-    
     setObjectName("sonosdisplay");
     m_layout = new QGridLayout();
     m_layout->setObjectName("layout");
@@ -50,180 +45,46 @@ SonosDisplay::SonosDisplay(QWidget *parent) : QWidget(parent)
     m_layout->addWidget(m_elapsedIndicator, 4, 0, 1, 4);
     m_layout->setAlignment(m_albumArt, Qt::AlignTop);
     setLayout(m_layout);
-
-    setupSonos();
-    installEventFilter(this);
 }
 
 SonosDisplay::~SonosDisplay()
 {
 }
 
-void SonosDisplay::go()
+void SonosDisplay::updateAlbumArt(QPixmap &pixmap)
 {
-    requestSonosStatus();
+    m_albumArt->setPixmap(pixmap.scaledToWidth(200));
 }
 
-void SonosDisplay::requestSonosStatus()
+void SonosDisplay::updateTitle(QString title)
 {
-    QNetworkRequest request;
-    request.setUrl(m_url);
-    request.setRawHeader("User-Agent", "SonosRequest 1.0");
-    m_namMetaData->get(request);
+    m_title->setText(title);
 }
 
-void SonosDisplay::setURL(QString url, QString room)
+void SonosDisplay::updateArtist(QString artist)
 {
-    QString path = "/" + room + "/state";
-    
-    m_url = QUrl::fromUserInput(url + path);
-    qDebug() << __PRETTY_FUNCTION__ << ":" << m_url;
+    m_artist->setText(artist);
 }
 
-void SonosDisplay::sonosRequestResult(QByteArray ba)
+void SonosDisplay::updateAlbum(QString album)
 {
-    QSettings settings(QSettings::IniFormat, QSettings::UserScope, "home", "homedisplay");
-    QJsonParseError *error = new QJsonParseError();
-    static QString lastState = "none";
-    static QString lastTitle;
+    m_album->setText(album);
+}
 
-    QJsonDocument doc = QJsonDocument::fromJson(ba, error);
-    if (error->error != QJsonParseError::NoError) {
-        qDebug() << __PRETTY_FUNCTION__ << ":" << error->errorString();
-    }
-    else {
-        if (doc.isObject()) {
-            QJsonObject parent = doc.object();
-            QString playback = parent["playbackState"].toString();
-            QJsonObject current = parent["currentTrack"].toObject();
-            if (playback == "PLAYING") {
-                if (current["type"].toString() == "radio") {
-                    if (lastTitle != current["title"].toString()) {
-                        m_artist->setText(current["artist"].toString());
-                        m_album->setText(current["album"].toString());
-      	                m_title->setText(current["title"].toString());
-                        QUrl url(settings.value("sonosaddress").toString() + current["albumArtUri"].toString());
-                        getAlbumArt(url);
-                        m_elapsedIndicator->setVisible(false);
-                        m_elapsedTime->setText(current["elapsedTimeFormatted"].toString());
-                        lastTitle = current["title"].toString();
-                    }
-                }
-                else {
-                    if (parent["trackNo"] != m_trackNumber) {
-                         m_artist->setText(current["artist"].toString());
-                         m_album->setText(current["album"].toString());
-                         m_title->setText(current["title"].toString());
-                         m_duration = current["duration"].toInt();
-                         m_elapsedIndicator->setMaximum(m_duration);
-                         m_elapsedIndicator->setMinimum(0);
-                         m_trackNumber = parent["trackNo"].toInt();
-                         QUrl url(settings.value("sonosaddress").toString() + current["albumArtUri"].toString());
-                         getAlbumArt(url);
-                    }
-                    m_elapsedIndicator->setVisible(true);
-                    m_elapsedTime->setVisible(true);
-                    calculateMinutes(parent["elapsedTime"].toInt());
-                    m_volume = parent["volume"].toInt();
-                }
-                emit startSonos();
-            }
-            else {
-                emit endSonos();
-            }
-        }
+void SonosDisplay::updatePosition(QTime elapsed)
+{
+    if (elapsed.isValid()) {
+        m_position = elapsed;
+        m_elapsedTime->setText(elapsed.toString("h:mm:ss"));
+        m_elapsedIndicator->setValue(elapsed.msecsSinceStartOfDay() / 1000);
     }
 }
 
-void SonosDisplay::setupSonos()
+void SonosDisplay::updateDuration(QTime duration)
 {
-    QSettings settings(QSettings::IniFormat, QSettings::UserScope, "home", "homedisplay");
-    QString hostname = settings.value("sonosserver").toString();
-    QString port = settings.value("sonosport").toString();
-    QHostInfo lookup = QHostInfo::fromName(hostname);
-    QList<QHostAddress> addresses = lookup.addresses();
-    
-    if (addresses.size() > 0) {
-        QString url = QString("%1:%2").arg(addresses.at(0).toString()).arg(settings.value("sonosport").toInt());
-        setURL(url, settings.value("sonosroom").toString());
-        qDebug() << __PRETTY_FUNCTION__ << ": setting host address to" << addresses.at(0);
+    if (duration != m_duration) {
+        m_duration = duration;
+        m_elapsedIndicator->setRange(0, duration.msecsSinceStartOfDay() / 1000);
+        m_elapsedIndicator->setValue(0);
     }
-    else {
-        setURL(QString("%1:%2").arg(hostname).arg(port), settings.value("sonosroom").toString());
-        qDebug() << __PRETTY_FUNCTION__ << ": using" << hostname << ":" << port;
-    }
-}
-
-void SonosDisplay::calculateMinutes(int elapsed)
-{
-    QString display = QString("%1:%2").arg(elapsed/60, 2, 10, QChar('0')).arg(elapsed%60, 2, 10, QChar('0'));
-//    m_elapsedIndicator->setFormat(display);
-    m_elapsedTime->setText(display);
-    m_elapsedIndicator->setValue(elapsed);
-}
-
-void SonosDisplay::getAlbumArt(QUrl url)
-{
-    QByteArray base64;
-
-    QNetworkRequest request;
-    qDebug() << __PRETTY_FUNCTION__ << ":" << url;
-    request.setUrl(url);
-    request.setRawHeader("User-Agent", "SonosRequest 1.0");
-    m_namAlbumArt->get(request);
-}
-
-void SonosDisplay::albumArtFinished(QNetworkReply* reply)
-{
-    QDateTime now = QDateTime::currentDateTime();
-
-    if (reply->error() != QNetworkReply::NoError) {
-        qDebug() << __PRETTY_FUNCTION__ << ":" << now << ":" << reply->error();
-    }
-    else {
-        QByteArray ba = reply->readAll();
-        QPixmap art;
-    
-        art.loadFromData(ba);
-        m_albumArt->setPixmap(art.scaledToWidth(200));;
-    }
-    reply->deleteLater();
-}
-
-void SonosDisplay::requestFinished(QNetworkReply* reply)
-{
-    QDateTime now = QDateTime::currentDateTime();
-    
-    if (reply->error() != QNetworkReply::NoError) {
-        qDebug() << __PRETTY_FUNCTION__ << ":" << reply->error();
-    	QTimer::singleShot(1000, this, &SonosDisplay::requestSonosStatus);
-    }
-    else {
-        QByteArray ba = reply->readAll();
-        sonosRequestResult(ba);
-    	QTimer::singleShot(100, this, &SonosDisplay::requestSonosStatus);
-    }
-
-    reply->deleteLater();
-}
-
-bool SonosDisplay::eventFilter(QObject* object, QEvent* event)
-{
-    QChildEvent *ce;
-    switch (event->type()) {
-        case QEvent::Resize:
-            qDebug() << __PRETTY_FUNCTION__ << ": resize event for" << object->objectName();
-            break;
-        case QEvent::Move:
-            qDebug() << __PRETTY_FUNCTION__ << ": move event for" << object->objectName();
-            break;
-        case QEvent::ChildAdded:
-            qDebug() << __PRETTY_FUNCTION__ << ": added a child";
-            ce = static_cast<QChildEvent*>(event);
-            ce->child()->installEventFilter(this);
-            break;
-        default:
-            break;
-    }
-    return false;
 }

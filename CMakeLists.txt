@@ -1,4 +1,4 @@
-cmake_minimum_required (VERSION 3.1.0)
+cmake_minimum_required (VERSION 3.10)
 
 project (homedisplay)
 
@@ -20,10 +20,11 @@ find_package (Qt6 COMPONENTS Widgets REQUIRED)
 find_package (Qt6 COMPONENTS Core REQUIRED)
 find_package (Qt6 COMPONENTS Mqtt REQUIRED)
 find_package (Qt6 COMPONENTS Sql REQUIRED)
-find_package(Qt6 REQUIRED COMPONENTS StateMachine)
+find_package (Qt6 REQUIRED COMPONENTS StateMachine)
+find_package (OpenSSL REQUIRED COMPONENTS SSL Crypto)
 
 add_executable (${PROJECT_NAME} ${SOURCES})
 
-target_link_libraries (${PROJECT_NAME} Qt6::Widgets Qt6::Core Qt6::Sql Qt6::Mqtt Qt6::StateMachine -lsunset -ltsl2561)
+target_link_libraries (${PROJECT_NAME} Qt6::Widgets Qt6::Core Qt6::Sql Qt6::Mqtt Qt6::StateMachine -lsunset -ltsl2561 -lnoson -lz OpenSSL::SSL OpenSSL::Crypto)
 
 install (TARGETS ${PROJECT_NAME} DESTINATION bin)

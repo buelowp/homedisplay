@@ -33,6 +33,7 @@
 #include "lux.h"
 #include "environment.h"
 #include "defines.h"
+#include "noson.h"
 
 class PrimaryDisplay : public QMainWindow {
     Q_OBJECT
@@ -62,12 +63,12 @@ signals:
 protected slots:
     void showNYECountDown();
 	void showPrimaryScreen();
-	void showMetadataScreen();
+	void showSonosScreen();
 	void showNYEScreen();
     void setNYETimeout();
     void showBlankScreen();
     void lightningTimeout();
-    void endMetadataScreen();
+    void endSonosScreen();
     void endWeatherScreen();
     void endBlankScreen();
     void showWeatherScreen();
@@ -91,7 +92,7 @@ private:
         Blank,
         Weather,
         Bigclock,
-        Metadata,
+        Sonos,
     } WidgetIndex;
 
     void setupMqttSubscriber();
@@ -119,6 +120,7 @@ private:
     BigClock *m_bigClock;
     Lux *m_lux;
     Environment *m_environment;
+    Noson *m_sonos;
 
     QStackedWidget *m_stackedWidget;
     
@@ -133,6 +135,7 @@ private:
     QTimer *m_endWeatherScreen;
     QTimer *m_startBigClockScreen;
     QTimer *m_endBigClockScreen;
+    QThread *m_sonosThread;
 
     QLabel *m_lbCountdown;
 

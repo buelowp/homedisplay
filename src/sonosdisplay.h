@@ -21,43 +21,26 @@ public:
     SonosDisplay(QWidget *parent = nullptr);
     ~SonosDisplay();
     
-    void go();
-
-protected:
-    bool eventFilter(QObject *object, QEvent *event) override;
-
-protected slots:
-    void requestFinished(QNetworkReply *reply);
-    void albumArtFinished(QNetworkReply *reply);
-    void requestSonosStatus();
-    
-signals:
-    void startSonos();
-    void endSonos();
+public slots:
+    void updateAlbum(QString a);
+    void updateTitle(QString title);
+    void updateArtist(QString artist);
+    void updatePosition(QTime remain);
+    void updateDuration(QTime duration);
+    void updateAlbumArt(QPixmap &pixmap);
     
 private:
-    void setupSonos();
     void calculateMinutes(int);
-    void setURL(QString, QString room);
-    void getAlbumArt(QUrl);
-    void sonosRequestResult(QByteArray ba);
     
     QLabel *m_artist;
     QLabel *m_album;
-    QLabel *m_station;
     QLabel *m_title;
     QLabel *m_albumArt;
     QLabel *m_elapsedTime;
     QGridLayout *m_layout;
-    int m_duration;
-    int m_elapsed;
-    int m_trackNumber;
-    int m_volume;
+    QTime m_duration;
+    QTime m_position;
     QProgressBar *m_elapsedIndicator;
-    
-    QNetworkAccessManager *m_namMetaData;
-    QNetworkAccessManager *m_namAlbumArt;
-    QUrl m_url;
 };
 
 #endif // SONOSDISPLAY_H
