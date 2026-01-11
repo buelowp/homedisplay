@@ -34,12 +34,13 @@
 #include "environment.h"
 #include "defines.h"
 #include "noson.h"
+#include "nye.h"
 
 class PrimaryDisplay : public QMainWindow {
     Q_OBJECT
-	
+
 public:
-    PrimaryDisplay();
+    PrimaryDisplay(QWidget *parent = nullptr, Qt::WindowFlags flags = Qt::WindowFlags());
     virtual ~PrimaryDisplay();
 
 protected:
@@ -48,10 +49,6 @@ protected:
 signals:
     void startNYE();
     void stopNYE();
-    void startLightning();
-    void endLightning();
-//    void startBlankScreen();
-//    void hideBlankScreen();
     void startWeather();
     void stopWeather();
     void hideWeather(bool);
@@ -62,12 +59,11 @@ signals:
 
 protected slots:
     void showNYECountDown();
-	void showPrimaryScreen();
-	void showSonosScreen();
-	void showNYEScreen();
+    void showPrimaryScreen();
+    void showSonosScreen();
+    void showNYEScreen();
     void setNYETimeout();
     void showBlankScreen();
-    void lightningTimeout();
     void endSonosScreen();
     void endWeatherScreen();
     void endBlankScreen();
@@ -84,6 +80,7 @@ protected slots:
     void disconnected();
     void errorChanged(QMqttClient::ClientError error);
     void messageReceived(const QByteArray &message, const QMqttTopicName &topic);
+    bool event(QEvent *event) override;
     
 private:
     typedef enum WIDGET_INDEX:int {
@@ -121,14 +118,10 @@ private:
     Lux *m_lux;
     Environment *m_environment;
     Noson *m_sonos;
+    NYE *m_nyeWidget;
 
     QStackedWidget *m_stackedWidget;
     
-    QGridLayout *m_primaryLayout;
-    QHBoxLayout *m_nyeLayout;
-    QGridLayout *m_sonosLayout;
-   
-	QByteArray prevTime;
     QTimer *m_startBlankScreen;
     QTimer *m_endBlankScreen;
     QTimer *m_endDimScreen;

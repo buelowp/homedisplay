@@ -5,6 +5,8 @@
 
 BigClock::BigClock(QFrame *parent) : QFrame(parent)
 {
+    setWindowState(Qt::WindowFullScreen);
+
     m_layout = new QGridLayout();
     m_primaryClock = new QLabel();
     m_primaryClock->setScaledContents(true);

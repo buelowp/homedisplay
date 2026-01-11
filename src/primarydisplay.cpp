@@ -18,11 +18,9 @@
 
 #include "primarydisplay.h"
 
-PrimaryDisplay::PrimaryDisplay() : QMainWindow() 
+PrimaryDisplay::PrimaryDisplay(QWidget *parent, Qt::WindowFlags flags) : QMainWindow(parent, flags)
 {
     QSettings settings(QSettings::IniFormat, QSettings::UserScope, "home", "homedisplay");
-    int widthSettings = settings.value("width", 800).toInt();
-    int heightSettings = settings.value("height", 480).toInt();
 
     QPalette pal(QColor(0,0,0));
     setBackgroundRole(QPalette::Window);
@@ -30,33 +28,47 @@ PrimaryDisplay::PrimaryDisplay() : QMainWindow()
     setAutoFillBackground(true);
     setPalette(pal);
 
-    m_primaryLayoutWidget = new QWidget();
-    
-    m_nyeLayoutWidget = new QWidget();
-    m_nyeLayout = new QHBoxLayout(m_nyeLayoutWidget);
-    m_lbCountdown = new QLabel(m_primaryLayoutWidget);
+    QScreen *primaryScreen = QGuiApplication::primaryScreen();
+
+    if (primaryScreen) {
+        // Get the screen's full geometry (resolution in pixels)
+        QRect screenGeometry = primaryScreen->geometry();
+        int screenWidth = screenGeometry.width();
+        int screenHeight = screenGeometry.height();
+
+        qDebug() << "Screen Resolution:" << screenWidth << "x" << screenHeight;
+
+        // Get the available geometry (excludes areas like taskbars/docks)
+        QRect availableGeometry = primaryScreen->availableGeometry();
+        int availableWidth = availableGeometry.width();
+        int availableHeight = availableGeometry.height();
+
+        qDebug() << "Available Screen Space:" << availableWidth << "x" << availableHeight;
+    } else {
+        qDebug() << "No primary screen found.";
+    }
+
+    setFixedSize(primaryScreen->geometry().width(), primaryScreen->geometry().height());
+
+    m_lbCountdown = new QLabel();
     m_lbCountdown->setScaledContents(true);
-    m_nyeLayout->addWidget(m_lbCountdown);
     
     QFont c("Roboto-Regular", 36);
     QFont l("Roboto-Regular", 28);
     QFont p("Roboto-Regular", 100);
     QFont d("Roboto-Regular", 32);
 
-
     m_weatherWidget = new WeatherDisplay();
-    m_weatherWidget->setFixedSize(widthSettings, heightSettings);
     m_sonosWidget = new SonosDisplay();
-    m_sonosWidget->setFixedSize(widthSettings, heightSettings);
+    m_sonosWidget->setFixedSize(primaryScreen->geometry().width(), primaryScreen->geometry().height());
     m_clockWidget = new ClockDisplay();
-    m_clockWidget->setFixedSize(widthSettings,heightSettings);
     m_bigClock = new BigClock();
-    m_bigClock->setFixedSize(widthSettings, heightSettings);
+    m_nyeWidget = new NYE();
     m_blankLayoutWidget = new QWidget();
 
     m_stackedWidget = new QStackedWidget();
     m_stackedWidget->addWidget(m_clockWidget);
-    m_stackedWidget->addWidget(m_nyeLayoutWidget);
+    m_stackedWidget->addWidget(m_nyeWidget);
     m_stackedWidget->addWidget(m_blankLayoutWidget);
     m_stackedWidget->addWidget(m_weatherWidget);
     m_stackedWidget->addWidget(m_bigClock);
@@ -90,7 +102,7 @@ PrimaryDisplay::PrimaryDisplay() : QMainWindow()
     QState *weather = new QState();
     QState *bigclock = new QState();
 
-    nye->addTransition(this, SIGNAL(stopNYE()), primary);
+    nye->addTransition(m_nyeWidget, &NYE::finished, primary);
     primary->addTransition(m_sonos, &Noson::startDisplay, sonos);
     primary->addTransition(this, SIGNAL(startNYE()), nye);
     primary->addTransition(m_startBlankScreen, &QTimer::timeout, blank);
@@ -163,6 +175,17 @@ PrimaryDisplay::~PrimaryDisplay()
 {
 }
 
+bool PrimaryDisplay::event(QEvent *event)
+{
+    switch (event->type()) {
+    case QEvent::MouseButtonRelease:
+        emit startWeather();
+        event->accept();
+        return true; // Event handled
+    }
+    return QMainWindow::event(event);
+}
+
 void PrimaryDisplay::updateLocalConditions(double temp, double humidity)
 {
     QSettings settings(QSettings::IniFormat, QSettings::UserScope, "home", "homedisplay");
@@ -177,10 +200,6 @@ void PrimaryDisplay::updateLocalConditions(double temp, double humidity)
 
 void PrimaryDisplay::showEvent(QShowEvent* event)
 {
-    qDebug() << __PRETTY_FUNCTION__ << ":" << width() << "x" << height();
-    m_weatherWidget->setFixedSize(width(), height());
-    m_sonosWidget->setFixedSize(width(), height());
-    m_clockWidget->setFixedSize(width(), height());
 }
 
 int PrimaryDisplay::getNightScreenTransitionTime()
@@ -316,7 +335,6 @@ void PrimaryDisplay::showPrimaryScreen()
 {
     qDebug() << __PRETTY_FUNCTION__;
     m_stackedWidget->setCurrentIndex(WidgetIndex::Primary);
-//    m_stackedWidget->move(0,0);
 }
 
 void PrimaryDisplay::updateNYEClock()
@@ -328,23 +346,15 @@ void PrimaryDisplay::updateNYEClock()
 
 void PrimaryDisplay::showNYEScreen()
 {
-    QTime t = QTime::currentTime();
-
     m_stackedWidget->setCurrentIndex(WidgetIndex::NYE);
-    
-    if (t.hour() == 23) {
-        QString countdown("<font style='font-size:200px; color:white; font-weight: bold;'>%1</font>");
-        m_lbCountdown->setText(countdown.arg(60 - t.second()));
-        QTimer::singleShot(1000, this, SLOT(updateNYEClock()));
-    }
-    else
-        emit stopNYE();
+    m_m_nyeWidget->go();
 }
 
 void PrimaryDisplay::connected()
 {
     m_mqttClient->subscribe(QMqttTopicFilter("weather/#"));
     m_mqttClient->subscribe(QMqttTopicFilter("garden/#"));
+    m_mqttClient->publish(QMqttTopicName("request/rainfall"), QByteArray("{\"request\": \"rainfall\"}"));
 }
 
 void PrimaryDisplay::disconnected()
@@ -357,10 +367,6 @@ void PrimaryDisplay::errorChanged(QMqttClient::ClientError error)
 {
     qDebug() << __PRETTY_FUNCTION__ << ":" << m_mqttClient->hostname() << ":" << m_mqttClient->port();
     qDebug() << __PRETTY_FUNCTION__ << ":" << error;
-}
-
-void PrimaryDisplay::lightningTimeout()
-{
 }
 
 void PrimaryDisplay::endSonosScreen()

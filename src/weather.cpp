@@ -54,9 +54,15 @@ void Weather::decodeResponse(QJsonDocument& doc)
                 low = min[0].toDouble();
             }
         }
+        if (daily.contains("precipitation_probability_max")) {
+            if (daily["precipitation_probability_max"].isArray()) {
+                QJsonArray p = daily["precipitation_probability_max"].toArray();
+                emit precip(p[0].toDouble());
+            }
+        }
+
         emit (forecast(high, low));
     }
-    qDebug() << "Got a high:" << high << ", and a low:" << low;
 }
 
 bool Weather::getToday()
@@ -76,7 +82,6 @@ bool Weather::getToday()
         return false;
 
     QUrl url(QString("https://api.open-meteo.com/v1/forecast?latitude=%1&longitude=%2&daily=temperature_2m_max,temperature_2m_min&current_weather=true&temperature_unit=fahrenheit&forecast_days=1&timezone=%3").arg(lat, 0, 'f', 4).arg(lon, 0, 'f', 4).arg(QString(tz)));
-    qDebug() << __PRETTY_FUNCTION__ << url.toEncoded();
     if (url.isValid()) {
         m_manager->get(QNetworkRequest(url));
         return true;

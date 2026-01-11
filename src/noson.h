@@ -45,6 +45,7 @@ public slots:
 
     void albumArtFinished(QNetworkReply* reply);
     void downloadAlbumArt();
+    void updateElapsedTime();
 
 private:
     void setDuration(QString s);
@@ -64,4 +65,5 @@ private:
     QUrl m_albumArtURL;
     QNetworkAccessManager *m_namAlbumArt;
     QPixmap m_albumArt;
+    int m_elapsedTime;
 };

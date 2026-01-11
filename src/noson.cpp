@@ -20,7 +20,7 @@ Noson::Noson(QObject *parent) : QObject(parent)
     m_sonos = new SONOS::System(static_cast<void*>(this), eventcb);
 
     m_updateTimer = new QTimer();
-    connect(m_updateTimer, &QTimer::timeout, this, &Noson::switchState);
+    connect(m_updateTimer, &QTimer::timeout, this, &Noson::updateElapsedTime);
     m_updateTimer->setInterval(1000);
 
     m_namAlbumArt = new QNetworkAccessManager(this);
@@ -45,12 +45,16 @@ Noson::Noson(QObject *parent) : QObject(parent)
     m_sm->setInitialState(stopped);
 
     m_sm->start();
-    qDebug() << __PRETTY_FUNCTION__ << ":" << m_sm->errorString() << ", is running" << m_sm->isRunning();
+}
+
+void Noson::updateElapsedTime()
+{
+    m_position = m_position.addSecs(1);
+    emit position(m_position);
 }
 
 void Noson::smstart()
 {
-    qDebug() << __PRETTY_FUNCTION__;
 }
 
 void Noson::smstop()
@@ -60,21 +64,24 @@ void Noson::smstop()
 
 void Noson::smchange(bool state)
 {
-    qDebug() << __PRETTY_FUNCTION__ << ":" << state << ":" << m_sm->errorString();
+    if (m_sm->error()) {
+        qDebug() << __PRETTY_FUNCTION__ << ":" << state << ":" << m_sm->errorString();
 }
 
 void Noson::playerStopped()
 {
     qDebug() << __PRETTY_FUNCTION__;
-    m_updateTimer->setInterval(1000);
+    m_updateTimer->stop();
     emit endDisplay();
 }
 
 void Noson::playerStarted()
 {
     qDebug() << __PRETTY_FUNCTION__;
-    m_updateTimer->setInterval(100);
+    m_updateTimer->stop();
+    parsePositionInfo();
     emit startDisplay();
+    m_updateTimer->start();
 }
 
 void Noson::parsePositionInfo()
@@ -199,10 +206,8 @@ void Noson::go()
             return;
         }
         if (m_sonos->IsConnected()) {
-            m_player = m_sonos->GetPlayer(m_zone, static_cast<void*>(this), playerEventcb);
-            switchState();
+            m_player = m_sonos->GetPlayer(m_zone, this, playerEventcb);
         }
-        m_updateTimer->start();
     }
     else {
         qWarning() << __PRETTY_FUNCTION__ << ": Unable to call Sonos Discover routine, exiting";

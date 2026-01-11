@@ -10,6 +10,8 @@ WeatherDisplay::WeatherDisplay(QWidget *parent) : QWidget(parent)
     QFont l("Roboto-Regular", 28);
     QFont p("Roboto-Regular", 12);
 
+    setWindowState(Qt::WindowFullScreen);
+
     m_temperature = new QLabel();
     m_temperature->setFont(l);
     m_temperature->setScaledContents(true);
@@ -47,6 +49,10 @@ WeatherDisplay::WeatherDisplay(QWidget *parent) : QWidget(parent)
     m_pressure->setFont(l);
     m_pressure->setScaledContents(true);
     m_pressure->setAlignment(Qt::AlignCenter);
+    m_precip = new QLabel();
+    m_precip->setFont(l);
+    m_precip->setScaledContents(true);
+    m_precip->setAlignment(Qt::AlignCenter);
 
     m_temperatureLabel = new QLabel("Temperature");
     m_temperatureLabel->setFont(p);
@@ -84,10 +90,14 @@ WeatherDisplay::WeatherDisplay(QWidget *parent) : QWidget(parent)
     m_rainYTDLabel->setFont(p);
     m_rainYTDLabel->setScaledContents(true);
     m_rainYTDLabel->setAlignment(Qt::AlignCenter);
-    m_pressureLabel = new QLabel("Atmospheric Pressure");
+    m_pressureLabel = new QLabel("Barometer");
     m_pressureLabel->setFont(p);
     m_pressureLabel->setScaledContents(true);
     m_pressureLabel->setAlignment(Qt::AlignCenter);
+    m_rainChanceLabel = new QLabel("% Precip");
+    m_rainChanceLabel->setFont(p);
+    m_rainChanceLabel->setScaledContents(true);
+    m_rainChanceLabel->setAlignment(Qt::AlignCenter);
 
 
     m_layout = new QGridLayout();
@@ -111,12 +121,19 @@ WeatherDisplay::WeatherDisplay(QWidget *parent) : QWidget(parent)
     m_layout->addWidget(m_usvh, 7, 0, 1, 1);
     m_layout->addWidget(m_uvIndexLabel, 6, 1, 1, 1);
     m_layout->addWidget(m_uvIndex, 7, 1, 1, 1);
+    m_layout->addWidget(m_rainChanceLabel, 6, 2, 1, 1);
+    m_layout->addWidget(m_precip, 6, 2, 1, 1);
     
     setLayout(m_layout);
 }
 
 WeatherDisplay::~WeatherDisplay()
 {
+}
+
+void WeatherDisplay::precip(double p)
+{
+    m_precip->setText(QString("%1%").arg(p, 0, 'f', 0));
 }
 
 double WeatherDisplay::calculateHeatIndex(double temp, double humidity)
@@ -139,8 +156,8 @@ void WeatherDisplay::updateDisplay(QString &topic, QJsonObject &object)
 {
     if (topic == "weather/rainfall") {
         if (object.contains("ytd")) {
-            m_rainYTD->setText(QString("%1\"").arg(object["ytd"].toDouble()));
-            m_rainToday->setText(QString("%1\"").arg(object["today"].toDouble()));
+            m_rainYTD->setText(QString("%1\"").arg(object["ytd"].toDouble(), 0, 'f', 2));
+            m_rainToday->setText(QString("%1\"").arg(object["today"].toDouble(),0, 'f', 2));
         }
     }
     else if (topic == "weather/conditions") {
@@ -191,7 +208,7 @@ void WeatherDisplay::updateDisplay(QString &topic, QJsonObject &object)
             m_rose->setAngle(object["direction"].toInt());
         }
     }
-    else if (topic == "weather/pressure") {
+    else if (topic == "weather/barometer") {
         if (object.contains("pressure")) {
             double pressure = object["pressure"].toDouble();
             m_pressure->setText(QString("%1 inHg").arg(pressure, 0, 'f', 2));

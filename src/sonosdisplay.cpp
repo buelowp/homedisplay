@@ -8,6 +8,7 @@ SonosDisplay::SonosDisplay(QWidget *parent) : QWidget(parent)
     QFont c("Roboto-Regular", 24);
     QFont t("Roboto-Regular", 36);
 
+    setWindowState(Qt::WindowFullScreen);
     setObjectName("sonosdisplay");
     m_layout = new QGridLayout();
     m_layout->setObjectName("layout");

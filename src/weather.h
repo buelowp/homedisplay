@@ -25,6 +25,7 @@ public slots:
 signals:
     void forecast(double high, double low);
     void apiError();
+    void precip(double p);
 
 private:
     void decodeResponse(QJsonDocument &doc);

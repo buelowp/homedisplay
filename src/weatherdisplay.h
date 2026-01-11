@@ -19,6 +19,9 @@ public:
     ~WeatherDisplay();
 
     void updateDisplay(QString &topic, QJsonObject &object);
+
+public slots:
+    void precip(double p);
         
 private:
     double calculateHeatIndex(double temp, double humidity);
@@ -33,6 +36,7 @@ private:
     QLabel *m_rainYTD;
     QLabel *m_usvh;
     QLabel *m_pressure;
+    QLabel *m_precip;
     QLabel *m_temperatureLabel;
     QLabel *m_humidityLabel;
     QLabel *m_heatIndexLabel;
@@ -43,6 +47,7 @@ private:
     QLabel *m_rainYTDLabel;
     QLabel *m_pressureLabel;
     QLabel *m_usvhLabel;
+    QLabel *m_rainChanceLabel;
     CompassRose *m_rose;
     QGridLayout *m_layout;
     int m_lastWS;
