@@ -22,5 +22,5 @@ private:
     QHBoxLayout *m_layout;
     QTimer *m_timer;
     QLabel *m_countdown;
-    int m_remains;
+    int m_remain;
 };

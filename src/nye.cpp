@@ -1,37 +1,35 @@
 #include "nye.h"
 
-NYE::NYE(QWidget *parent) : QWidget(parent)
+NYEWidget::NYEWidget(QWidget *parent) : QStackedWidget(parent)
 {
-    m_stackedWidget = new QStackedWidget();
     m_countdownWidget = new CountdownWidget();
     m_nyeWidget = new HappyNYEWidget();
 
-    connect(m_countdownWidget, &CountdownWidget::finished, this, &NYE::happy);
-    connect(m_nyeWidget, &HappyNYEWidget::finished, this, &NYE::complete);
+    connect(m_countdownWidget, &CountdownWidget::finished, this, &NYEWidget::happy);
+    connect(m_nyeWidget, &HappyNYEWidget::finished, this, &NYEWidget::complete);
 
-    m_stackedWidget->addWidget(m_countdownWidget);
-    m_stackedWidget->addWidget(m_nyeWidget);
-    m_stackedWidget->setCurrentIndex(WidgetIndex::Primary);
-    setCentralWidget(m_stackedWidget);
+    addWidget(m_countdownWidget);
+    addWidget(m_nyeWidget);
+    setCurrentIndex(0);
 }
 
-NYE::~NYE()
+NYEWidget::~NYEWidget()
 {
 }
 
-void NYE::countdown()
+void NYEWidget::countdown()
 {
-    m_stackedWidget->setCurrentIndex(0);
+    setCurrentIndex(0);
     m_countdownWidget->go();
 }
 
-void NYE::happy()
+void NYEWidget::happy()
 {
-    m_stackedWidget->setCurrentIndex(1);
+    setCurrentIndex(1);
     m_nyeWidget->go();
 }
 
-void NYE::complete()
+void NYEWidget::complete()
 {
     emit finished();
 }

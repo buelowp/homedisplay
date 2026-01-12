@@ -66,6 +66,7 @@ void Noson::smchange(bool state)
 {
     if (m_sm->error()) {
         qDebug() << __PRETTY_FUNCTION__ << ":" << state << ":" << m_sm->errorString();
+    }
 }
 
 void Noson::playerStopped()

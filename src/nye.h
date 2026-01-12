@@ -6,12 +6,12 @@
 #include "countdownwidget.h"
 #include "happynyewidget.h"
 
-class NYE : public QWidget
+class NYEWidget : public QStackedWidget
 {
     Q_OBJECT
 public:
-    NYE(QWidget *parent = nullptr);
-    ~NYE();
+    NYEWidget(QWidget *parent = nullptr);
+    ~NYEWidget();
 
 signals:
     void finished();
@@ -22,7 +22,6 @@ public slots:
     void happy();
 
 private:
-    QStackedWidget *m_stackedWidget;
     CountdownWidget *m_countdownWidget;
     HappyNYEWidget *m_nyeWidget;
 };

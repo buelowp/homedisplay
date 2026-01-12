@@ -68,7 +68,6 @@ protected slots:
     void endWeatherScreen();
     void endBlankScreen();
     void showWeatherScreen();
-    void updateNYEClock();
     void showDimScreen();
     void endDimScreen();
     void lux(long l);
@@ -118,7 +117,7 @@ private:
     Lux *m_lux;
     Environment *m_environment;
     Noson *m_sonos;
-    NYE *m_nyeWidget;
+    NYEWidget *m_nyeWidget;
 
     QStackedWidget *m_stackedWidget;
     
@@ -129,8 +128,6 @@ private:
     QTimer *m_startBigClockScreen;
     QTimer *m_endBigClockScreen;
     QThread *m_sonosThread;
-
-    QLabel *m_lbCountdown;
 
     QStateMachine m_states;
 

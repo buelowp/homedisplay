@@ -49,9 +49,6 @@ PrimaryDisplay::PrimaryDisplay(QWidget *parent, Qt::WindowFlags flags) : QMainWi
     }
 
     setFixedSize(primaryScreen->geometry().width(), primaryScreen->geometry().height());
-
-    m_lbCountdown = new QLabel();
-    m_lbCountdown->setScaledContents(true);
     
     QFont c("Roboto-Regular", 36);
     QFont l("Roboto-Regular", 28);
@@ -63,7 +60,7 @@ PrimaryDisplay::PrimaryDisplay(QWidget *parent, Qt::WindowFlags flags) : QMainWi
     m_sonosWidget->setFixedSize(primaryScreen->geometry().width(), primaryScreen->geometry().height());
     m_clockWidget = new ClockDisplay();
     m_bigClock = new BigClock();
-    m_nyeWidget = new NYE();
+    m_nyeWidget = new NYEWidget();
     m_blankLayoutWidget = new QWidget();
 
     m_stackedWidget = new QStackedWidget();
@@ -102,7 +99,7 @@ PrimaryDisplay::PrimaryDisplay(QWidget *parent, Qt::WindowFlags flags) : QMainWi
     QState *weather = new QState();
     QState *bigclock = new QState();
 
-    nye->addTransition(m_nyeWidget, &NYE::finished, primary);
+    nye->addTransition(m_nyeWidget, &NYEWidget::finished, primary);
     primary->addTransition(m_sonos, &Noson::startDisplay, sonos);
     primary->addTransition(this, SIGNAL(startNYE()), nye);
     primary->addTransition(m_startBlankScreen, &QTimer::timeout, blank);
@@ -337,17 +334,10 @@ void PrimaryDisplay::showPrimaryScreen()
     m_stackedWidget->setCurrentIndex(WidgetIndex::Primary);
 }
 
-void PrimaryDisplay::updateNYEClock()
-{
-    QTime t = QTime::currentTime();
-    QString countdown("<font style='font-size:200px; color:white; font-weight: bold;'>%1</font>");
-    m_lbCountdown->setText(countdown.arg(60 - t.second()));
-}
-
 void PrimaryDisplay::showNYEScreen()
 {
     m_stackedWidget->setCurrentIndex(WidgetIndex::NYE);
-    m_m_nyeWidget->go();
+    m_nyeWidget->countdown();
 }
 
 void PrimaryDisplay::connected()
