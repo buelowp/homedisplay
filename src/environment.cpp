@@ -5,12 +5,15 @@
 
 Environment::Environment(int interval, QObject *parent) : QObject(parent), m_interval(interval), m_open(false)
 {
+    QSettings settings(QSettings::IniFormat, QSettings::UserScope, "home", "homedisplay");
+    QString hwmon = settings.value("hwmon").toString();
+
     m_timer = new QTimer(this);
     connect(m_timer, &QTimer::timeout, this, &Environment::timeout);
     m_timer->setInterval(m_interval);
 
-    m_temp = new QFile("/sys/class/hwmon/hwmon1/temp1_input");
-    m_humidity = new QFile("/sys/class/hwmon/hwmon1/humidity1_input");
+    m_temp = new QFile(QString("/sys/class/hwmon/") + hwmon + QString("/temp1_input"));
+    m_humidity = new QFile(QString("/sys/class/hwmon/") + hwmon + QString("/humidity1_input"));
     if (m_temp->open(QFile::ReadOnly)) {
         m_tempStream = new QTextStream(m_temp);
     }

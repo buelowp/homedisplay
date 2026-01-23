@@ -255,7 +255,7 @@ void PrimaryDisplay::lux(long l)
         bright = 10;
     }
     if (bright != m_lastBrightValue) {
-//        setBacklight(true, bright);
+        setBacklight(true, bright);
         m_lastBrightValue = bright;
     }
 }
@@ -342,6 +342,7 @@ void PrimaryDisplay::showNYEScreen()
 
 void PrimaryDisplay::connected()
 {
+    qDebug() << __PRETTY_FUNCTION__ << ": MQTT client connected";
     m_mqttClient->subscribe(QMqttTopicFilter("weather/#"));
     m_mqttClient->subscribe(QMqttTopicFilter("garden/#"));
     m_mqttClient->publish(QMqttTopicName("request/rainfall"), QByteArray("{\"request\": \"rainfall\"}"));
@@ -350,7 +351,6 @@ void PrimaryDisplay::connected()
 void PrimaryDisplay::disconnected()
 {
     qDebug() << __PRETTY_FUNCTION__ << ": MQTT connection lost";
-    m_mqttClient->connectToHost();
 }
 
 void PrimaryDisplay::errorChanged(QMqttClient::ClientError error)

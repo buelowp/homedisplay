@@ -25,7 +25,7 @@ public slots:
         
 private:
     double calculateHeatIndex(double temp, double humidity);
-    double calculateWindchill(double temp, int speed);
+    double calculateWindchill(double temp, double speed);
     
     QLabel *m_temperature;
     QLabel *m_humidity;
@@ -50,7 +50,7 @@ private:
     QLabel *m_rainChanceLabel;
     CompassRose *m_rose;
     QGridLayout *m_layout;
-    int m_lastWS;
+    double m_lastWS;
 };
 
 #endif // WEATHERDISPLAY_H

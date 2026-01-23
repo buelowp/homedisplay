@@ -136,17 +136,38 @@ void WeatherDisplay::precip(double p)
     m_precip->setText(QString("%1%").arg(p, 0, 'f', 0));
 }
 
-double WeatherDisplay::calculateHeatIndex(double temp, double humidity)
+double WeatherDisplay::calculateHeatIndex(double T, double R)
 {
-    double tdpfc =  (temp - (14.55 + 0.114 * temp) * (1 - (0.01 * humidity)) - pow(((2.5 + 0.007 * temp) * (1 - (0.01 * humidity))),3) - (15.9 + 0.117 * temp) * pow((1 - (0.01 * humidity)), 14));
-    double heatIndex = tdpfc * 1.8 + 32;
-    return heatIndex;
+
+    // Formula constants
+    double c1 = -42.379, c2 = 2.04901523, c3 = 10.14333127,
+    c4 = -0.22475541, c5 = -0.00683783, c6 = -0.05481717,
+    c7 = 0.00122874, c8 = 0.00085282, c9 = -0.00000199;
+
+    double HI = c1 + (c2 * T) + (c3 * R) + (c4 * T * R) +
+    (c5 * T * T) + (c6 * R * R) + (c7 * T * T * R) +
+    (c8 * T * R * R) + (c9 * T * T * R * R);
+
+    // Adjustments for specific conditions
+    if (R < 13.0 && T >= 80.0 && T <= 112.0) {
+        HI -= ((13.0 - R) / 4.0) * sqrt((17.0 - fabs(T - 95.0)) / 17.0);
+    } else if (R > 85.0 && T >= 80.0 && T <= 87.0) {
+        HI += ((R - 85.0) / 10.0) * ((87.0 - T) / 5.0);
+    }
+
+    return HI;
 }
 
-double WeatherDisplay::calculateWindchill(double temp, int speed)
+double WeatherDisplay::calculateWindchill(double temp, double speed)
 {
-    double w = 33-((10*sqrt(speed)-speed+10.5)*(33-temp))/23.1;
-    return w;
+    if (temp > 40.0 || speed <= 3.0) {
+        return temp;
+    } else {
+        // Use the NWS wind chill formula
+        double wind_chill = 35.74 + (0.6215 * temp) - (35.75 * pow(speed, 0.16)) + (0.4275 * temp * pow(speed, 0.16));
+
+        return wind_chill;
+    }
 }
 
 /*
@@ -169,13 +190,13 @@ void WeatherDisplay::updateDisplay(QString &topic, QJsonObject &object)
             double humidity = env["humidity"].toDouble();
             m_temperature->setText(QString("%1%2").arg(farenheit, 0, 'f', 1).arg(QChar(176)));
             m_humidity->setText(QString("%1%").arg(humidity, 0, 'f', 1));
-            if (farenheit >= 50.0) {
+            if (farenheit >= 80.0) {
                 m_heatIndexLabel->setText("Heat Index");
                 m_heatIndex->setText(QString("%1%2").arg(calculateHeatIndex(celsius, humidity), 0, 'f', 1).arg(QChar(176)));
             }
             else {
-                m_heatIndexLabel->setText("Wind Chill");
-                m_heatIndex->setText(QString("%1").arg(calculateWindchill(farenheit, m_lastWS), 0, 'f', 1));
+                m_heatIndexLabel->setText("");
+                m_heatIndex->setText(QString("%1").arg(farenheit));
             }
             m_usvh->setText(QString("%1 usv/h").arg(radiation["uSvh"].toDouble(), 0, 'f', 3));
         }
@@ -203,9 +224,14 @@ void WeatherDisplay::updateDisplay(QString &topic, QJsonObject &object)
     }
     else if (topic == "weather/wind") {
         if (object.contains("speed")) {
-            m_lastWS = object["speed"].toInt();
-            m_windSpeed->setText(QString("%1 mph").arg(m_lastWS));
+            m_lastWS = object["speed"].toDouble();
+            m_windSpeed->setText(QString("%1 mph").arg(m_lastWS, 0, 'f', 1));
             m_rose->setAngle(object["direction"].toInt());
+            double t = m_temperature->text().toDouble();
+            if (t <= 40.0) {
+                m_heatIndexLabel->setText("Wind Chill");
+                m_heatIndex->setText(QString("%1").arg(calculateWindchill(t, m_lastWS), 0, 'f', 1));
+            }
         }
     }
     else if (topic == "weather/barometer") {
