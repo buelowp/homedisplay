@@ -6,6 +6,7 @@
 WeatherDisplay::WeatherDisplay(QWidget *parent) : QWidget(parent)
 {
     m_lastWS = 0;
+    m_lastTemp = -100.0;
     
     QFont l("Roboto-Regular", 28);
     QFont p("Roboto-Regular", 12);
@@ -162,10 +163,10 @@ double WeatherDisplay::calculateWindchill(double temp, double speed)
 {
     if (temp > 40.0 || speed <= 3.0) {
         return temp;
-    } else {
+    }
+    else {
         // Use the NWS wind chill formula
         double wind_chill = 35.74 + (0.6215 * temp) - (35.75 * pow(speed, 0.16)) + (0.4275 * temp * pow(speed, 0.16));
-
         return wind_chill;
     }
 }
@@ -185,18 +186,18 @@ void WeatherDisplay::updateDisplay(QString &topic, QJsonObject &object)
         if (object.contains("environment")) {
             QJsonObject env = object["environment"].toObject();
             QJsonObject radiation = object["radiation"].toObject();
-            double farenheit = env["farenheit"].toDouble();
+            m_lastTemp = env["farenheit"].toDouble();
             double celsius = env["celsius"].toDouble();
             double humidity = env["humidity"].toDouble();
-            m_temperature->setText(QString("%1%2").arg(farenheit, 0, 'f', 1).arg(QChar(176)));
+            m_temperature->setText(QString("%1%2").arg(m_lastTemp, 0, 'f', 1).arg(QChar(176)));
             m_humidity->setText(QString("%1%").arg(humidity, 0, 'f', 1));
-            if (farenheit >= 80.0) {
+            if (m_lastTemp >= 80.0) {
                 m_heatIndexLabel->setText("Heat Index");
                 m_heatIndex->setText(QString("%1%2").arg(calculateHeatIndex(celsius, humidity), 0, 'f', 1).arg(QChar(176)));
             }
             else {
                 m_heatIndexLabel->setText("");
-                m_heatIndex->setText(QString("%1").arg(farenheit));
+                m_heatIndex->setText(QString("%1%2").arg(m_lastTemp).arg(QChar(176)));
             }
             m_usvh->setText(QString("%1 usv/h").arg(radiation["uSvh"].toDouble(), 0, 'f', 3));
         }
@@ -227,10 +228,9 @@ void WeatherDisplay::updateDisplay(QString &topic, QJsonObject &object)
             m_lastWS = object["speed"].toDouble();
             m_windSpeed->setText(QString("%1 mph").arg(m_lastWS, 0, 'f', 1));
             m_rose->setAngle(object["direction"].toInt());
-            double t = m_temperature->text().toDouble();
-            if (t <= 40.0) {
+            if (m_lastTemp != -100) {
                 m_heatIndexLabel->setText("Wind Chill");
-                m_heatIndex->setText(QString("%1").arg(calculateWindchill(t, m_lastWS), 0, 'f', 1));
+                m_heatIndex->setText(QString("%1%2").arg(calculateWindchill(m_lastTemp, m_lastWS), 0, 'f', 1).arg(QChar(176)));
             }
         }
     }

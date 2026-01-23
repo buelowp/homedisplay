@@ -51,6 +51,7 @@ private:
     CompassRose *m_rose;
     QGridLayout *m_layout;
     double m_lastWS;
+    double m_lastTemp;
 };
 
 #endif // WEATHERDISPLAY_H
