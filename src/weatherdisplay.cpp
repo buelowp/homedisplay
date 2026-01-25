@@ -20,8 +20,6 @@ WeatherDisplay::WeatherDisplay(QWidget *parent) : QWidget(parent)
         QRect screenGeometry = primaryScreen->geometry();
         m_width = screenGeometry.width();
         int screenHeight = screenGeometry.height();
-
-        qDebug() << __PRETTY_FUNCTION__ << "Screen Resolution:" << m_width << "x" << screenHeight;
     }
 
     m_temperature = new CustomLabel(28, m_width);
