@@ -29,6 +29,8 @@ Lux::~Lux()
 
 void Lux::go()
 {
+    timeout();
+
     if (m_open)
         m_timer->start();
 }

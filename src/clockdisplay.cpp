@@ -6,15 +6,6 @@
 ClockDisplay::ClockDisplay(QFrame *parent) : QFrame(parent)
 {
     QSettings settings(QSettings::IniFormat, QSettings::UserScope, "home", "homedisplay");
-
-    leftSideLayout();
-    rightSideLayout();
-
-    QHBoxLayout *parentLayout = new QHBoxLayout();
-    parentLayout->addWidget(m_leftSideWidget, 60);
-    parentLayout->addWidget(m_rightSideWidget, 40);
-    setLayout(parentLayout);
-
     QScreen *primaryScreen = QGuiApplication::primaryScreen();
 
     if (primaryScreen) {
@@ -25,6 +16,14 @@ ClockDisplay::ClockDisplay(QFrame *parent) : QFrame(parent)
 
         qDebug() << __PRETTY_FUNCTION__ << "Screen Resolution:" << m_width << "x" << screenHeight;
     }
+
+    leftSideLayout();
+    rightSideLayout();
+
+    QHBoxLayout *parentLayout = new QHBoxLayout();
+    parentLayout->addWidget(m_leftSideWidget, 60);
+    parentLayout->addWidget(m_rightSideWidget, 40);
+    setLayout(parentLayout);
 
     m_clockTimer = new QTimer();
     connect(m_clockTimer, &QTimer::timeout, this, &ClockDisplay::clockTimeout);
@@ -58,14 +57,14 @@ void ClockDisplay::leftSideLayout()
     m_primaryClock = new CustomLabel(60, m_width);
     m_primaryClock->setStyleSheet("QLabel{color:#FFFFC0}");
     m_primaryDate = new CustomLabel(20, m_width);
-    m_localHighTempLabel = new CustomLabel("Today's High", 14);
+    m_localHighTempLabel = new CustomLabel("Today's High", 14, m_width);
     m_localHighTemp = new CustomLabel(18, m_width);
     m_localLowTemp = new CustomLabel(18, m_width);
-    m_localLowTempLabel = new CustomLabel("Today's Low", 14);
+    m_localLowTempLabel = new CustomLabel("Today's Low", 14, m_width);
     m_forecastHighTemp = new CustomLabel(18, m_width);
-    m_forecastHighTempLabel = new CustomLabel("Forecast High", 14);
+    m_forecastHighTempLabel = new CustomLabel("Forecast High", 14, m_width);
     m_forecastLowTemp = new CustomLabel(18, m_width);
-    m_forecastLowTempLabel = new CustomLabel("Forecast Low", 14);
+    m_forecastLowTempLabel = new CustomLabel("Forecast Low", 14, m_width);
     m_sunrise = new CustomLabel(18, m_width);
     m_sunset = new CustomLabel(18, m_width);
     m_sunriseLabel = new CustomLabel("Sunrise", 14, m_width);

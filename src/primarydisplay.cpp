@@ -121,6 +121,8 @@ PrimaryDisplay::PrimaryDisplay(QWidget *parent, Qt::WindowFlags flags) : QMainWi
     setNYETimeout();
 
     if (settings.value("usetsl2561").toBool()) {
+        m_maxBrightness = settings.value("brightness", 255).toInt();
+        qDebug() << __PRETTY_FUNCTION__ << ": Display has a max brightness value of" << m_maxBrightness;
         int bus = settings.value("tsl2561bus", 2).toInt();
         m_lux = new Lux(bus);
         connect(m_lux, &Lux::lux, this, &PrimaryDisplay::lux);
@@ -158,8 +160,6 @@ PrimaryDisplay::PrimaryDisplay(QWidget *parent, Qt::WindowFlags flags) : QMainWi
     m_stackedWidget->setCurrentIndex(WidgetIndex::Primary);
     setCentralWidget(m_stackedWidget);
     m_states.start();
-    m_maxBrightness = settings.value("brightness", 255).toInt();
-    qDebug() << __PRETTY_FUNCTION__ << ": Display has a max brightness value of" << m_maxBrightness;
 }
 
 PrimaryDisplay::~PrimaryDisplay() 
@@ -240,7 +240,7 @@ void PrimaryDisplay::lux(long l)
     int bright = 0;
 
     if (now.time().hour() >= 7 && now.time().hour() <= 21) {
-        bright = 255;
+        bright = m_maxBrightness;
     }
     else {
         bright = myMap(l, 0, 255, 1, m_maxBrightness);
@@ -249,6 +249,7 @@ void PrimaryDisplay::lux(long l)
     }
 
     if (bright != m_lastBrightValue) {
+        qDebug() << __PRETTY_FUNCTION__ << ":" << bright;
         setBacklight(true, bright);
         m_lastBrightValue = bright;
     }
