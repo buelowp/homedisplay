@@ -136,6 +136,10 @@ private:
     long m_lastBrightValue;
 
     QString m_hostName;
+
+    int m_maxBrightness;
+
+    int m_width;
 };
 
 #endif /* MYTHFRAME_H_ */

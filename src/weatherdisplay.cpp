@@ -7,99 +7,46 @@ WeatherDisplay::WeatherDisplay(QWidget *parent) : QWidget(parent)
 {
     m_lastWS = 0;
     m_lastTemp = -100.0;
-    
+
     QFont l("Roboto-Regular", 28);
     QFont p("Roboto-Regular", 12);
 
     setWindowState(Qt::WindowFullScreen);
 
-    m_temperature = new QLabel();
-    m_temperature->setFont(l);
-    m_temperature->setScaledContents(true);
-    m_temperature->setAlignment(Qt::AlignCenter);
-    m_heatIndex = new QLabel();
-    m_heatIndex->setFont(l);
-    m_heatIndex->setScaledContents(true);
-    m_heatIndex->setAlignment(Qt::AlignCenter);
-    m_humidity = new QLabel();
-    m_humidity->setFont(l);
-    m_humidity->setScaledContents(true);
-    m_humidity->setAlignment(Qt::AlignCenter);
+    QScreen *primaryScreen = QGuiApplication::primaryScreen();
+
+    if (primaryScreen) {
+        // Get the screen's full geometry (resolution in pixels)
+        QRect screenGeometry = primaryScreen->geometry();
+        m_width = screenGeometry.width();
+        int screenHeight = screenGeometry.height();
+
+        qDebug() << __PRETTY_FUNCTION__ << "Screen Resolution:" << m_width << "x" << screenHeight;
+    }
+
+    m_temperature = new CustomLabel(28, m_width);
+    m_heatIndex = new CustomLabel(28, m_width);
+    m_humidity = new CustomLabel(28, m_width);
     m_rose = new CompassRose();
-    m_uvIndex = new QLabel();
-    m_uvIndex->setFont(l);
-    m_uvIndex->setScaledContents(true);
-    m_uvIndex->setAlignment(Qt::AlignCenter);
-    m_windSpeed = new QLabel();
-    m_windSpeed->setFont(l);
-    m_windSpeed->setScaledContents(true);
-    m_windSpeed->setAlignment(Qt::AlignCenter);
-    m_usvh = new QLabel();
-    m_usvh->setFont(l);
-    m_usvh->setScaledContents(true);
-    m_usvh->setAlignment(Qt::AlignCenter);
-    m_rainToday = new QLabel();
-    m_rainToday->setFont(l);
-    m_rainToday->setScaledContents(true);
-    m_rainToday->setAlignment(Qt::AlignCenter);
-    m_rainYTD = new QLabel();
-    m_rainYTD->setFont(l);
-    m_rainYTD->setScaledContents(true);
-    m_rainYTD->setAlignment(Qt::AlignCenter);
-    m_pressure = new QLabel();
-    m_pressure->setFont(l);
-    m_pressure->setScaledContents(true);
-    m_pressure->setAlignment(Qt::AlignCenter);
-    m_precip = new QLabel();
-    m_precip->setFont(l);
-    m_precip->setScaledContents(true);
-    m_precip->setAlignment(Qt::AlignCenter);
+    m_uvIndex = new CustomLabel(28, m_width);
+    m_windSpeed = new CustomLabel(28, m_width);
+    m_usvh = new CustomLabel(28, m_width);
+    m_rainToday = new CustomLabel(28, m_width);
+    m_rainYTD = new CustomLabel(28, m_width);
+    m_pressure = new CustomLabel(28, m_width);
+    m_precip = new CustomLabel(28, m_width);
 
-    m_temperatureLabel = new QLabel("Temperature");
-    m_temperatureLabel->setFont(p);
-    m_temperatureLabel->setScaledContents(true);
-    m_temperatureLabel->setAlignment(Qt::AlignCenter);
-    m_heatIndexLabel = new QLabel("Heat Index");
-    m_heatIndexLabel->setFont(p);
-    m_heatIndexLabel->setScaledContents(true);
-    m_heatIndexLabel->setAlignment(Qt::AlignCenter);
-    m_humidityLabel = new QLabel("Humidity");
-    m_humidityLabel->setFont(p);
-    m_humidityLabel->setScaledContents(true);
-    m_humidityLabel->setAlignment(Qt::AlignCenter);
-    m_uvIndexLabel = new QLabel("UV Index");
-    m_uvIndexLabel->setFont(p);
-    m_uvIndexLabel->setScaledContents(true);
-    m_uvIndexLabel->setAlignment(Qt::AlignCenter);
-    m_windSpeedLabel = new QLabel("Wind Speed");
-    m_windSpeedLabel->setFont(p);
-    m_windSpeedLabel->setScaledContents(true);
-    m_windSpeedLabel->setAlignment(Qt::AlignCenter);
-    m_windDirLabel = new QLabel("Wind Direction");
-    m_windDirLabel->setFont(p);
-    m_windDirLabel->setScaledContents(true);
-    m_windDirLabel->setAlignment(Qt::AlignCenter);
-    m_usvhLabel = new QLabel("Radiation");
-    m_usvhLabel->setFont(p);
-    m_usvhLabel->setScaledContents(true);
-    m_usvhLabel->setAlignment(Qt::AlignCenter);
-    m_rainTodayLabel = new QLabel("Rainfall Today");
-    m_rainTodayLabel->setFont(p);
-    m_rainTodayLabel->setScaledContents(true);
-    m_rainTodayLabel->setAlignment(Qt::AlignCenter);
-    m_rainYTDLabel = new QLabel("Rainfall YTD");
-    m_rainYTDLabel->setFont(p);
-    m_rainYTDLabel->setScaledContents(true);
-    m_rainYTDLabel->setAlignment(Qt::AlignCenter);
-    m_pressureLabel = new QLabel("Barometer");
-    m_pressureLabel->setFont(p);
-    m_pressureLabel->setScaledContents(true);
-    m_pressureLabel->setAlignment(Qt::AlignCenter);
-    m_rainChanceLabel = new QLabel("% Precip");
-    m_rainChanceLabel->setFont(p);
-    m_rainChanceLabel->setScaledContents(true);
-    m_rainChanceLabel->setAlignment(Qt::AlignCenter);
-
+    m_temperatureLabel = new CustomLabel("Temperature", 12, m_width);
+    m_heatIndexLabel = new CustomLabel("Heat Index", 12, m_width);
+    m_humidityLabel = new CustomLabel("Humidity", 12, m_width);
+    m_uvIndexLabel = new CustomLabel("UV Index", 12, m_width);
+    m_windSpeedLabel = new CustomLabel("Wind Speed", 12, m_width);
+    m_windDirLabel = new CustomLabel("Wind Direction", 12, m_width);
+    m_usvhLabel = new CustomLabel("Radiation", 12, m_width);
+    m_rainTodayLabel = new CustomLabel("Rainfall Today", 12, m_width);
+    m_rainYTDLabel = new CustomLabel("Rainfall YTD", 12, m_width);
+    m_pressureLabel = new CustomLabel("Barometer", 12, m_width);
+    m_rainChanceLabel = new CustomLabel("% Precip", 12, m_width);
 
     m_layout = new QGridLayout();
     m_layout->addWidget(m_temperatureLabel, 0, 0, 1, 1);

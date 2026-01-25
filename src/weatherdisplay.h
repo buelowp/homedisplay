@@ -9,6 +9,7 @@
 #include <QtWidgets/QtWidgets>
 
 #include "compassrose.h"
+#include "customlabel.h"
 
 class WeatherDisplay : public QWidget
 {
@@ -27,31 +28,32 @@ private:
     double calculateHeatIndex(double temp, double humidity);
     double calculateWindchill(double temp, double speed);
     
-    QLabel *m_temperature;
-    QLabel *m_humidity;
-    QLabel *m_heatIndex;
-    QLabel *m_windSpeed;
-    QLabel *m_uvIndex;
-    QLabel *m_rainToday;
-    QLabel *m_rainYTD;
-    QLabel *m_usvh;
-    QLabel *m_pressure;
-    QLabel *m_precip;
-    QLabel *m_temperatureLabel;
-    QLabel *m_humidityLabel;
-    QLabel *m_heatIndexLabel;
-    QLabel *m_windSpeedLabel;
-    QLabel *m_windDirLabel;
-    QLabel *m_uvIndexLabel;
-    QLabel *m_rainTodayLabel;
-    QLabel *m_rainYTDLabel;
-    QLabel *m_pressureLabel;
-    QLabel *m_usvhLabel;
-    QLabel *m_rainChanceLabel;
+    CustomLabel *m_temperature;
+    CustomLabel *m_humidity;
+    CustomLabel *m_heatIndex;
+    CustomLabel *m_windSpeed;
+    CustomLabel *m_uvIndex;
+    CustomLabel *m_rainToday;
+    CustomLabel *m_rainYTD;
+    CustomLabel *m_usvh;
+    CustomLabel *m_pressure;
+    CustomLabel *m_precip;
+    CustomLabel *m_temperatureLabel;
+    CustomLabel *m_humidityLabel;
+    CustomLabel *m_heatIndexLabel;
+    CustomLabel *m_windSpeedLabel;
+    CustomLabel *m_windDirLabel;
+    CustomLabel *m_uvIndexLabel;
+    CustomLabel *m_rainTodayLabel;
+    CustomLabel *m_rainYTDLabel;
+    CustomLabel *m_pressureLabel;
+    CustomLabel *m_usvhLabel;
+    CustomLabel *m_rainChanceLabel;
     CompassRose *m_rose;
     QGridLayout *m_layout;
     double m_lastWS;
     double m_lastTemp;
+    int m_width;
 };
 
 #endif // WEATHERDISPLAY_H

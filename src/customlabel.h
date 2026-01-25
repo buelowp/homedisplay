@@ -13,8 +13,8 @@ class CustomLabel : public QLabel
     Q_OBJECT
 
 public:
-    CustomLabel(const QString &text, int fontSize, Qt::Alignment alignment = Qt::AlignCenter, QWidget *parent = nullptr);
-    CustomLabel(int fontSize, Qt::Alignment alignment = Qt::AlignCenter, QWidget *parent = nullptr);
+    CustomLabel(const QString &text, int fontSize, int width = 720, Qt::Alignment alignment = Qt::AlignCenter, QWidget *parent = nullptr);
+    CustomLabel(int fontSize, int width = 720, Qt::Alignment alignment = Qt::AlignCenter, QWidget *parent = nullptr);
 };
 
 #endif // CUSTOMLABEL_H

@@ -3,18 +3,26 @@
 
 #include "customlabel.h"
 
-CustomLabel::CustomLabel(const QString& text, int fontSize, Qt::Alignment alignment, QWidget* parent) : QLabel(text, parent)
+CustomLabel::CustomLabel(const QString& text, int fontSize, int width, Qt::Alignment alignment, QWidget* parent) : QLabel(text, parent)
 {
     QFont f("Roboto-Regular");
-    f.setPointSize(fontSize);
+    if (width == 1280)
+        fontSize = fontSize * 1.5;
+
+    f.setPointSize(fontSize * 1.5);
     setFont(f);
     setAlignment(alignment);
+    setScaledContents(true);
 }
 
-CustomLabel::CustomLabel(int fontSize, Qt::Alignment alignment, QWidget* parent) : QLabel(parent)
+CustomLabel::CustomLabel(int fontSize, int width, Qt::Alignment alignment, QWidget* parent) : QLabel(parent)
 {
     QFont f("Roboto-Regular");
-    f.setPointSize(fontSize);
+    if (width == 1280)
+        fontSize = fontSize * 1.5;
+
+    f.setPointSize(fontSize * 1.5);
     setFont(f);
     setAlignment(alignment);
+    setScaledContents(true);
 }

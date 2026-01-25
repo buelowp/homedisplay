@@ -15,6 +15,17 @@ ClockDisplay::ClockDisplay(QFrame *parent) : QFrame(parent)
     parentLayout->addWidget(m_rightSideWidget, 40);
     setLayout(parentLayout);
 
+    QScreen *primaryScreen = QGuiApplication::primaryScreen();
+
+    if (primaryScreen) {
+        // Get the screen's full geometry (resolution in pixels)
+        QRect screenGeometry = primaryScreen->geometry();
+        m_width = screenGeometry.width();
+        int screenHeight = screenGeometry.height();
+
+        qDebug() << __PRETTY_FUNCTION__ << "Screen Resolution:" << m_width << "x" << screenHeight;
+    }
+
     m_clockTimer = new QTimer();
     connect(m_clockTimer, &QTimer::timeout, this, &ClockDisplay::clockTimeout);
     m_clockTimer->setInterval(500);
@@ -44,21 +55,21 @@ void ClockDisplay::leftSideLayout()
     m_leftSideLayout = new QGridLayout();
     m_leftSideWidget = new QWidget();
 
-    m_primaryClock = new CustomLabel(60);
+    m_primaryClock = new CustomLabel(60, m_width);
     m_primaryClock->setStyleSheet("QLabel{color:#FFFFC0}");
-    m_primaryDate = new CustomLabel(20);
+    m_primaryDate = new CustomLabel(20, m_width);
     m_localHighTempLabel = new CustomLabel("Today's High", 14);
-    m_localHighTemp = new CustomLabel(18);
-    m_localLowTemp = new CustomLabel(18);
+    m_localHighTemp = new CustomLabel(18, m_width);
+    m_localLowTemp = new CustomLabel(18, m_width);
     m_localLowTempLabel = new CustomLabel("Today's Low", 14);
-    m_forecastHighTemp = new CustomLabel(18);
+    m_forecastHighTemp = new CustomLabel(18, m_width);
     m_forecastHighTempLabel = new CustomLabel("Forecast High", 14);
-    m_forecastLowTemp = new CustomLabel(18);
+    m_forecastLowTemp = new CustomLabel(18, m_width);
     m_forecastLowTempLabel = new CustomLabel("Forecast Low", 14);
-    m_sunrise = new CustomLabel(18);
-    m_sunset = new CustomLabel(18);
-    m_sunriseLabel = new CustomLabel("Sunrise", 14);
-    m_sunsetLabel = new CustomLabel("Sunset", 14);
+    m_sunrise = new CustomLabel(18, m_width);
+    m_sunset = new CustomLabel(18, m_width);
+    m_sunriseLabel = new CustomLabel("Sunrise", 14, m_width);
+    m_sunsetLabel = new CustomLabel("Sunset", 14, m_width);
 
                                                     // row, col, rowspan, colspan
     m_leftSideLayout->addWidget(m_primaryClock,          0, 0, 3, 2, Qt::AlignCenter);
@@ -83,26 +94,26 @@ void ClockDisplay::rightSideLayout()
     m_rightSideLayout = new QGridLayout();
     m_rightSideWidget = new QWidget();
 
-    CustomLabel *outside = new CustomLabel("Outside", 20);
-    CustomLabel *inside = new CustomLabel("Inside", 20);
+    CustomLabel *outside = new CustomLabel("Outside", 20, m_width);
+    CustomLabel *inside = new CustomLabel("Inside", 20, m_width);
 
-    m_localTemperatureLabel = new CustomLabel("Temperature", 16);
-    m_localTemperatureSymbol = new CustomLabel(QChar(176), 12, Qt::AlignLeft|Qt::AlignVCenter);
-    m_localTemperature = new CustomLabel(16);
-    m_localHumidityLabel = new CustomLabel("Humidity", 16);
-    m_localHumidity = new CustomLabel(16);
-    m_localHumiditySymbol = new CustomLabel("%", 12, Qt::AlignLeft);
-    m_outdoorTemperatureLabel = new CustomLabel("Temperature", 16);
-    m_outdoorTemperatureSymbol = new CustomLabel(QChar(176), 12, Qt::AlignLeft|Qt::AlignVCenter);
-    m_outdoorTemperature = new CustomLabel(16);
-    m_outdoorHumidtyLabel = new CustomLabel("Humidity", 16);
-    m_outdoorHumiditySymbol = new CustomLabel("%", 12, Qt::AlignLeft|Qt::AlignVCenter);
-    m_outdoorHumidity = new CustomLabel(16);
-    m_uvIndexLabel = new CustomLabel("UV Index", 16);
-    m_uvIndex = new CustomLabel(16);
-    m_rainFallSymbol = new CustomLabel("in", 12);
-    m_rainFallLabel = new CustomLabel("Rain Today", 16, Qt::AlignLeft|Qt::AlignVCenter);
-    m_rainFall = new CustomLabel(16);
+    m_localTemperatureLabel = new CustomLabel("Temperature", 16, m_width);
+    m_localTemperatureSymbol = new CustomLabel(QChar(176), 12, m_width, Qt::AlignLeft|Qt::AlignVCenter);
+    m_localTemperature = new CustomLabel(16, m_width);
+    m_localHumidityLabel = new CustomLabel("Humidity", 16, m_width);
+    m_localHumidity = new CustomLabel(16, m_width);
+    m_localHumiditySymbol = new CustomLabel("%", 12, m_width, Qt::AlignLeft);
+    m_outdoorTemperatureLabel = new CustomLabel("Temperature", 16, m_width);
+    m_outdoorTemperatureSymbol = new CustomLabel(QChar(176), 12, m_width, Qt::AlignLeft|Qt::AlignVCenter);
+    m_outdoorTemperature = new CustomLabel(16, m_width);
+    m_outdoorHumidtyLabel = new CustomLabel("Humidity", 16, m_width);
+    m_outdoorHumiditySymbol = new CustomLabel("%", 12, m_width, Qt::AlignLeft|Qt::AlignVCenter);
+    m_outdoorHumidity = new CustomLabel(16, m_width);
+    m_uvIndexLabel = new CustomLabel("UV Index", 16, m_width);
+    m_uvIndex = new CustomLabel(16, m_width);
+    m_rainFallSymbol = new CustomLabel("in", 12, m_width);
+    m_rainFallLabel = new CustomLabel("Rain Today", 16, m_width, Qt::AlignLeft|Qt::AlignVCenter);
+    m_rainFall = new CustomLabel(16, m_width);
 
 
     m_rightSideLayout->addWidget(outside,                    0, 0, 1, 5, Qt::AlignCenter);

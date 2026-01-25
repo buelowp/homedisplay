@@ -27,28 +27,19 @@ PrimaryDisplay::PrimaryDisplay(QWidget *parent, Qt::WindowFlags flags) : QMainWi
     pal.setColor(QPalette::Window, Qt::black);
     setAutoFillBackground(true);
     setPalette(pal);
-
     QScreen *primaryScreen = QGuiApplication::primaryScreen();
 
     if (primaryScreen) {
         // Get the screen's full geometry (resolution in pixels)
         QRect screenGeometry = primaryScreen->geometry();
-        int screenWidth = screenGeometry.width();
+        m_width = screenGeometry.width();
         int screenHeight = screenGeometry.height();
 
-        qDebug() << "Screen Resolution:" << screenWidth << "x" << screenHeight;
-
-        // Get the available geometry (excludes areas like taskbars/docks)
-        QRect availableGeometry = primaryScreen->availableGeometry();
-        int availableWidth = availableGeometry.width();
-        int availableHeight = availableGeometry.height();
-
-        qDebug() << "Available Screen Space:" << availableWidth << "x" << availableHeight;
-    } else {
-        qDebug() << "No primary screen found.";
+        qDebug() << __PRETTY_FUNCTION__ << "Screen Resolution:" << m_width << "x" << screenHeight;
     }
 
     setFixedSize(primaryScreen->geometry().width(), primaryScreen->geometry().height());
+    m_maxBrightness = 255;
     
     QFont c("Roboto-Regular", 36);
     QFont l("Roboto-Regular", 28);
@@ -130,7 +121,8 @@ PrimaryDisplay::PrimaryDisplay(QWidget *parent, Qt::WindowFlags flags) : QMainWi
     setNYETimeout();
 
     if (settings.value("usetsl2561").toBool()) {
-        m_lux = new Lux();
+        int bus = settings.value("tsl2561bus", 2).toInt();
+        m_lux = new Lux(bus);
         connect(m_lux, &Lux::lux, this, &PrimaryDisplay::lux);
         if (m_lux->isOpen()) {
             qDebug() << __PRETTY_FUNCTION__ << ": I can sense light";
@@ -166,6 +158,8 @@ PrimaryDisplay::PrimaryDisplay(QWidget *parent, Qt::WindowFlags flags) : QMainWi
     m_stackedWidget->setCurrentIndex(WidgetIndex::Primary);
     setCentralWidget(m_stackedWidget);
     m_states.start();
+    m_maxBrightness = settings.value("brightness", 255).toInt();
+    qDebug() << __PRETTY_FUNCTION__ << ": Display has a max brightness value of" << m_maxBrightness;
 }
 
 PrimaryDisplay::~PrimaryDisplay() 
@@ -241,20 +235,21 @@ void PrimaryDisplay::setupMqttSubscriber()
 
 void PrimaryDisplay::lux(long l)
 {
+    QSettings settings(QSettings::IniFormat, QSettings::UserScope, "home", "homedisplay");
     QDateTime now = QDateTime::currentDateTime();
-
-    long bright = myMap(l, 0, 255, 10, 255);
-    if (bright == 0)
-        bright = 10;
+    int bright = 0;
 
     if (now.time().hour() >= 7 && now.time().hour() <= 21) {
         bright = 255;
     }
-
-    if (bright < 10) {
-        bright = 10;
+    else {
+        bright = myMap(l, 0, 255, 1, m_maxBrightness);
+        if (bright == 0)
+            bright = 1;
     }
+
     if (bright != m_lastBrightValue) {
+        qDebug() << __PRETTY_FUNCTION__ << ":" << bright;
         setBacklight(true, bright);
         m_lastBrightValue = bright;
     }
@@ -262,7 +257,7 @@ void PrimaryDisplay::lux(long l)
 
 void PrimaryDisplay::setBacklight(bool state, uint8_t brightness)
 {
-    QSettings settings(QSettings::IniFormat, QSettings::UserScope, "MythClock", "MythClock");
+    QSettings settings(QSettings::IniFormat, QSettings::UserScope, "home", "homedisplay");
 
     if (settings.contains("backlight")) {
         QString sysfs = settings.value("backlight").toString();
@@ -272,13 +267,17 @@ void PrimaryDisplay::setBacklight(bool state, uint8_t brightness)
             if (state == true)
                 ts << brightness;
             else
-                ts << "0";
+                ts << m_maxBrightness;
 
             bl.close();
         }
         else {
             qDebug() << __PRETTY_FUNCTION__ << ": Backlight:" << sysfs << "" << bl.errorString();
         }
+    }
+    else {
+        qDebug() << __PRETTY_FUNCTION__ << ": Settings does not contain backlight";
+        qDebug() << __PRETTY_FUNCTION__ << ":" << settings.allKeys();
     }
 }
 

@@ -87,6 +87,7 @@ private:
     QTimer *m_clockTimer;
     QTimer *m_weatherUpdateTimer;
     QSqlDatabase m_tempsDb;
+    int m_width;
 };
 
 #endif // CLOCKDISPLAY_H

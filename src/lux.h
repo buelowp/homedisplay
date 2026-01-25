@@ -17,7 +17,7 @@ public:
     void setInterval(int interval = 1000) { m_interval = interval; }
     long max() { return m_max; }
     long min() { return m_min; }
-    bool isOpen() { return m_tsl != nullptr; }
+    bool isOpen() { return (m_tsl != nullptr) && m_open; }
 
 public slots:
     void go();
@@ -34,6 +34,7 @@ private:
     int m_interval;
     long m_max;
     long m_min;
+    long m_open;
 };
 
 #endif // LUX_H

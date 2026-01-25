@@ -8,11 +8,17 @@ Lux::Lux(uint8_t device, uint8_t address, QObject *parent) : QObject(parent), m_
     m_timer = new QTimer();
     connect(m_timer, &QTimer::timeout, this, &Lux::timeout);
     m_timer->setInterval(m_interval);
+    m_min = 0;
+    m_max = 0;
 
     m_device = QString("/dev/i2c-%1").arg(device);
     if ((m_tsl = tsl2561_init(address, m_device.toLocal8Bit().data())) != NULL) {
         tsl2561_enable_autogain(m_tsl);
         tsl2561_set_integration_time(m_tsl, TSL2561_INTEGRATION_TIME_13MS);
+        m_open = true;
+    }
+    else {
+        m_open = false;
     }
 }
 
@@ -23,7 +29,8 @@ Lux::~Lux()
 
 void Lux::go()
 {
-    m_timer->start();
+    if (m_open)
+        m_timer->start();
 }
 
 void Lux::timeout()
