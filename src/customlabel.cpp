@@ -9,7 +9,7 @@ CustomLabel::CustomLabel(const QString& text, int fontSize, int width, Qt::Align
     if (width == 1280)
         fontSize = fontSize * 1.5;
 
-    f.setPointSize(fontSize * 1.5);
+    f.setPointSize(fontSize);
     setFont(f);
     setAlignment(alignment);
     setScaledContents(true);
@@ -21,7 +21,7 @@ CustomLabel::CustomLabel(int fontSize, int width, Qt::Alignment alignment, QWidg
     if (width == 1280)
         fontSize = fontSize * 1.5;
 
-    f.setPointSize(fontSize * 1.5);
+    f.setPointSize(fontSize);
     setFont(f);
     setAlignment(alignment);
     setScaledContents(true);
