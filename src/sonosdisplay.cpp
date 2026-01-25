@@ -8,34 +8,31 @@ SonosDisplay::SonosDisplay(QWidget *parent) : QWidget(parent)
     QFont c("Roboto-Regular", 24);
     QFont t("Roboto-Regular", 36);
 
+    QScreen *primaryScreen = QGuiApplication::primaryScreen();
+
+    if (primaryScreen) {
+        // Get the screen's full geometry (resolution in pixels)
+        QRect screenGeometry = primaryScreen->geometry();
+        m_width = screenGeometry.width();
+        int screenHeight = screenGeometry.height();
+
+        qDebug() << __PRETTY_FUNCTION__ << "Screen Resolution:" << m_width << "x" << screenHeight;
+    }
+
     setWindowState(Qt::WindowFullScreen);
     setObjectName("sonosdisplay");
     m_layout = new QGridLayout();
-    m_layout->setObjectName("layout");
-    m_title = new QLabel();
-    m_title->setScaledContents(true);
-    m_title->setObjectName("title");
-    m_artist = new QLabel();
-    m_artist->setScaledContents(true);
-    m_artist->setObjectName("artist");
-    m_album = new QLabel();
-    m_album->setScaledContents(true);
-    m_album->setObjectName("album");
-    m_elapsedTime = new QLabel();
-    m_elapsedTime->setScaledContents(true);
-    m_elapsedTime->setObjectName("et");
+    m_title = new CustomLabel(36, m_width, Qt::AlignLeft);
+    m_artist = new CustomLabel(24, m_width, Qt::AlignLeft);
+    m_album = new CustomLabel(24, m_width, Qt::AlignLeft);
+    m_elapsedTime = new CustomLabel(24, m_width, Qt::AlignLeft);
+    m_time = new CustomLabel(24, m_width, Qt::AlignRight);
     m_albumArt = new QLabel();
-    m_albumArt->setFixedSize(200, 200);
-    m_albumArt->setObjectName("albumart");
+    m_albumArt->setFixedSize(300, 300);
+    m_albumArt->setAlignment(Qt::AlignCenter);
     m_elapsedIndicator = new QProgressBar();
     m_elapsedIndicator->setStyleSheet(g_progressBarStyle);
     m_elapsedIndicator->setTextVisible(false);
-    m_elapsedIndicator->setObjectName("ei");
-    
-    m_artist->setFont(c);
-    m_album->setFont(c);
-    m_title->setFont(t);
-    m_elapsedTime->setFont(c);
     
     m_layout->setSpacing(20);
     m_layout->addWidget(m_title, 0, 0, 1, 4);
@@ -43,18 +40,41 @@ SonosDisplay::SonosDisplay(QWidget *parent) : QWidget(parent)
     m_layout->addWidget(m_artist, 1, 1, 1, 3);
     m_layout->addWidget(m_album, 2, 1, 1, 3);
     m_layout->addWidget(m_elapsedTime, 3, 1, 1, 3);
+    m_layout->addWidget(m_time, 4, 1, 1, 3);
     m_layout->addWidget(m_elapsedIndicator, 4, 0, 1, 4);
     m_layout->setAlignment(m_albumArt, Qt::AlignTop);
     setLayout(m_layout);
+
+    m_timeTimer = new QTimer();
+    m_timeTimer->setInterval(1000);
+    connect(m_timeTimer, &QTimer::timeout, this, &SonosDisplay::timeout);
 }
 
 SonosDisplay::~SonosDisplay()
 {
 }
 
+void SonosDisplay::startTime()
+{
+    timeout();
+    m_timeTimer->start();
+}
+
+void SonosDisplay::stopTime()
+{
+    m_timeTimer->stop();
+}
+
+void SonosDisplay::timeout()
+{
+    QTime now = QTime::currentTime();
+
+    m_time->setText(now.toString("h:mm:ss"));
+}
+
 void SonosDisplay::updateAlbumArt(QPixmap &pixmap)
 {
-    m_albumArt->setPixmap(pixmap.scaledToWidth(200));
+    m_albumArt->setPixmap(pixmap.scaledToWidth(300));
 }
 
 void SonosDisplay::updateTitle(QString title)

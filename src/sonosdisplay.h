@@ -8,6 +8,7 @@
 #include <QtWidgets/QtWidgets>
 #include <QtGui/QtGui>
 #include <QtNetwork/QtNetwork>
+#include "customlabel.h"
 
 const QString g_progressBarStyle = "QProgressBar { border: 1px solid white;"
             "padding: 1px; border-radius: 5px; background: black; }"
@@ -20,6 +21,9 @@ class SonosDisplay : public QWidget
 public:
     SonosDisplay(QWidget *parent = nullptr);
     ~SonosDisplay();
+
+    void startTime();
+    void stopTime();
     
 public slots:
     void updateAlbum(QString a);
@@ -28,19 +32,23 @@ public slots:
     void updatePosition(QTime remain);
     void updateDuration(QTime duration);
     void updateAlbumArt(QPixmap &pixmap);
+    void timeout();
     
 private:
     void calculateMinutes(int);
     
-    QLabel *m_artist;
-    QLabel *m_album;
-    QLabel *m_title;
+    CustomLabel *m_artist;
+    CustomLabel *m_album;
+    CustomLabel *m_title;
+    CustomLabel *m_time;
     QLabel *m_albumArt;
-    QLabel *m_elapsedTime;
+    CustomLabel *m_elapsedTime;
     QGridLayout *m_layout;
     QTime m_duration;
     QTime m_position;
     QProgressBar *m_elapsedIndicator;
+    QTimer *m_timeTimer;
+    int m_width;
 };
 
 #endif // SONOSDISPLAY_H

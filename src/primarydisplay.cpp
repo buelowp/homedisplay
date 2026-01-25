@@ -249,7 +249,6 @@ void PrimaryDisplay::lux(long l)
     }
 
     if (bright != m_lastBrightValue) {
-        qDebug() << __PRETTY_FUNCTION__ << ":" << bright;
         setBacklight(true, bright);
         m_lastBrightValue = bright;
     }
@@ -361,13 +360,15 @@ void PrimaryDisplay::errorChanged(QMqttClient::ClientError error)
 void PrimaryDisplay::endSonosScreen()
 {
     qDebug() << __PRETTY_FUNCTION__;
-    m_stackedWidget->setCurrentIndex(WidgetIndex::Primary);    
+    m_stackedWidget->setCurrentIndex(WidgetIndex::Primary);
+    m_sonosWidget->stopTime();
 }
 
 void PrimaryDisplay::showSonosScreen()
 {
     qDebug() << __PRETTY_FUNCTION__;
     m_stackedWidget->setCurrentIndex(WidgetIndex::Sonos);
+    m_sonosWidget->startTime();
 }
 
 void PrimaryDisplay::endWeatherScreen()
