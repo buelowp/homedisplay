@@ -27,6 +27,8 @@ signals:
     void lux(long l);
 
 private:
+    int map(int x, int in_min, int in_max, int out_min, int out_max);
+
     QTimer *m_timer;
     QString m_device;
     uint8_t m_address;
@@ -35,6 +37,9 @@ private:
     long m_max;
     long m_min;
     long m_open;
+    QFile m_backlight;
+    int m_maxBrightness;
+    int m_lastVal;
 };
 
 #endif // LUX_H

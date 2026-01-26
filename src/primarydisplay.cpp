@@ -235,49 +235,10 @@ void PrimaryDisplay::setupMqttSubscriber()
 
 void PrimaryDisplay::lux(long l)
 {
-    QSettings settings(QSettings::IniFormat, QSettings::UserScope, "home", "homedisplay");
-    QDateTime now = QDateTime::currentDateTime();
-    int bright = 0;
-
-    if (now.time().hour() >= 7 && now.time().hour() <= 21) {
-        bright = m_maxBrightness;
-    }
-    else {
-        bright = myMap(l, 0, 255, 1, m_maxBrightness);
-        if (bright == 0)
-            bright = 1;
-    }
-
-    if (bright != m_lastBrightValue) {
-        setBacklight(true, bright);
-        m_lastBrightValue = bright;
-    }
 }
 
 void PrimaryDisplay::setBacklight(bool state, uint8_t brightness)
 {
-    QSettings settings(QSettings::IniFormat, QSettings::UserScope, "home", "homedisplay");
-
-    if (settings.contains("backlight")) {
-        QString sysfs = settings.value("backlight").toString();
-        QFile bl(sysfs);
-        if (bl.open(QIODevice::WriteOnly | QIODevice::Text)) {
-            QTextStream ts(&bl);
-            if (state == true)
-                ts << brightness;
-            else
-                ts << m_maxBrightness;
-
-            bl.close();
-        }
-        else {
-            qDebug() << __PRETTY_FUNCTION__ << ": Backlight:" << sysfs << "" << bl.errorString();
-        }
-    }
-    else {
-        qDebug() << __PRETTY_FUNCTION__ << ": Settings does not contain backlight";
-        qDebug() << __PRETTY_FUNCTION__ << ":" << settings.allKeys();
-    }
 }
 
 void PrimaryDisplay::setNYETimeout()
@@ -306,24 +267,7 @@ void PrimaryDisplay::showNYECountDown()
 
 void PrimaryDisplay::enableBacklight(bool state, uint8_t brightness)
 {
-    QSettings settings(QSettings::IniFormat, QSettings::UserScope, "home", "homedisplay");
-    
-    if (settings.contains("backlight")) {
-        QString sysfs = settings.value("backlight").toString();
-        QFile bl(sysfs);
-        if (bl.open(QIODevice::WriteOnly | QIODevice::Text)) {
-            QTextStream ts(&bl);
-            if (state == true)
-                ts << brightness;
-            else
-                ts << "0";
 
-            bl.close();
-        }
-        else {
-            qDebug() << __PRETTY_FUNCTION__ << ": Backlight not found at" << sysfs;
-        }
-    }
 }
 
 void PrimaryDisplay::showPrimaryScreen()
