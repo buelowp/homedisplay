@@ -13,6 +13,7 @@ ClockDisplay::ClockDisplay(QFrame *parent) : QFrame(parent)
         QRect screenGeometry = primaryScreen->geometry();
         m_width = screenGeometry.width();
         int screenHeight = screenGeometry.height();
+        qDebug() << __PRETTY_FUNCTION__ << ": width" << m_width;
     }
 
     leftSideLayout();

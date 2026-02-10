@@ -293,6 +293,7 @@ void PrimaryDisplay::connected()
 void PrimaryDisplay::disconnected()
 {
     qDebug() << __PRETTY_FUNCTION__ << ": MQTT connection lost";
+    m_mqttClient->connectToHost();
 }
 
 void PrimaryDisplay::errorChanged(QMqttClient::ClientError error)

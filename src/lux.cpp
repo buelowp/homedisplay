@@ -37,8 +37,10 @@ Lux::Lux(uint8_t device, uint8_t address, QObject *parent) : QObject(parent), m_
             }
 
             m_backlight.setFileName(brightness);
-            if (!m_backlight.open(QIODevice::WriteOnly | QIODevice::Text)) {
+            if (m_backlight.open(QIODevice::WriteOnly | QIODevice::Text)) {
                 m_open = m_open & true;
+                QTextStream ts(&m_backlight);
+                ts << m_maxBrightness;
             }
         }
         else {
@@ -79,7 +81,7 @@ void Lux::timeout()
     QDateTime now = QDateTime::currentDateTime();
     long l = tsl2561_lux(m_tsl);
 
-    if (now.time().hour() >= 7 && now.time().hour() <= 21) {
+    if (now.time().hour() >= 7 && now.time().hour() <= 20) {
         return;
     }
 
