@@ -21,10 +21,14 @@ Lux::Lux(uint8_t device, uint8_t address, QObject *parent) : QObject(parent), m_
     if ((m_tsl = tsl2561_init(address, m_device.toLocal8Bit().data())) != NULL) {
         tsl2561_enable_autogain(m_tsl);
         tsl2561_set_integration_time(m_tsl, TSL2561_INTEGRATION_TIME_13MS);
+        qWarning() << __PRETTY_FUNCTION__ << ": Opened i2c-" << device << "at address" << address;
         m_open = true;
     }
+    else {
+        qWarning() << __PRETTY_FUNCTION__ << ": Unable to open i2c-" << device << "at address" << address;
+    }
 
-    if (settings.contains("backlight")) {
+    if (settings.contains("backlight") && m_open) {
         QFileInfo fi(settings.value("backlight").toString());
         if (fi.isDir() || fi.exists()) {
             QString brightness = fi.absoluteFilePath() + "/brightness";
@@ -70,10 +74,10 @@ int Lux::map(int x, int in_min, int in_max, int out_min, int out_max)
 
 void Lux::go()
 {
-    timeout();
-
-    if (m_open)
+    if (m_open) {
+        timeout();
         m_timer->start();
+    }
 }
 
 void Lux::timeout()
@@ -82,15 +86,21 @@ void Lux::timeout()
     long l = tsl2561_lux(m_tsl);
 
     if (now.time().hour() >= 7 && now.time().hour() <= 20) {
+        if (m_lastVal != m_maxBrightness) {
+            QTextStream ts(&m_backlight);
+            ts << m_maxBrightness;
+            m_lastVal = m_maxBrightness;;
+        }
         return;
     }
 
     int b = map(static_cast<int>(l), m_min, m_max, 1, m_maxBrightness);
     if (b == 0)
-        b = 1;
+        b = 10;
 
     if (b != m_lastVal) {
         QTextStream ts(&m_backlight);
         ts << b;
+        m_lastVal = b;
     }
 }
