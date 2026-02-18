@@ -21,11 +21,10 @@ Lux::Lux(uint8_t device, uint8_t address, QObject *parent) : QObject(parent), m_
     if ((m_tsl = tsl2561_init(address, m_device.toLocal8Bit().data())) != NULL) {
         tsl2561_enable_autogain(m_tsl);
         tsl2561_set_integration_time(m_tsl, TSL2561_INTEGRATION_TIME_13MS);
-        qWarning() << __PRETTY_FUNCTION__ << ": Opened i2c-" << device << "at address" << address;
         m_open = true;
     }
     else {
-        qWarning() << __PRETTY_FUNCTION__ << ": Unable to open i2c-" << device << "at address" << address;
+        qWarning() << __PRETTY_FUNCTION__ << ": Unable to open" << m_device << "at address" << address;
     }
 
     if (settings.contains("backlight") && m_open) {
@@ -95,8 +94,8 @@ void Lux::timeout()
     }
 
     int b = map(static_cast<int>(l), m_min, m_max, 1, m_maxBrightness);
-    if (b == 0)
-        b = 10;
+    if (b < 25)
+        b = 25;
 
     if (b != m_lastVal) {
         QTextStream ts(&m_backlight);
