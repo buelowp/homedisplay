@@ -350,6 +350,7 @@ void PrimaryDisplay::connected()
 void PrimaryDisplay::disconnected()
 {
     qDebug() << __PRETTY_FUNCTION__ << ": MQTT connection lost";
+    QThread::sleep(3);
     m_mqttClient->connectToHost();
 }
 
