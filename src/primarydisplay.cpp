@@ -270,7 +270,7 @@ void PrimaryDisplay::showNYEScreen()
 
 void PrimaryDisplay::reconnect()
 {
-    switch (m_mqttClient->state) {
+    switch (m_mqttClient->state()) {
         case QMqttClient::Disconnected:
             qDebug() << __PRETTY_FUNCTION__ << ": Reconnecting to MQTT server";
             m_mqttClient->connectToHost();
