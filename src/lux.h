@@ -39,6 +39,7 @@ private:
     long m_open;
     QFile m_backlight;
     int m_maxBrightness;
+    int m_minBrightness;
     int m_lastVal;
 };
 

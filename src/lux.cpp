@@ -11,6 +11,7 @@ Lux::Lux(uint8_t device, uint8_t address, QObject *parent) : QObject(parent), m_
     m_maxBrightness = 255;
     m_min = 1;
     m_max = 255;
+    m_minBrightness = 5;
     m_lastVal = -1;
 
     m_timer = new QTimer();
@@ -37,7 +38,8 @@ Lux::Lux(uint8_t device, uint8_t address, QObject *parent) : QObject(parent), m_
             if (mb.open(QIODevice::ReadOnly | QIODevice::Text)) {
                 QByteArray line = mb.readAll();
                 m_maxBrightness = line.toInt();
-                qDebug() << __PRETTY_FUNCTION__ << ": m_maxBrightness:" << m_maxBrightness;
+                m_minBrightness = static_cast<int>(m_maxBrightness *.05 + .5);
+                qDebug() << __PRETTY_FUNCTION__ << ": m_maxBrightness:" << m_maxBrightness << ", min" << m_minBrightness;
             }
 
             m_backlight.setFileName(brightness);
@@ -95,12 +97,13 @@ void Lux::timeout()
     }
 
     int b = map(static_cast<int>(l), m_min, m_max, 1, m_maxBrightness);
-    if (b == 0)
-        b = 10;
+    if (b < m_minBrightness)
+        b = m_minBrightness;
 
     if (b != m_lastVal) {
         QTextStream ts(&m_backlight);
         ts << b;
         m_lastVal = b;
+        qDebug() << __PRETTY_FUNCTION__ << ":" << m_lastVal;
     }
 }

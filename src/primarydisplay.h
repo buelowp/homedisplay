@@ -68,10 +68,6 @@ protected slots:
     void endWeatherScreen();
     void endBlankScreen();
     void showWeatherScreen();
-    void showDimScreen();
-    void endDimScreen();
-    void lux(long l);
-    void setBacklight(bool state, uint8_t brightness);
     void showBigClock();
     void endBigClock();
     void updateLocalConditions(double temp, double humidity);
@@ -80,6 +76,7 @@ protected slots:
     void errorChanged(QMqttClient::ClientError error);
     void messageReceived(const QByteArray &message, const QMqttTopicName &topic);
     bool event(QEvent *event) override;
+    void reconnect();
     
 private:
     typedef enum WIDGET_INDEX:int {
@@ -93,18 +90,7 @@ private:
 
     void setupMqttSubscriber();
     int getNightScreenTransitionTime();
-    void enableBacklight(bool state, uint8_t brightness = 255);
     
-    long myMap(long x, long in_min, long in_max, long out_min, long out_max)
-    {
-        long out = out_max - out_min;
-        long in = (in_max - in_min) + out_min;
-        if (in > 0) {
-            return (x - in_min) * out / in;
-        }
-        return 255;
-    }
-
     QMqttClient *m_mqttClient;
 
     QWidget *m_primaryLayoutWidget;

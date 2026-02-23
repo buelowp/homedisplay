@@ -67,11 +67,9 @@ PrimaryDisplay::PrimaryDisplay(QWidget *parent, Qt::WindowFlags flags) : QMainWi
 
     m_startBlankScreen = new QTimer(this);
     m_endBlankScreen = new QTimer(this);
-    m_endDimScreen = new QTimer(this);
     m_startBigClockScreen = new QTimer(this);
     m_endBigClockScreen = new QTimer(this);
   
-    setupMqttSubscriber();
     m_sonos = new Noson();
     if (settings.value("usesonos").toBool() == true) {
         connect(m_sonos, &Noson::title, m_sonosWidget, &SonosDisplay::updateTitle);
@@ -125,7 +123,6 @@ PrimaryDisplay::PrimaryDisplay(QWidget *parent, Qt::WindowFlags flags) : QMainWi
         qDebug() << __PRETTY_FUNCTION__ << ": Display has a max brightness value of" << m_maxBrightness;
         int bus = settings.value("tsl2561bus", 2).toInt();
         m_lux = new Lux(bus);
-        connect(m_lux, &Lux::lux, this, &PrimaryDisplay::lux);
         if (m_lux->isOpen()) {
             qDebug() << __PRETTY_FUNCTION__ << ": I can sense light";
             m_lux->go();
@@ -156,10 +153,12 @@ PrimaryDisplay::PrimaryDisplay(QWidget *parent, Qt::WindowFlags flags) : QMainWi
     connect(m_environment, &Environment::conditions, this, &PrimaryDisplay::updateLocalConditions);
     m_environment->go();
 
-    enableBacklight(true);
     m_stackedWidget->setCurrentIndex(WidgetIndex::Primary);
     setCentralWidget(m_stackedWidget);
     m_states.start();
+
+    m_mqttClient = new QMqttClient;
+    setupMqttSubscriber();
 }
 
 PrimaryDisplay::~PrimaryDisplay() 
@@ -219,7 +218,7 @@ int PrimaryDisplay::getNightScreenTransitionTime()
 void PrimaryDisplay::setupMqttSubscriber()
 {
     QSettings settings(QSettings::IniFormat, QSettings::UserScope, "home", "homedisplay");
-    m_mqttClient = new QMqttClient;
+
     m_hostName = QString("%1-%2").arg(QHostInfo::localHostName()).arg(QRandomGenerator::global()->generate());
     m_mqttClient->setClientId(m_hostName);
     m_mqttClient->setAutoKeepAlive(true);
@@ -231,14 +230,6 @@ void PrimaryDisplay::setupMqttSubscriber()
     m_mqttClient->setHostname(settings.value("mqttserver", "172.24.1.2").toString());
     m_mqttClient->setPort(settings.value("mqttport", 1883).toInt());
     m_mqttClient->connectToHost();
-}
-
-void PrimaryDisplay::lux(long l)
-{
-}
-
-void PrimaryDisplay::setBacklight(bool state, uint8_t brightness)
-{
 }
 
 void PrimaryDisplay::setNYETimeout()
@@ -265,11 +256,6 @@ void PrimaryDisplay::showNYECountDown()
     emit startNYE();
 }
 
-void PrimaryDisplay::enableBacklight(bool state, uint8_t brightness)
-{
-
-}
-
 void PrimaryDisplay::showPrimaryScreen()
 {
     qDebug() << __PRETTY_FUNCTION__;
@@ -282,6 +268,20 @@ void PrimaryDisplay::showNYEScreen()
     m_nyeWidget->countdown();
 }
 
+void PrimaryDisplay::reconnect()
+{
+    switch (m_mqttClient->state) {
+        case QMqttClient::Disconnected:
+            qDebug() << __PRETTY_FUNCTION__ << ": Reconnecting to MQTT server";
+            m_mqttClient->connectToHost();
+            break;
+        case QMqttClient::Connecting:
+            qDebug() << __PRETTY_FUNCTION__ << ": Client is attempting to connect, will try again in 60 seconds";
+            QTimer::singleShot(60000, this, &PrimaryDisplay::reconnect);
+            break;
+    }
+}
+
 void PrimaryDisplay::connected()
 {
     qDebug() << __PRETTY_FUNCTION__ << ": MQTT client connected";
@@ -292,14 +292,13 @@ void PrimaryDisplay::connected()
 
 void PrimaryDisplay::disconnected()
 {
-    qDebug() << __PRETTY_FUNCTION__ << ": MQTT connection lost";
-    m_mqttClient->connectToHost();
+    qWarning() << __PRETTY_FUNCTION__ << ": MQTT connection lost";
+    QTimer::singleShot(60000, this, &PrimaryDisplay::reconnect);
 }
 
 void PrimaryDisplay::errorChanged(QMqttClient::ClientError error)
 {
-    qDebug() << __PRETTY_FUNCTION__ << ":" << m_mqttClient->hostname() << ":" << m_mqttClient->port();
-    qDebug() << __PRETTY_FUNCTION__ << ":" << error;
+    qWarning() << __PRETTY_FUNCTION__ << ":" << m_mqttClient->hostname() << ":" << m_mqttClient->port() << ":" << error;
 }
 
 void PrimaryDisplay::endSonosScreen()
@@ -341,44 +340,15 @@ void PrimaryDisplay::showBlankScreen()
         interval = settings.value("blankinterval").toInt();
     }
     m_stackedWidget->setCurrentIndex(WidgetIndex::Blank);
-    enableBacklight(false);
     qDebug() << __PRETTY_FUNCTION__ << ": sleeping for" << interval / 1000 << "seconds";
     m_endBlankScreen->setInterval(interval);
     m_endBlankScreen->setSingleShot(true);
     m_endBlankScreen->start();
 }
 
-void PrimaryDisplay::endDimScreen()
-{
-    enableBacklight(true);
-    qDebug() << __PRETTY_FUNCTION__;
-}
-
-void PrimaryDisplay::showDimScreen()
-{
-    QSettings settings(QSettings::IniFormat, QSettings::UserScope, "home", "homedisplay");
-    int interval = ONE_HOUR * 2;
-    int dim = 100;
-    qDebug() << __PRETTY_FUNCTION__ << ": sleeping for" << interval / 1000 << "seconds";
-
-    if (settings.contains("diminterval")) {
-        interval = settings.value("diminterval").toInt();
-    }
-    if (settings.contains("dimvalue")) {
-        dim = settings.value("dimvalue").toInt();
-    }
-    m_stackedWidget->setCurrentIndex(WidgetIndex::Primary);
-    enableBacklight(true, dim);
-    m_endDimScreen->setInterval(interval);
-    m_endDimScreen->setSingleShot(true);
-    m_endDimScreen->start();
-    m_stackedWidget->setCurrentIndex(WidgetIndex::Bigclock);
-}
-
 void PrimaryDisplay::endBlankScreen()
 {
     qDebug() << __PRETTY_FUNCTION__;
-    enableBacklight(true);
     m_startBlankScreen->setInterval(getNightScreenTransitionTime());
     m_startBlankScreen->setSingleShot(true);
     m_startBlankScreen->start();
