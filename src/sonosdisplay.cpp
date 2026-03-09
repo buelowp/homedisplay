@@ -25,7 +25,7 @@ SonosDisplay::SonosDisplay(QWidget *parent) : QWidget(parent)
     m_title = new CustomLabel(36, m_width, Qt::AlignLeft);
     m_artist = new CustomLabel(24, m_width, Qt::AlignLeft);
     m_album = new CustomLabel(24, m_width, Qt::AlignLeft);
-    m_elapsedTime = new CustomLabel(24, m_width, Qt::AlignLeft);
+    m_elapsedTime = new CustomLabel(24, m_width, Qt::AlignHCenter);
     m_time = new CustomLabel(24, m_width, Qt::AlignRight);
     m_albumArt = new QLabel();
     m_albumArt->setFixedSize(300, 300);
@@ -36,11 +36,11 @@ SonosDisplay::SonosDisplay(QWidget *parent) : QWidget(parent)
     
     m_layout->setSpacing(20);
     m_layout->addWidget(m_title, 0, 0, 1, 4);
-    m_layout->addWidget(m_albumArt, 1, 0, 3, 1);
+    m_layout->addWidget(m_albumArt, 1, 0, 2, 1);
     m_layout->addWidget(m_artist, 1, 1, 1, 3);
     m_layout->addWidget(m_album, 2, 1, 1, 3);
-    m_layout->addWidget(m_elapsedTime, 3, 1, 1, 3);
-    m_layout->addWidget(m_time, 4, 1, 1, 3);
+    m_layout->addWidget(m_elapsedTime, 3, 0, 1, 3);
+    m_layout->addWidget(m_time, 3, 3, 1, 1);
     m_layout->addWidget(m_elapsedIndicator, 4, 0, 1, 4);
     m_layout->setAlignment(m_albumArt, Qt::AlignTop);
     setLayout(m_layout);

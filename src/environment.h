@@ -32,6 +32,7 @@ private:
     QTimer *m_timer;
     int m_interval;
     bool m_open;
+    int m_offset;
 };
 
 #endif // ENVIRONMENT_H

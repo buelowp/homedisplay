@@ -7,6 +7,8 @@ Environment::Environment(int interval, QObject *parent) : QObject(parent), m_int
 {
     QSettings settings(QSettings::IniFormat, QSettings::UserScope, "home", "homedisplay");
     QString hwmon = settings.value("hwmon").toString();
+    m_offset = settings.value("offset", 0).toInt();
+    qDebug() << __PRETTY_FUNCTION__ << ": offset to temp" << m_offset;
 
     m_timer = new QTimer(this);
     connect(m_timer, &QTimer::timeout, this, &Environment::timeout);
@@ -51,7 +53,7 @@ void Environment::timeout()
         m_humidityStream->seek(0);
         h = m_humidityStream->readAll().toInt();
         emit humidity(h / 1000);
-        emit temperature((t / 1000) * 1.8 + 32);
-        emit conditions((t / 1000) * 1.8 + 32, h / 1000);
+        emit temperature((t / 1000) * 1.8 + 32 + m_offset);
+        emit conditions(((t / 1000) * 1.8 + 32 + m_offset), h / 1000);
     }
 }

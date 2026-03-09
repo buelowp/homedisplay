@@ -55,6 +55,7 @@ void Noson::updateElapsedTime()
 
 void Noson::smstart()
 {
+    qDebug() << __PRETTY_FUNCTION__;
 }
 
 void Noson::smstop()
